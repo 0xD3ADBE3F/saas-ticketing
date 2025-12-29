@@ -1,0 +1,16 @@
+{
+  "servers": {
+    "Mollie": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://mcp.mollie.com/mcp",
+        "--header",
+        "Authorization: Bearer ${MOLLIE_API_OAUTH_ORG_TOKEN}"
+      ],
+      "env": {
+        "MOLLIE_API_OAUTH_ORG_TOKEN": "access_27Kq6ysHnPcGV2UWhasEBU7cJysfjNm6Maay3TPH"
+      }
+    }
+  }
+}
