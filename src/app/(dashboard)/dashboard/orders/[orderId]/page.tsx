@@ -1,9 +1,13 @@
 import { getUser } from "@/server/lib/supabase";
 import { getUserOrganizations } from "@/server/services/organizationService";
 import { redirect } from "next/navigation";
-import { OrderList } from "@/components/dashboard/OrderList";
+import { OrderDetails } from "./OrderDetails";
 
-export default async function OrdersPage() {
+export default async function OrderDetailsPage({
+  params,
+}: {
+  params: Promise<{ orderId: string }>;
+}) {
   const user = await getUser();
 
   if (!user) {
@@ -17,11 +21,11 @@ export default async function OrdersPage() {
   }
 
   const organization = organizations[0];
+  const { orderId } = await params;
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Bestellingen</h1>
-      <OrderList organizationId={organization.id} />
+      <OrderDetails organizationId={organization.id} orderId={orderId} />
     </div>
   );
 }

@@ -1,24 +1,51 @@
-export default function DashboardPage() {
+import { redirect } from "next/navigation";
+import { getUser } from "@/server/lib/supabase";
+import { getUserOrganizations } from "@/server/services/organizationService";
+import { getDashboardStatistics } from "@/server/services/statisticsService";
+import { formatPrice } from "@/lib/currency";
+
+export default async function DashboardPage() {
+  const user = await getUser();
+
+  if (!user) {
+    redirect("/auth/login");
+  }
+
+  const organizations = await getUserOrganizations(user.id);
+
+  if (organizations.length === 0) {
+    redirect("/onboarding");
+  }
+
+  const currentOrg = organizations[0];
+  const stats = await getDashboardStatistics(currentOrg.id);
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <DashboardCard
-          title="Evenementen"
-          value="0"
-          description="Actieve evenementen"
+          title="Totaal Evenementen"
+          value={stats.totalEvents.toString()}
+          description={`${stats.liveEvents} live, ${stats.draftEvents} concept`}
           href="/dashboard/events"
         />
         <DashboardCard
+          title="Live Evenementen"
+          value={stats.liveEvents.toString()}
+          description="Actief beschikbaar"
+          href="/dashboard/events?status=LIVE"
+        />
+        <DashboardCard
           title="Tickets Verkocht"
-          value="0"
-          description="Totaal verkochte tickets"
+          value={stats.totalTicketsSold.toString()}
+          description={`${formatPrice(stats.totalRevenue)} omzet`}
           href="/dashboard/orders"
         />
         <DashboardCard
           title="Gescand"
-          value="0"
-          description="Gescande tickets"
+          value={stats.totalScanned.toString()}
+          description={`${stats.totalTicketsSold > 0 ? Math.round((stats.totalScanned / stats.totalTicketsSold) * 100) : 0}% van verkochte tickets`}
           href="/dashboard/scanning"
         />
       </div>

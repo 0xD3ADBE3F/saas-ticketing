@@ -453,4 +453,100 @@ export const orderRepo = {
       take: 50,
     });
   },
+
+  /**
+   * List orders with comprehensive filters
+   */
+  findWithFilters: async (
+    organizationId: string,
+    userId: string,
+    filters?: {
+      status?: OrderStatus;
+      eventId?: string;
+      search?: string; // Email or order number
+      dateFrom?: Date;
+      dateTo?: Date;
+      limit?: number;
+      offset?: number;
+    }
+  ): Promise<{ orders: OrderWithEvent[]; total: number }> => {
+    const where: Prisma.OrderWhereInput = {
+      organizationId,
+      organization: {
+        memberships: {
+          some: { userId },
+        },
+      },
+    };
+
+    if (filters?.status) {
+      where.status = filters.status;
+    }
+
+    if (filters?.eventId) {
+      where.eventId = filters.eventId;
+    }
+
+    if (filters?.search) {
+      const search = filters.search.trim();
+      where.OR = [
+        {
+          buyerEmail: {
+            contains: search.toLowerCase(),
+            mode: "insensitive",
+          },
+        },
+        {
+          orderNumber: {
+            contains: search.toUpperCase(),
+            mode: "insensitive",
+          },
+        },
+      ];
+    }
+
+    if (filters?.dateFrom || filters?.dateTo) {
+      where.createdAt = {};
+      if (filters.dateFrom) {
+        where.createdAt.gte = filters.dateFrom;
+      }
+      if (filters.dateTo) {
+        where.createdAt.lte = filters.dateTo;
+      }
+    }
+
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        include: {
+          event: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              startsAt: true,
+              endsAt: true,
+              location: true,
+            },
+          },
+          orderItems: {
+            include: {
+              ticketType: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: filters?.limit || 50,
+        skip: filters?.offset || 0,
+      }),
+      prisma.order.count({ where }),
+    ]);
+
+    return { orders, total };
+  },
 };
