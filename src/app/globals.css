@@ -23,3 +23,21 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* Safe area for iOS devices with home indicator */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* App-like touch behavior */
+@media (hover: none) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Smooth scrolling for app feel */
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}

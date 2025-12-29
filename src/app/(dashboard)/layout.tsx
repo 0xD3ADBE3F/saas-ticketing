@@ -26,12 +26,15 @@ export default async function DashboardLayout({
   const currentOrg = organizations[0];
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <DashboardNav
         organizationName={currentOrg.name}
         userEmail={user.email || ""}
       />
-      <main className="flex-1 p-8">{children}</main>
+      {/* Main content with responsive padding for nav */}
+      <main className="md:ml-64 pt-14 md:pt-0 pb-20 md:pb-0 min-h-screen">
+        <div className="p-4 md:p-8">{children}</div>
+      </main>
     </div>
   );
 }

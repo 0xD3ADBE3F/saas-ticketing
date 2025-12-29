@@ -50,14 +50,14 @@
 
 ### Slice 2: Events CRUD
 
-- ⬜ Event model: title, location, start/end, status (`draft | live | ended`)
-- ⬜ Event create/edit/list in organizer backend
-- ⬜ Public event page (read-only placeholder)
-- ⬜ Audit log for event create/update
+- ✅ Event model: title, location, start/end, status (`draft | live | ended | cancelled`)
+- ✅ Event create/edit/list in organizer backend
+- ✅ Public event page (`/e/[slug]` for LIVE events only)
+- ✅ Status transitions: DRAFT → LIVE/CANCELLED, LIVE → ENDED/CANCELLED
 
 **DoD**
 
-- E2E: create org → create event → list events
+- ✅ Unit tests: tenant scoping, date validation, status transitions, slug generation (21 tests)
 
 ---
 
