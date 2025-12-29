@@ -155,14 +155,14 @@
 ### Slice 7: Online scanning + ScanLogs
 
 - ✅ ScanLog model (log every scan attempt)
-- ⬜ `POST /api/scanner/scan`
-- ⬜ Rule: **first scan wins**
-- ⬜ Duplicate scans handled correctly
-- ⬜ Scanner-only role access
+- ✅ `POST /api/scanner/scan`
+- ✅ Rule: **first scan wins**
+- ✅ Duplicate scans handled correctly
+- ✅ Scanner-only role access
 
 **DoD**
 
-- Unit tests: first-scan-wins & duplicate handling
+- ✅ Unit tests: first-scan-wins & duplicate handling (11 tests)
 
 ---
 

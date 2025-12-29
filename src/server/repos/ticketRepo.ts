@@ -133,6 +133,30 @@ export const ticketRepo = {
   },
 
   /**
+   * Find ticket by ID for scanning
+   */
+  findByIdForScanning: async (id: string): Promise<TicketForScanning | null> => {
+    return prisma.ticket.findUnique({
+      where: { id },
+      include: {
+        ticketType: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        event: {
+          select: {
+            id: true,
+            title: true,
+            organizationId: true,
+          },
+        },
+      },
+    });
+  },
+
+  /**
    * Find all tickets for an order
    */
   findByOrder: async (orderId: string): Promise<TicketWithDetails[]> => {
