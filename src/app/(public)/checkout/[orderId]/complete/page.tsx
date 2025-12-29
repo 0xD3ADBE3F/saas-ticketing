@@ -51,7 +51,7 @@ export default async function CompletePage({ params }: CompletePageProps) {
               href="/"
               className="text-lg font-semibold text-gray-900 dark:text-white"
             >
-              Ticketplatform
+              Entro
             </Link>
           </div>
         </header>
@@ -133,7 +133,7 @@ export default async function CompletePage({ params }: CompletePageProps) {
             href="/"
             className="text-lg font-semibold text-gray-900 dark:text-white"
           >
-            Ticketplatform
+            Entro
           </Link>
         </div>
       </header>

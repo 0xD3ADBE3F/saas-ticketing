@@ -4,7 +4,7 @@
 > **Docs:** https://docs.mollie.com/docs/connect-platforms-getting-started
 > **Last Updated:** 2025-12-29
 
-This document tracks the implementation of Mollie Connect for Platforms, which enables our multi-tenant ticketing SaaS to process payments on behalf of organizations (customers).
+This document tracks the implementation of Mollie Connect for Platforms, which enables Entro to process payments on behalf of organizations (customers).
 
 ---
 
@@ -19,7 +19,7 @@ Mollie Connect for Platforms allows us to:
 
 ### Why Mollie Connect?
 
-For our ticketing platform:
+For Entro:
 
 - **Organizations** are our customers (tenants)
 - **Buyers** purchase tickets from organizations

@@ -10,7 +10,7 @@ export default function PublicLayout({
       <header className="border-b border-gray-200 dark:border-gray-800 px-6 py-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <Link href="/" className="text-xl font-bold">
-            🎟️ Ticketing
+            🎟️ Entro
           </Link>
           <nav className="flex gap-4">
             <Link

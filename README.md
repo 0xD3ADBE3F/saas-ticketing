@@ -1,4 +1,4 @@
-# Ticketing SaaS
+# Entro
 
 Multi-tenant ticketing platform for small organizations in the Netherlands.
 
@@ -80,6 +80,31 @@ npm run build    # Production build
 npm run lint     # Run ESLint
 npm run test     # Run tests
 ```
+
+### Platform Administration
+
+The platform includes a SuperAdmin dashboard at `/platform` for managing all organizations.
+
+**Creating a SuperAdmin:**
+
+```bash
+# Create a SuperAdmin user (requires Supabase user ID)
+npx tsx scripts/create-super-admin.ts <user-id> <email>
+
+# Example:
+npx tsx scripts/create-super-admin.ts "abc123-def456..." "admin@example.com"
+```
+
+Once created, SuperAdmins can access:
+
+- Platform dashboard with global statistics
+- Organization management
+- Subscription & billing management
+- Platform analytics
+- Admin audit logs
+- Platform settings
+
+**Note:** SuperAdmin access is completely separate from organization membership. Users with SuperAdmin status can access both `/platform` (admin) and `/dashboard` (organizer) routes.
 
 ### Before Committing
 

@@ -1,8 +1,8 @@
-# Copilot Instructions – Multi-Tenant Ticketing SaaS
+# Copilot Instructions – Entro
 
 ## Project Overview
 
-Multi-tenant ticketing SaaS for small organizations in the Netherlands.
+Entro is a multi-tenant ticketing platform for small organizations in the Netherlands.
 
 ### Key Business Rules
 

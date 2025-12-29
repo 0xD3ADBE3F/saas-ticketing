@@ -35,7 +35,7 @@ export function DashboardNav({
         <div className="mb-8">
           <Link href="/" className="text-xl font-bold flex items-center gap-2">
             <span className="text-2xl">🎟️</span>
-            <span>Ticketing</span>
+            <span>Entro</span>
           </Link>
         </div>
 
@@ -85,7 +85,7 @@ export function DashboardNav({
       <header className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 z-40 flex items-center justify-between px-4">
         <Link href="/" className="text-lg font-bold flex items-center gap-2">
           <span>🎟️</span>
-          <span>Ticketing</span>
+          <span>Entro</span>
         </Link>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

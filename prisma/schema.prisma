@@ -308,3 +308,43 @@ model IdempotencyKey {
   @@index([expiresAt])
   @@map("idempotency_keys")
 }
+
+// =============================================================================
+// PLATFORM ADMIN
+// =============================================================================
+
+model SuperAdmin {
+  id        String   @id @default(uuid())
+  userId    String   @unique // Supabase auth.users.id
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  auditLogs AdminAuditLog[]
+
+  @@index([userId])
+  @@index([email])
+  @@map("super_admins")
+}
+
+model AdminAuditLog {
+  id          String   @id @default(uuid())
+  adminId     String   // SuperAdmin.id
+  action      String   // e.g., "organization.suspend", "user.impersonate", "plan.change"
+  entityType  String?  // e.g., "organization", "user", "payment"
+  entityId    String?  // ID of affected entity
+  metadata    Json?    // Additional context (old values, reason, etc.)
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  admin SuperAdmin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("admin_audit_logs")
+}

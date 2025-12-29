@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GetEntry - Het eerlijke ticketplatform voor Nederland",
+  title: "Entro - Het eerlijke ticketplatform voor Nederland",
   description:
     "Verkoop tickets zonder gedoe. Betaal alleen voor tickets die daadwerkelijk worden gebruikt. Simpel, transparant en volledig gericht op de Nederlandse markt.",
   keywords: [
@@ -25,16 +25,17 @@ export const metadata: Metadata = {
     "qr-code",
   ],
   openGraph: {
-    title: "GetEntry - Het eerlijke ticketplatform voor Nederland",
+    title: "Entro - Het eerlijke ticketplatform voor Nederland",
     description:
       "Verkoop tickets zonder gedoe. Betaal alleen voor tickets die daadwerkelijk worden gebruikt.",
     type: "website",
     locale: "nl_NL",
+    url: "https://getentro.app",
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "GetEntry",
+    title: "Entro",
   },
 };
 

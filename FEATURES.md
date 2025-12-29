@@ -1,4 +1,4 @@
-# FEATURES.md — Ticketing SaaS (NL-first, Offline Scanning MVP)
+# FEATURES.md — Entro (NL-first, Offline Scanning MVP)
 
 ## Legend
 
@@ -268,15 +268,19 @@
 
 ### Slice 16: Super Admin Auth & Access Control
 
-- ⬜ SuperAdmin role model (separate from Organization roles)
-- ⬜ SuperAdmin login flow (separate from organizer auth)
-- ⬜ Platform admin routes protection (`/platform/*`)
-- ⬜ Audit log for all admin actions
+- ✅ SuperAdmin role model (separate from Organization roles)
+- ✅ SuperAdmin database tables (SuperAdmin, AdminAuditLog)
+- ✅ Platform admin authentication utilities (getSuperAdmin, isSuperAdmin)
+- ✅ Platform admin routes protection (`/platform/*`)
+- ✅ Audit log infrastructure for all admin actions
+- ✅ Platform admin layout with navigation
+- ✅ Platform dashboard home with key metrics
 
 **DoD**
 
-- SuperAdmins cannot access without explicit role grant
-- All admin actions are logged with timestamp + admin user
+- ✅ SuperAdmins cannot access without explicit role grant
+- ✅ All admin actions can be logged with timestamp + admin user
+- ✅ Platform routes redirect non-SuperAdmins to organizer dashboard
 
 ---
 

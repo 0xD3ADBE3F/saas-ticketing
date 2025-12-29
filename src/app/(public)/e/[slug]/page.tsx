@@ -52,7 +52,7 @@ export default async function PublicEventPage({
             href="/"
             className="text-lg font-semibold text-gray-900 dark:text-white"
           >
-            Ticketplatform
+            Entro
           </Link>
         </div>
       </header>
@@ -186,7 +186,7 @@ export default async function PublicEventPage({
       <footer className="border-t border-gray-200 dark:border-gray-800 mt-16">
         <div className="max-w-4xl mx-auto px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
           <p>
-            © {new Date().getFullYear()} Ticketplatform. Alle rechten
+            © {new Date().getFullYear()} Entro (getentro.app). Alle rechten
             voorbehouden.
           </p>
         </div>

@@ -179,7 +179,7 @@ function generateTicketEmailHTML(data: TicketEmailData): string {
                 Bewaar deze e-mail goed. Je hebt de QR-codes nodig om binnen te komen.
               </p>
               <p style="margin: 0; font-size: 12px; color: #999;">
-                © ${new Date().getFullYear()} Ticketplatform
+                © ${new Date().getFullYear()} Entro (getentro.app)
               </p>
             </td>
           </tr>
@@ -219,7 +219,7 @@ Bestelnummer: ${data.orderNumber}
 
 Bewaar deze e-mail goed. Je hebt de ticketcodes nodig om binnen te komen.
 
-© ${new Date().getFullYear()} Ticketplatform
+© ${new Date().getFullYear()} Entro (getentro.app)
   `.trim();
 }
 
@@ -243,7 +243,7 @@ export async function sendTicketEmail(data: TicketEmailData): Promise<EmailResul
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     const result = await resend.emails.send({
-      from: process.env.EMAIL_FROM || "Ticketplatform <ticketing@email.stormzaak.nl>",
+      from: process.env.EMAIL_FROM || "Entro <tickets@getentro.app>",
       to: data.to,
       subject,
       html,

@@ -1,4 +1,4 @@
-# SPEC.md – Ticketing SaaS Specification
+# SPEC.md – Entro Specification
 
 > Living document. Update when behavior or requirements change.
 
