@@ -468,3 +468,94 @@ export async function processExpiredOrders(): Promise<number> {
 
   return expiredOrders.length;
 }
+
+/**
+ * Refund an order (admin action)
+ * This marks the order as refunded and logs the action
+ */
+export async function refundOrder(
+  orderId: string,
+  userId: string,
+  reason?: string,
+  ipAddress?: string,
+  userAgent?: string
+): Promise<OrderServiceResult<void>> {
+  try {
+    const { auditService } = await import("./auditService");
+
+    const result = await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        include: {
+          tickets: true,
+          orderItems: true,
+        },
+      });
+
+      if (!order) {
+        throw new Error("Bestelling niet gevonden");
+      }
+
+      // Only allow refunding PAID orders
+      if (order.status !== "PAID") {
+        throw new Error("Alleen betaalde bestellingen kunnen worden terugbetaald");
+      }
+
+      // Mark all tickets as refunded
+      await tx.ticket.updateMany({
+        where: { orderId },
+        data: { status: "REFUNDED" },
+      });
+
+      // Release capacity back to ticket types
+      for (const item of order.orderItems) {
+        await tx.ticketType.update({
+          where: { id: item.ticketTypeId },
+          data: {
+            soldCount: {
+              decrement: item.quantity,
+            },
+          },
+        });
+      }
+
+      // Mark order as refunded
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: "REFUNDED",
+          refundedAt: new Date(),
+        },
+      });
+
+      return order;
+    });
+
+    // Log the refund action
+    await auditService.log({
+      organizationId: result.organizationId,
+      userId,
+      action: auditService.actions.ORDER_REFUNDED,
+      entityType: "order",
+      entityId: orderId,
+      metadata: {
+        reason,
+        orderNumber: result.orderNumber,
+        totalAmount: result.totalAmount,
+        buyerEmail: result.buyerEmail,
+      },
+      ipAddress,
+      userAgent,
+    });
+
+    return { success: true, data: undefined };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Er is een fout opgetreden bij het terugbetalen",
+    };
+  }
+}

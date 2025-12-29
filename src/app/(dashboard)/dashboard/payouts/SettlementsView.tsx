@@ -24,6 +24,24 @@ interface Settlement {
   createdAt: string;
 }
 
+interface EventPayoutBreakdown {
+  eventId: string;
+  eventTitle: string;
+  ticketsSold: number;
+  grossRevenue: number;
+  serviceFees: number;
+  platformFee: number;
+  netPayout: number;
+}
+
+interface PayoutSummary {
+  totalGrossRevenue: number;
+  totalServiceFees: number;
+  totalPlatformFees: number;
+  totalNetPayout: number;
+  events: EventPayoutBreakdown[];
+}
+
 interface SettlementsViewProps {
   organizationId: string;
 }
@@ -60,8 +78,14 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
   const [balance, setBalance] = useState<Balance | null>(null);
   const [openSettlement, setOpenSettlement] = useState<Settlement | null>(null);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
+  const [payoutSummary, setPayoutSummary] = useState<PayoutSummary | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"settlements" | "events">(
+    "settlements"
+  );
 
   useEffect(() => {
     async function fetchData() {
@@ -87,6 +111,15 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
           const settlementsData = await settlementsRes.json();
           setSettlements(settlementsData.settlements || []);
         }
+
+        // Fetch payout summary
+        const summaryRes = await fetch(
+          `/api/organizations/${organizationId}/payouts/summary`
+        );
+        if (summaryRes.ok) {
+          const summaryData = await summaryRes.json();
+          setPayoutSummary(summaryData);
+        }
       } catch (err) {
         console.error("Failed to fetch settlements:", err);
         setError("Kon uitbetalingen niet ophalen");
@@ -97,6 +130,30 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
 
     fetchData();
   }, [organizationId]);
+
+  const handleExport = async (type: "orders" | "tickets" | "scans") => {
+    try {
+      const response = await fetch(
+        `/api/organizations/${organizationId}/export/${type}`
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to export ${type}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${type}-${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error(`Failed to export ${type}:`, err);
+      alert(`Kon ${type} niet exporteren`);
+    }
+  };
 
   if (loading) {
     return (
@@ -185,78 +242,243 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
         </div>
       </div>
 
-      {/* Settlements history */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Uitbetalingshistorie
-          </h2>
-        </div>
-
-        {settlements.length === 0 ? (
-          <div className="p-6 text-center text-gray-500 dark:text-gray-400">
-            Nog geen uitbetalingen ontvangen.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Referentie
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Bedrag
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Datum
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                {settlements.map((settlement) => (
-                  <tr
-                    key={settlement.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {settlement.reference}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          statusColors[settlement.status]
-                        }`}
-                      >
-                        {statusLabels[settlement.status]}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {formatPrice(settlement.amount.value)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                      {settlement.settledAt
-                        ? new Date(settlement.settledAt).toLocaleDateString(
-                            "nl-NL"
-                          )
-                        : new Date(settlement.createdAt).toLocaleDateString(
-                            "nl-NL"
-                          )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      {/* Export buttons */}
+      <div className="flex gap-3">
+        <button
+          onClick={() => handleExport("orders")}
+          className="px-4 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        >
+          📊 Exporteer bestellingen
+        </button>
+        <button
+          onClick={() => handleExport("tickets")}
+          className="px-4 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        >
+          🎫 Exporteer tickets
+        </button>
+        <button
+          onClick={() => handleExport("scans")}
+          className="px-4 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        >
+          📱 Exporteer scans
+        </button>
       </div>
+
+      {/* Tabs */}
+      <div className="border-b border-gray-200 dark:border-gray-800">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab("settlements")}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === "settlements"
+                ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+            }`}
+          >
+            Uitbetalingen
+          </button>
+          <button
+            onClick={() => setActiveTab("events")}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === "events"
+                ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+            }`}
+          >
+            Per evenement
+          </button>
+        </nav>
+      </div>
+
+      {/* Settlements tab */}
+      {activeTab === "settlements" && (
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Uitbetalingshistorie
+            </h2>
+          </div>
+
+          {settlements.length === 0 ? (
+            <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+              Nog geen uitbetalingen ontvangen.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Referentie
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Bedrag
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Datum
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                  {settlements.map((settlement) => (
+                    <tr
+                      key={settlement.id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {settlement.reference}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            statusColors[settlement.status]
+                          }`}
+                        >
+                          {statusLabels[settlement.status]}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {formatPrice(settlement.amount.value)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
+                        {settlement.settledAt
+                          ? new Date(settlement.settledAt).toLocaleDateString(
+                              "nl-NL"
+                            )
+                          : new Date(settlement.createdAt).toLocaleDateString(
+                              "nl-NL"
+                            )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Events tab */}
+      {activeTab === "events" && payoutSummary && (
+        <div className="space-y-4">
+          {/* Summary totals */}
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Totaal overzicht
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Bruto omzet
+                </p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">
+                  {formatPrice(payoutSummary.totalGrossRevenue)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Service fees
+                </p>
+                <p className="text-xl font-bold text-gray-500 dark:text-gray-400">
+                  {formatPrice(payoutSummary.totalServiceFees)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Platform fee (2%)
+                </p>
+                <p className="text-xl font-bold text-red-600 dark:text-red-400">
+                  -{formatPrice(payoutSummary.totalPlatformFees)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Netto uitbetaling
+                </p>
+                <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                  {formatPrice(payoutSummary.totalNetPayout)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Per event breakdown */}
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Uitsplitsing per evenement
+              </h2>
+            </div>
+
+            {payoutSummary.events.length === 0 ? (
+              <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                Nog geen tickets verkocht.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Evenement
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Tickets
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Bruto
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Platform fee
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Netto
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                    {payoutSummary.events.map((event) => (
+                      <tr
+                        key={event.eventId}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                      >
+                        <td className="px-6 py-4">
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {event.eventTitle}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
+                          {event.ticketsSold}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {formatPrice(event.grossRevenue)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-red-600 dark:text-red-400">
+                          -{formatPrice(event.platformFee)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                            {formatPrice(event.netPayout)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Info notice */}
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
@@ -275,8 +497,9 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
             />
           </svg>
           <p className="text-sm text-blue-700 dark:text-blue-300">
-            Uitbetalingen worden verwerkt via Mollie. Je kunt je bankrekening en
-            uitbetalingsfrequentie beheren in het{" "}
+            Uitbetalingen worden verwerkt via Mollie. De platform fee van 2%
+            wordt automatisch ingehouden. Service fees gaan naar het platform.
+            Je kunt je bankrekening en uitbetalingsfrequentie beheren in het{" "}
             <a
               href="https://my.mollie.com/dashboard"
               target="_blank"

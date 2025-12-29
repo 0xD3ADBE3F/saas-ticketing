@@ -252,6 +252,26 @@ enum ScanResult {
   REFUNDED
 }
 
+model AuditLog {
+  id             String   @id @default(uuid())
+  organizationId String
+  userId         String   // User who performed the action
+  action         String   // e.g., "order.refund", "ticket.override", "ticket.resend"
+  entityType     String   // e.g., "order", "ticket", "event"
+  entityId       String   // ID of affected entity
+  metadata       Json?    // Additional context (reason, old/new values, etc.)
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
 // =============================================================================
 // PAYOUTS
 // =============================================================================

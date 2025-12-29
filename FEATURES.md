@@ -228,15 +228,18 @@
 
 - ✅ Payouts page with Mollie connection check
 - ✅ Settlements view component (UI framework)
-- ⬜ Payout overview per event
-- ⬜ Gross / platform fee / net breakdown
-- ⬜ Integration with Mollie Settlements API (fetch real data)
-- ⬜ CSV export (orders, tickets, scans)
-- ⬜ Audit log for refunds & overrides
+- ✅ Payout overview per event
+- ✅ Gross / platform fee / net breakdown
+- ✅ Integration with Mollie Settlements API (fetch real data)
+- ✅ CSV export (orders, tickets, scans)
+- ✅ Audit log for refunds & overrides
 
 **DoD**
 
-- Export totals match Mollie settlement data
+- ✅ Export totals match Mollie settlement data
+- ✅ Event-level breakdown shows tickets sold, gross, platform fee, and net
+- ✅ CSV exports available for orders, tickets, and scans
+- ✅ Audit log tracks all refund actions with reason and metadata
 
 ---
 
