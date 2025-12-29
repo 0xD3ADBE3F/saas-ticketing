@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getOrderForCheckout } from "@/server/services/orderService";
+import { getTicketsWithQR } from "@/server/services/ticketService";
 import { formatPrice } from "@/lib/currency";
 import { formatDateTime, formatDateRange } from "@/lib/date";
+import { PaymentButton } from "@/components/checkout/PaymentButton";
+import { TicketDisplay } from "@/components/checkout/TicketDisplay";
 
 interface CheckoutPageProps {
   params: Promise<{ orderId: string }>;
@@ -41,6 +44,12 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
     new Date(order.expiresAt) < new Date();
   const isPending = order.status === "PENDING" && !isExpired;
   const isPaid = order.status === "PAID";
+
+  // Fetch tickets if order is paid
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const ticketsResult = isPaid
+    ? await getTicketsWithQR(orderId, baseUrl)
+    : null;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -110,8 +119,30 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
                 <span className="font-medium">Betaling ontvangen</span>
               </div>
               <p className="mt-1 text-sm text-green-600 dark:text-green-400">
-                Je tickets zijn onderweg naar {order.buyerEmail}
+                Je tickets zijn verstuurd naar {order.buyerEmail}
               </p>
+            </div>
+          )}
+
+          {/* Show tickets for paid orders */}
+          {isPaid && ticketsResult?.success && (
+            <div className="p-6">
+              <TicketDisplay
+                tickets={ticketsResult.data.tickets.map((t) => ({
+                  id: t.id,
+                  code: t.code,
+                  ticketType: { name: t.ticketType.name },
+                  event: {
+                    title: t.event.title,
+                    startsAt: t.event.startsAt,
+                    endsAt: t.event.endsAt,
+                    location: t.event.location,
+                  },
+                  qrData: t.qrData,
+                }))}
+                orderNumber={order.orderNumber}
+                buyerEmail={order.buyerEmail}
+              />
             </div>
           )}
 
@@ -139,107 +170,108 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
             </div>
           )}
 
-          {/* Order Header */}
-          <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Bestelnummer
-                </p>
-                <p className="font-mono font-medium text-gray-900 dark:text-white">
-                  {order.orderNumber}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Geplaatst op
-                </p>
-                <p className="text-gray-900 dark:text-white">
-                  {formatDateTime(order.createdAt)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Event Info */}
-          <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-            <h2 className="font-semibold text-gray-900 dark:text-white mb-2">
-              {event.title}
-            </h2>
-            <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-              <p>{formatDateRange(event.startsAt, event.endsAt)}</p>
-              {event.location && <p>{event.location}</p>}
-            </div>
-          </div>
-
-          {/* Order Items */}
-          <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-            <h3 className="font-medium text-gray-900 dark:text-white mb-4">
-              Tickets
-            </h3>
-            <div className="space-y-3">
-              {items.map((item, index) => (
-                <div key={index} className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    {item.quantity}× {item.ticketTypeName}
-                  </span>
-                  <span className="text-gray-900 dark:text-white">
-                    {formatPrice(item.totalPrice)}
-                  </span>
+          {/* Order Header - Only show for pending/expired orders */}
+          {!isPaid && (
+            <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Bestelnummer
+                  </p>
+                  <p className="font-mono font-medium text-gray-900 dark:text-white">
+                    {order.orderNumber}
+                  </p>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Order Summary */}
-          <div className="p-6">
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                <span>Subtotaal</span>
-                <span>{formatPrice(order.ticketTotal)}</span>
-              </div>
-              <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                <span>Servicekosten</span>
-                <span>{formatPrice(order.serviceFee)}</span>
-              </div>
-              <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700 font-medium text-gray-900 dark:text-white">
-                <span>Totaal</span>
-                <span>{formatPrice(order.totalAmount)}</span>
+                <div className="text-right">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Geplaatst op
+                  </p>
+                  <p className="text-gray-900 dark:text-white">
+                    {formatDateTime(order.createdAt)}
+                  </p>
+                </div>
               </div>
             </div>
+          )}
 
-            {/* Payment Button (for pending orders) */}
-            {isPending && (
-              <div className="mt-6">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                  Betaal met iDEAL om je tickets te ontvangen.
-                </p>
-                {/* In Slice 5, this will redirect to Mollie payment */}
-                <button
-                  type="button"
-                  disabled
-                  className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors"
-                >
-                  Betalen met iDEAL ({formatPrice(order.totalAmount)})
-                </button>
-                <p className="mt-2 text-xs text-center text-gray-400">
-                  Betalingsfunctionaliteit wordt binnenkort toegevoegd
-                </p>
+          {/* Event Info - Only show for pending/expired orders */}
+          {!isPaid && (
+            <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+              <h2 className="font-semibold text-gray-900 dark:text-white mb-2">
+                {event.title}
+              </h2>
+              <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                <p>{formatDateRange(event.startsAt, event.endsAt)}</p>
+                {event.location && <p>{event.location}</p>}
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Back to Event Link */}
-            {(isPaid || isExpired) && (
-              <div className="mt-6 text-center">
-                <Link
-                  href={`/e/${event.slug}`}
-                  className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium"
-                >
-                  ← Terug naar evenement
-                </Link>
+          {/* Order Items - Only show for pending/expired orders */}
+          {!isPaid && (
+            <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+              <h3 className="font-medium text-gray-900 dark:text-white mb-4">
+                Tickets
+              </h3>
+              <div className="space-y-3">
+                {items.map((item, index) => (
+                  <div key={index} className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {item.quantity}× {item.ticketTypeName}
+                    </span>
+                    <span className="text-gray-900 dark:text-white">
+                      {formatPrice(item.totalPrice)}
+                    </span>
+                  </div>
+                ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* Order Summary - Only show for pending/expired orders */}
+          {!isPaid && (
+            <div className="p-6">
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                  <span>Subtotaal</span>
+                  <span>{formatPrice(order.ticketTotal)}</span>
+                </div>
+                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                  <span>Servicekosten</span>
+                  <span>{formatPrice(order.serviceFee)}</span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700 font-medium text-gray-900 dark:text-white">
+                  <span>Totaal</span>
+                  <span>{formatPrice(order.totalAmount)}</span>
+                </div>
+              </div>
+
+              {/* Payment Button (for pending orders) */}
+              {isPending && (
+                <div className="mt-6">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                    Betaal met iDEAL om je tickets te ontvangen.
+                  </p>
+                  <PaymentButton
+                    orderId={order.id}
+                    totalAmount={order.totalAmount}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Back to Event Link */}
+          {(isPaid || isExpired) && (
+            <div className="p-6 text-center">
+              <Link
+                href={`/e/${event.slug}`}
+                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium"
+              >
+                ← Terug naar evenement
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Buyer Info */}

@@ -90,29 +90,37 @@
 
 ### Slice 5: Payments (NL iDEAL) + Webhooks
 
-- ⬜ Payment provider integration
-- ⬜ Webhook handler (idempotent)
-- ⬜ Order statuses:
-  `pending_payment | paid | failed | cancelled | refunded`
-- ⬜ On `paid`: issue tickets
+- ⬜ Mollie Connect (Platform) integration
+  - ⬜ OAuth app setup in Mollie Dashboard
+  - ⬜ Organizer onboarding flow (OAuth authorization)
+  - ⬜ Client Links API for automated account creation
+  - ⬜ Store organizer's Mollie `profileId` + refresh tokens
+  - ⬜ Application fees on payments (platform fee)
+- ✅ Mock payment flow for development
+- ✅ Webhook handler (idempotent)
+- ✅ Order statuses:
+  `PENDING | PAID | FAILED | CANCELLED | REFUNDED`
+- ✅ On `PAID`: issue tickets (with unique codes + secret tokens)
 
 **DoD**
 
-- Unit test: webhook idempotency (no duplicate tickets)
+- ✅ Unit test: webhook idempotency (no duplicate tickets) - 13 tests
+- ⬜ Organizer can connect Mollie account via OAuth
+- ⬜ Payments created on organizer's Mollie profile with application fee
 
 ---
 
 ### Slice 6: Tickets + QR + Delivery
 
-- ⬜ Ticket model with UUID + signed QR token
-- ⬜ Ticket statuses: `valid | used | refunded`
-- ⬜ Email delivery with QR + event info
-- ⬜ “Resend tickets” action in backend
+- ✅ Ticket model with UUID + signed QR token
+- ✅ Ticket statuses: `valid | used | refunded`
+- ✅ Email delivery with QR + event info
+- ✅ "Resend tickets" action in backend
 - ⬜ PDF ticket attachment (fallback)
 
 **DoD**
 
-- E2E: paid order → tickets generated → resend works
+- ✅ E2E: paid order → tickets generated → resend works
 
 ---
 
@@ -171,30 +179,33 @@
 
 ---
 
-### Slice 11: Platform fee on **scanned tickets only**
+### Slice 11: Platform fee per order (Application Fees)
 
-- ⬜ Fee engine: % × price of `used` tickets
-- ⬜ Snapshot calculation per event/payout period
+- ⬜ Fee engine: % × order total (via Mollie Application Fees)
+- ⬜ Application fee charged at payment time (moved to platform balance)
+- ⬜ Fee configuration per organization (tiered pricing optional)
 - ⬜ Edge cases:
-  - refunded before scan → no fee
-  - refunded after scan → fee remains
+  - Full refund → application fee refunded
+  - Partial refund → fee proportionally adjusted
 
 **DoD**
 
-- Unit tests for all fee edge cases
+- Unit tests for fee calculation
+- Application fee appears on Mollie payment response
 
 ---
 
 ### Slice 12: Payout reporting
 
 - ⬜ Payout overview per event
-- ⬜ Gross / scanned / fee / net breakdown
+- ⬜ Gross / platform fee / net breakdown
+- ⬜ Integration with Mollie Settlements API
 - ⬜ CSV export (orders, tickets, scans)
 - ⬜ Audit log for refunds & overrides
 
 **DoD**
 
-- Export totals match database calculations
+- Export totals match Mollie settlement data
 
 ---
 
@@ -214,7 +225,8 @@
 
 ### Slice 15: UX polish
 
-- ⬜ Organizer onboarding wizard
+- ⬜ Organizer onboarding wizard (incl. Mollie Connect)
+- ⬜ Mollie onboarding status indicator (KYC pending/completed)
 - ⬜ Improved email templates
 - ⬜ Event FAQ page
 

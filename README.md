@@ -107,3 +107,5 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ## License
 
 Proprietary – All rights reserved.
+
+Resend API key: re_7eGtCxHD_PydRHn9gzRTDah1ovFCvxaMN
