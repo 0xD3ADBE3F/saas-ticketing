@@ -13,12 +13,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ticketing Platform",
-  description: "Het ticketingplatform voor kleine organisaties in Nederland",
+  title: "GetEntry - Het eerlijke ticketplatform voor Nederland",
+  description:
+    "Verkoop tickets zonder gedoe. Betaal alleen voor tickets die daadwerkelijk worden gebruikt. Simpel, transparant en volledig gericht op de Nederlandse markt.",
+  keywords: [
+    "tickets",
+    "evenementen",
+    "ticketverkoop",
+    "nederland",
+    "ideal",
+    "qr-code",
+  ],
+  openGraph: {
+    title: "GetEntry - Het eerlijke ticketplatform voor Nederland",
+    description:
+      "Verkoop tickets zonder gedoe. Betaal alleen voor tickets die daadwerkelijk worden gebruikt.",
+    type: "website",
+    locale: "nl_NL",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Ticketing",
+    title: "GetEntry",
   },
 };
 

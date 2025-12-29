@@ -11,18 +11,18 @@
 
 ### Revenue Model
 
-| Fee Type     | Who Pays  | When Charged | Calculation            |
-| ------------ | --------- | ------------ | ---------------------- |
-| Service Fee  | Buyer     | Per order    | TBD (fixed or %)       |
-| Platform Fee | Organizer | On payout    | % of used tickets only |
+| Fee Type     | Who Pays  | When Charged | Calculation           |
+| ------------ | --------- | ------------ | --------------------- |
+| Service Fee  | Buyer     | Per order    | €0,99 fixed per order |
+| Platform Fee | Organizer | On payout    | 2% per ticket sold    |
 
 ### Key Insight
 
-Platform fee is calculated **only on tickets that are actually scanned/used**. This aligns incentives:
+Platform fee is calculated **per ticket sold** (2% of ticket price). This keeps the model simple:
 
-- Organizers only pay for value delivered
-- Encourages accurate attendance tracking
-- Fair for events with no-shows
+- Predictable costs for organizers
+- No complexity around tracking usage for billing
+- Fair and transparent pricing
 
 ---
 

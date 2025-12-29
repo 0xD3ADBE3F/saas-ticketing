@@ -6,8 +6,8 @@ Multi-tenant ticketing SaaS for small organizations in the Netherlands.
 
 ### Key Business Rules
 
-- Buyer pays service fees **per order** (not per ticket)
-- Platform fee is a % **only on tickets that are scanned/used**
+- Buyer pays service fees **per order** (€0,99 fixed, not per ticket)
+- Platform fee is **2% per ticket sold** (charged on payout)
 - NL-only market (iDEAL payments)
 - Offline scanning required in MVP (Capacitor app later, backend must support sync + scan logs)
 
@@ -89,16 +89,57 @@ const events = await prisma.event.findMany({
 - Never expose sequential IDs
 - Validate signature on every scan
 
-### 3. Idempotent Handlers
+### 3. Idempotency-Key Support
+
+All payment-related APIs and critical state-changing operations **must** support the `Idempotency-Key` header (industry standard).
 
 ```typescript
-// Payment webhooks must handle duplicates
-async function handlePaymentWebhook(paymentId: string) {
-  const existing = await orderRepo.findByPaymentId(paymentId);
-  if (existing?.status === "paid") return; // Already processed
-  // ... process payment
+// Route handler example
+export async function POST(req: Request) {
+  const idempotencyKey = req.headers.get("idempotency-key");
+  if (!idempotencyKey) {
+    return NextResponse.json(
+      { error: "Idempotency-Key header required" },
+      { status: 400 }
+    );
+  }
+
+  // Check if request with this key was already processed
+  const existing = await idempotencyRepo.findByKey(idempotencyKey);
+  if (existing) {
+    return NextResponse.json(existing.response, { status: existing.statusCode });
+  }
+
+  // Process request...
+  const result = await paymentService.createPayment(...);
+
+  // Store result with idempotency key (24h TTL)
+  await idempotencyRepo.store({
+    key: idempotencyKey,
+    response: result,
+    statusCode: 200,
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+  });
+
+  return NextResponse.json(result);
 }
 ```
+
+**Requirements:**
+
+- Accept `Idempotency-Key` header on all POST/PUT/PATCH endpoints
+- Store key + response for 24 hours minimum
+- Return same response for duplicate requests
+- Generate UUID v4 if client doesn't provide one
+- Scope keys to organization for multi-tenancy
+
+**Applies to:**
+
+- Payment creation (`/api/checkout`)
+- Order creation
+- Refund requests
+- Ticket activation/deactivation
+- Webhook handlers (use webhook ID as key)
 
 ### 4. Auditable Scanning
 
@@ -198,12 +239,14 @@ const serviceFee = calculateServiceFee(orderTotal);
 // Fixed amount or % based on business rules
 ```
 
-### Platform Fee (on used tickets only)
+### Platform Fee (per ticket sold)
 
 ```typescript
-const platformFee = tickets
-  .filter((t) => t.status === "used")
-  .reduce((sum, t) => sum + t.price * PLATFORM_FEE_PERCENT, 0);
+const PLATFORM_FEE_PERCENT = 0.02; // 2%
+const platformFee = tickets.reduce(
+  (sum, t) => sum + t.price * PLATFORM_FEE_PERCENT,
+  0
+);
 ```
 
 ---
