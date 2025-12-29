@@ -252,6 +252,21 @@ enum ScanResult {
   REFUNDED
 }
 
+model ScannerDevice {
+  id             String    @id @default(uuid())
+  organizationId String
+  deviceId       String    // Unique device identifier (client-generated)
+  name           String?   // Optional friendly name
+  lastSyncAt     DateTime? // Last successful sync timestamp
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([organizationId, deviceId])
+  @@index([organizationId])
+  @@index([deviceId])
+  @@map("scanner_devices")
+}
+
 model AuditLog {
   id             String   @id @default(uuid())
   organizationId String

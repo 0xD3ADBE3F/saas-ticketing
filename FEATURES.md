@@ -168,14 +168,14 @@
 
 ### Slice 8: Offline sync API
 
-- ⬜ `POST /api/scanner/sync` (event ticket dataset)
-- ⬜ `POST /api/scanner/scanlogs/batch` (bulk upload)
-- ⬜ Conflict resolution for multi-device scans
-- ⬜ ScannerDevice model + last_sync_at
+- ✅ `POST /api/scanner/sync` (event ticket dataset)
+- ✅ `POST /api/scanner/scanlogs/batch` (bulk upload)
+- ✅ Conflict resolution for multi-device scans
+- ✅ ScannerDevice model + last_sync_at
 
 **DoD**
 
-- E2E: sync → batch upload → ticket marked `used`
+- ✅ E2E: sync → batch upload → ticket marked `used` (11 tests)
 
 ---
 
