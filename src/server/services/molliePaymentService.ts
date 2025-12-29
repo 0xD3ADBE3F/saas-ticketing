@@ -126,6 +126,14 @@ export async function createMolliePayment(
     // Create payment with application fee
     // profileId is required when using OAuth tokens (Mollie Connect)
     // testmode is required when using OAuth tokens in test mode
+    console.log("Creating Mollie payment:", {
+      orderId,
+      organizationId,
+      totalAmount: formatAmount(order.totalAmount),
+      platformFee: formatAmount(platformFeeCents),
+      profileId: org.mollieProfileId,
+    });
+
     const payment = await client.payments.create({
       profileId: org.mollieProfileId,
       amount: {
