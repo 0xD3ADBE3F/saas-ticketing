@@ -6,6 +6,7 @@ import { formatPrice } from "@/lib/currency";
 import { formatDateTime, formatDateRange } from "@/lib/date";
 import { PaymentButton } from "@/components/checkout/PaymentButton";
 import { TicketDisplay } from "@/components/checkout/TicketDisplay";
+import { PaymentStatusPoller } from "@/components/checkout/PaymentStatusPoller";
 
 interface CheckoutPageProps {
   params: Promise<{ orderId: string }>;
@@ -44,6 +45,8 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
     new Date(order.expiresAt) < new Date();
   const isPending = order.status === "PENDING" && !isExpired;
   const isPaid = order.status === "PAID";
+  const isFailed = order.status === "FAILED";
+  const isCancelled = order.status === "CANCELLED";
 
   // Fetch tickets if order is paid
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -53,6 +56,9 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      {/* Payment Status Poller - polls for updates after payment redirect */}
+      <PaymentStatusPoller orderId={order.id} orderStatus={order.status} />
+
       {/* Header */}
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-2xl mx-auto px-4 py-4">
@@ -120,6 +126,55 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
               </div>
               <p className="mt-1 text-sm text-green-600 dark:text-green-400">
                 Je tickets zijn verstuurd naar {order.buyerEmail}
+              </p>
+            </div>
+          )}
+
+          {isFailed && (
+            <div className="p-4 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
+              <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+                <span className="font-medium">Betaling mislukt</span>
+              </div>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                De betaling is niet geslaagd. Je kunt het opnieuw proberen of de
+                bestelling annuleren.
+              </p>
+            </div>
+          )}
+
+          {isCancelled && (
+            <div className="p-4 bg-gray-50 dark:bg-gray-900/20 border-b border-gray-200 dark:border-gray-800">
+              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-400">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                  />
+                </svg>
+                <span className="font-medium">Bestelling geannuleerd</span>
+              </div>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                Deze bestelling is geannuleerd.
               </p>
             </div>
           )}
@@ -258,11 +313,32 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
                   />
                 </div>
               )}
+
+              {/* Retry/Cancel Buttons (for failed orders) */}
+              {isFailed && (
+                <div className="mt-6 space-y-3">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Probeer het opnieuw of annuleer de bestelling.
+                  </p>
+                  <PaymentButton
+                    orderId={order.id}
+                    totalAmount={order.totalAmount}
+                  />
+                  <form action={`/api/orders/${order.id}/cancel`} method="POST">
+                    <button
+                      type="submit"
+                      className="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      Bestelling annuleren
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
           )}
 
           {/* Back to Event Link */}
-          {(isPaid || isExpired) && (
+          {(isPaid || isExpired || isCancelled) && (
             <div className="p-6 text-center">
               <Link
                 href={`/e/${event.slug}`}

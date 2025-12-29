@@ -1,4 +1,5 @@
 import { eventRepo, CreateEventInput, UpdateEventInput, EventFilters, PublicEvent } from "@/server/repos/eventRepo";
+import { mollieOnboardingService } from "@/server/services/mollieOnboardingService";
 import type { Event, EventStatus } from "@/generated/prisma";
 
 /**
@@ -175,6 +176,19 @@ export async function updateEventStatus(
   const transitionError = validateStatusTransition(currentEvent.status, newStatus);
   if (transitionError) {
     return { success: false, error: transitionError };
+  }
+
+  // Check Mollie onboarding when going LIVE
+  if (newStatus === "LIVE") {
+    const canPublish = await mollieOnboardingService.canPublishEvents(
+      currentEvent.organizationId
+    );
+    if (!canPublish) {
+      return {
+        success: false,
+        error: "Mollie onboarding moet eerst worden voltooid voordat je evenementen kunt publiceren",
+      };
+    }
   }
 
   const event = await eventRepo.updateStatus(eventId, userId, newStatus);

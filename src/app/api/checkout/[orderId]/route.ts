@@ -37,16 +37,18 @@ export async function GET(
     const { order, event, items } = result.data;
 
     return NextResponse.json({
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-      status: order.status,
-      buyerEmail: order.buyerEmail,
-      buyerName: order.buyerName,
-      ticketTotal: order.ticketTotal,
-      serviceFee: order.serviceFee,
-      totalAmount: order.totalAmount,
-      expiresAt: order.expiresAt,
-      createdAt: order.createdAt,
+      order: {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        buyerEmail: order.buyerEmail,
+        buyerName: order.buyerName,
+        ticketTotal: order.ticketTotal,
+        serviceFee: order.serviceFee,
+        totalAmount: order.totalAmount,
+        expiresAt: order.expiresAt,
+        createdAt: order.createdAt,
+      },
       event: {
         id: event.id,
         title: event.title,
@@ -56,6 +58,10 @@ export async function GET(
         location: event.location,
       },
       items,
+    }, {
+      headers: {
+        "Cache-Control": "no-store, max-age=0",
+      },
     });
   } catch (error) {
     console.error("Get order error:", error);

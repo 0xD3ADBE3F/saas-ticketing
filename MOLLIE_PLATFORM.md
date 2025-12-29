@@ -1,6 +1,6 @@
 # Mollie Connect for Platforms - Implementation Guide
 
-> **Status:** 🔴 Not Started
+> **Status:** � In Progress
 > **Docs:** https://docs.mollie.com/docs/connect-platforms-getting-started
 
 This document tracks the implementation of Mollie Connect for Platforms, which enables our multi-tenant ticketing SaaS to process payments on behalf of organizations (customers).
@@ -31,43 +31,43 @@ For our ticketing platform:
 
 ### Phase 1: Setup & Configuration
 
-| Task                                 | Status         | Notes                       |
-| ------------------------------------ | -------------- | --------------------------- |
-| Register as Mollie Partner           | ⬜ Not Started | Apply at partner.mollie.com |
-| Create OAuth App in Mollie Dashboard | ⬜ Not Started | Get Client ID & Secret      |
-| Configure OAuth redirect URIs        | ⬜ Not Started | Production + dev URLs       |
-| Set up webhook endpoints             | ⬜ Not Started | Payment status updates      |
-| Configure API idempotency            | ⬜ Not Started | Prevent duplicate payments  |
+| Task                                 | Status  | Notes                                 |
+| ------------------------------------ | ------- | ------------------------------------- |
+| Register as Mollie Partner           | ✅ Done | Partner account active                |
+| Create OAuth App in Mollie Dashboard | ✅ Done | `MOLLIE_CONNECT_CLIENT_ID` in .env    |
+| Configure OAuth redirect URIs        | ✅ Done | `MOLLIE_REDIRECT_URI` configured      |
+| Set up webhook endpoints             | ✅ Done | `/api/webhooks/payments` handles both |
+| Configure API idempotency            | ✅ Done | `IdempotencyKey` table + service      |
 
 ### Phase 2: OAuth Implementation
 
-| Task                              | Status         | Notes                       |
-| --------------------------------- | -------------- | --------------------------- |
-| Install OAuth library             | ⬜ Not Started | `simple-oauth2` for Node.js |
-| Create "Connect with Mollie" flow | ⬜ Not Started | Onboarding page             |
-| Implement token exchange endpoint | ⬜ Not Started | `/api/auth/mollie/callback` |
-| Store access/refresh tokens       | ⬜ Not Started | Encrypted in DB             |
-| Implement token refresh logic     | ⬜ Not Started | Before API calls            |
-| Define OAuth scopes               | ⬜ Not Started | See scopes section below    |
+| Task                              | Status  | Notes                                                                |
+| --------------------------------- | ------- | -------------------------------------------------------------------- |
+| Install OAuth library             | ✅ Done | Using native fetch (no library needed)                               |
+| Create "Connect with Mollie" flow | ✅ Done | `MollieConnection` component in dashboard                            |
+| Implement token exchange endpoint | ✅ Done | `/api/auth/mollie/callback`                                          |
+| Store access/refresh tokens       | ✅ Done | AES-256-GCM encrypted via `encryptionService`                        |
+| Implement token refresh logic     | ✅ Done | `mollieConnectService.getValidToken()` auto-refresh                  |
+| Define OAuth scopes               | ✅ Done | payments, profiles, organizations, onboarding, settlements, balances |
 
 ### Phase 3: Organization Onboarding
 
-| Task                                   | Status         | Notes                |
-| -------------------------------------- | -------------- | -------------------- |
-| Create Client Links API integration    | ⬜ Not Started | Prefilled onboarding |
-| Build onboarding status tracking       | ⬜ Not Started | Capabilities API     |
-| Handle KYC status updates              | ⬜ Not Started | Webhooks             |
-| Create organization profile management | ⬜ Not Started | Profiles API         |
-| Design onboarding UI for organizations | ⬜ Not Started | Dashboard flow       |
+| Task                                   | Status  | Notes                                      |
+| -------------------------------------- | ------- | ------------------------------------------ |
+| Create Client Links API integration    | ✅ Done | `mollieOnboardingService.createClientLink` |
+| Build onboarding status tracking       | ✅ Done | `/api/organizations/[id]/mollie/status`    |
+| Handle KYC status updates              | ✅ Done | Polling every 30s in dashboard             |
+| Create organization profile management | ✅ Done | Profile ID stored on org                   |
+| Design onboarding UI for organizations | ✅ Done | Settings page with `MollieConnection`      |
 
 ### Phase 4: Payment Processing
 
-| Task                                       | Status         | Notes                   |
-| ------------------------------------------ | -------------- | ----------------------- |
-| Update payment creation with access tokens | ⬜ Not Started | Per-organization        |
-| Implement Application fees                 | ⬜ Not Started | Platform fee collection |
-| Update webhook handlers                    | ⬜ Not Started | Multi-tenant aware      |
-| Handle payment methods per organization    | ⬜ Not Started | Methods API             |
+| Task                                       | Status         | Notes                                      |
+| ------------------------------------------ | -------------- | ------------------------------------------ |
+| Update payment creation with access tokens | ✅ Done        | `molliePaymentService.createMolliePayment` |
+| Implement Application fees                 | ✅ Done        | 2% platform fee (non-refundable)           |
+| Update webhook handlers                    | ✅ Done        | `handleMollieWebhook` multi-tenant         |
+| Handle payment methods per organization    | ⬜ Not Started | iDEAL only for now                         |
 
 ### Phase 5: Reporting & Reconciliation
 

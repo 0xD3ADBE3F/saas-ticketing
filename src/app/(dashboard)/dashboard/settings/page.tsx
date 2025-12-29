@@ -1,9 +1,34 @@
-export default function SettingsPage() {
+import { redirect } from "next/navigation";
+import { getUser } from "@/server/lib/supabase";
+import { getUserOrganizations } from "@/server/services/organizationService";
+import { MollieConnection } from "@/components/dashboard/MollieConnection";
+
+export default async function SettingsPage() {
+  const user = await getUser();
+
+  if (!user) {
+    redirect("/auth/login");
+  }
+
+  const organizations = await getUserOrganizations(user.id);
+
+  if (organizations.length === 0) {
+    redirect("/onboarding");
+  }
+
+  const currentOrg = organizations[0];
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Instellingen</h1>
 
       <div className="space-y-6">
+        {/* Mollie Connection */}
+        <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
+          <h2 className="font-semibold mb-4">Betalingen</h2>
+          <MollieConnection organizationId={currentOrg.id} />
+        </section>
+
         <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
           <h2 className="font-semibold mb-4">Organisatie</h2>
           <div className="space-y-4">
@@ -13,6 +38,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="text"
+                defaultValue={currentOrg.name}
                 placeholder="Jouw organisatie"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
               />
@@ -23,6 +49,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="email"
+                defaultValue={currentOrg.email || ""}
                 placeholder="contact@voorbeeld.nl"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
               />

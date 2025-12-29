@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { handlePaymentWebhook, completeMockPayment } from "@/server/services/paymentService";
+import { handleMollieWebhook } from "@/server/services/molliePaymentService";
 import { z } from "zod";
 
 const webhookSchema = z.object({
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // For mock payments, complete them
+    // For mock payments, use mock handler
     if (paymentId.startsWith("tr_mock_")) {
       const result = await completeMockPayment(paymentId);
 
@@ -65,11 +66,11 @@ export async function POST(request: Request) {
       });
     }
 
-    // For real Mollie payments (future implementation)
-    const result = await handlePaymentWebhook(paymentId);
+    // For real Mollie payments
+    const result = await handleMollieWebhook(paymentId);
 
     if (!result.success) {
-      console.error("Payment webhook failed:", result.error);
+      console.error("Mollie payment webhook failed:", result.error);
       // Still return 200 to acknowledge receipt (Mollie expects 200)
       return NextResponse.json({ received: true, error: result.error });
     }
@@ -77,6 +78,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       received: true,
       status: result.data.status,
+      orderId: result.data.orderId,
     });
   } catch (error) {
     console.error("Webhook error:", error);

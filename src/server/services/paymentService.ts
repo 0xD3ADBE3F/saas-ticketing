@@ -65,7 +65,8 @@ export async function createPayment(
     return { success: false, error: "Bestelling niet gevonden" };
   }
 
-  if (order.status !== "PENDING") {
+  // Allow payment for PENDING and FAILED orders (for retry)
+  if (order.status !== "PENDING" && order.status !== "FAILED") {
     return { success: false, error: "Bestelling kan niet meer betaald worden" };
   }
 
@@ -93,7 +94,7 @@ export async function createPayment(
 
   // Create mock checkout URL
   // In production, this would be Mollie's hosted checkout URL
-  const checkoutUrl = `${baseUrl}/api/checkout/${orderId}/pay?mock=true&paymentId=${paymentId}`;
+  const checkoutUrl = `${baseUrl}/api/checkout/${orderId}/pay?mock=true&paymentId=${paymentId}&returnUrl=${encodeURIComponent(`${baseUrl}/checkout/${orderId}?from=payment`)}`;
 
   // Store mock payment
   const mockPayment: MockPayment = {
@@ -107,7 +108,19 @@ export async function createPayment(
   mockPayments.set(paymentId, mockPayment);
 
   // Update order with payment ID
-  await orderRepo.setPaymentId(orderId, paymentId);
+  // If order was FAILED, reset to PENDING for retry
+  if (order.status === "FAILED") {
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paymentId,
+        status: "PENDING",
+        updatedAt: new Date(),
+      },
+    });
+  } else {
+    await orderRepo.setPaymentId(orderId, paymentId);
+  }
 
   return {
     success: true,

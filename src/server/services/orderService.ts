@@ -406,6 +406,57 @@ export async function cancelExpiredOrder(orderId: string): Promise<void> {
 }
 
 /**
+ * Cancel an order manually (user-initiated)
+ * Can be called for PENDING or FAILED orders
+ */
+export async function cancelOrder(orderId: string): Promise<OrderServiceResult<void>> {
+  try {
+    await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        include: {
+          orderItems: true,
+        },
+      });
+
+      if (!order) {
+        throw new Error("Bestelling niet gevonden");
+      }
+
+      // Only allow cancellation of PENDING or FAILED orders
+      if (order.status !== "PENDING" && order.status !== "FAILED") {
+        throw new Error("Deze bestelling kan niet geannuleerd worden");
+      }
+
+      // Release reserved capacity
+      for (const item of order.orderItems) {
+        await tx.ticketType.update({
+          where: { id: item.ticketTypeId },
+          data: {
+            soldCount: {
+              decrement: item.quantity,
+            },
+          },
+        });
+      }
+
+      // Mark order as cancelled
+      await tx.order.update({
+        where: { id: orderId },
+        data: { status: "CANCELLED" },
+      });
+    });
+
+    return { success: true, data: undefined };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Er is een fout opgetreden bij het annuleren"
+    };
+  }
+}
+
+/**
  * Process expired orders (run periodically)
  */
 export async function processExpiredOrders(): Promise<number> {

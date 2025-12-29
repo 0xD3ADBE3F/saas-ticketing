@@ -12,11 +12,21 @@ const serverEnvSchema = z.object({
   // Supabase
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 
-  // Payments
+  // Payments - Platform
   MOLLIE_API_KEY: z.string().min(1),
+
+  // Mollie Connect (OAuth)
+  MOLLIE_CONNECT_CLIENT_ID: z.string().min(1),
+  MOLLIE_CONNECT_CLIENT_SECRET: z.string().min(1),
+  MOLLIE_REDIRECT_URI: z.string().url().optional(),
+  // Platform access token (from OAuth flow - has clients.write scope)
+  MOLLIE_PLATFORM_ACCESS_TOKEN: z.string().min(1).optional(),
+  // Test mode - set to "true" to use Mollie test mode
+  MOLLIE_TEST_MODE: z.enum(["true", "false"]).default("false"),
 
   // Security
   TICKET_SIGNING_SECRET: z.string().min(32),
+  TOKEN_ENCRYPTION_KEY: z.string().length(64), // 32 bytes = 64 hex chars
 
   // Email
   RESEND_API_KEY: z.string().min(1),

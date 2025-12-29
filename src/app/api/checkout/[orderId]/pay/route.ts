@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createPayment, completeMockPayment } from "@/server/services/paymentService";
-import { z } from "zod";
+import { createMolliePayment } from "@/server/services/molliePaymentService";
+import { mollieConnectService } from "@/server/services/mollieConnectService";
+import { orderRepo } from "@/server/repos/orderRepo";
 import { getAppUrl } from "@/lib/env";
 
 interface RouteParams {
@@ -10,12 +12,43 @@ interface RouteParams {
 /**
  * POST /api/checkout/[orderId]/pay
  * Initiate payment for an order
+ * Uses real Mollie if organization is connected, otherwise mock
  */
 export async function POST(request: Request, { params }: RouteParams) {
   try {
     const { orderId } = await params;
-
     const baseUrl = getAppUrl();
+
+    // Get order to determine organization
+    const order = await orderRepo.findByIdPublic(orderId);
+    if (!order) {
+      return NextResponse.json(
+        { error: "Bestelling niet gevonden" },
+        { status: 404 }
+      );
+    }
+
+    // Check if organization has Mollie connected
+    const isMollieConnected = await mollieConnectService.isConnected(order.organizationId);
+
+    if (isMollieConnected) {
+      // Use real Mollie payment
+      const result = await createMolliePayment(orderId, order.organizationId, baseUrl);
+
+      if (!result.success) {
+        return NextResponse.json(
+          { error: result.error },
+          { status: 400 }
+        );
+      }
+
+      return NextResponse.json({
+        paymentId: result.data.paymentId,
+        checkoutUrl: result.data.checkoutUrl,
+      });
+    }
+
+    // Fallback to mock payment (for development/testing)
     const result = await createPayment(orderId, baseUrl);
 
     if (!result.success) {
@@ -48,6 +81,7 @@ export async function GET(request: Request, { params }: RouteParams) {
   const { searchParams } = new URL(request.url);
   const isMock = searchParams.get("mock") === "true";
   const paymentId = searchParams.get("paymentId");
+  const returnUrl = searchParams.get("returnUrl") || `/checkout/${orderId}`;
 
   if (!isMock || !paymentId) {
     return NextResponse.redirect(new URL(`/checkout/${orderId}`, request.url));
@@ -168,7 +202,7 @@ export async function GET(request: Request, { params }: RouteParams) {
               ✓ Betaling voltooien
             </button>
           </form>
-          <a href="${baseUrl}/checkout/${orderId}">
+          <a href="${returnUrl}">
             <button type="button" class="btn-cancel" style="width: 100%;">
               ✕ Annuleren
             </button>

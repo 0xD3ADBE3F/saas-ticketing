@@ -31,10 +31,10 @@ export async function POST(request: Request, { params }: RouteParams) {
       );
     }
 
-    // Redirect to confirmation page
+    // Redirect to checkout page with from=payment for polling
     const baseUrl = getAppUrl();
     return NextResponse.redirect(
-      new URL(`/checkout/${orderId}?status=success`, baseUrl)
+      new URL(`/checkout/${orderId}?from=payment`, baseUrl)
     );
   } catch (error) {
     console.error("Error completing payment:", error);

@@ -22,13 +22,31 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
-  memberships Membership[]
-  events      Event[]
-  orders      Order[]
-  payouts     Payout[]
+  // Mollie Connect
+  mollieOrganizationId   String?   @unique
+  mollieAccessToken      String?   // Encrypted
+  mollieRefreshToken     String?   // Encrypted
+  mollieTokenExpiresAt   DateTime?
+  mollieOnboardingStatus MollieOnboardingStatus?
+  mollieProfileId        String?
+  mollieClientLinkUrl    String?
 
+  // Relations
+  memberships     Membership[]
+  events          Event[]
+  orders          Order[]
+  payouts         Payout[]
+  idempotencyKeys IdempotencyKey[]
+
+  @@index([mollieOrganizationId])
   @@map("organizations")
+}
+
+enum MollieOnboardingStatus {
+  PENDING
+  NEEDS_DATA
+  IN_REVIEW
+  COMPLETED
 }
 
 model Membership {
@@ -266,4 +284,27 @@ enum PayoutStatus {
   CALCULATED
   APPROVED
   PAID
+}
+
+// =============================================================================
+// IDEMPOTENCY
+// =============================================================================
+
+model IdempotencyKey {
+  id             String   @id @default(uuid())
+  key            String   // Idempotency key from client
+  organizationId String
+  endpoint       String   // API endpoint path
+  statusCode     Int
+  response       Json     // Cached response body
+  expiresAt      DateTime // 24h TTL
+  createdAt      DateTime @default(now())
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([key, organizationId])
+  @@index([organizationId])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
 }
