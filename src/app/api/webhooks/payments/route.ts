@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { handlePaymentWebhook, completeMockPayment } from "@/server/services/paymentService";
 import { handleMollieWebhook } from "@/server/services/molliePaymentService";
+import { webhookLogger } from "@/server/lib/logger";
 import { z } from "zod";
 
 const webhookSchema = z.object({
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
       const parsed = webhookSchema.safeParse(body);
 
       if (!parsed.success) {
-        console.warn(`[Webhook ${requestId}] Invalid payload`);
+        webhookLogger.warn({ requestId }, "Invalid payload");
         return NextResponse.json(
           { error: "Invalid payload" },
           { status: 400 }
@@ -53,14 +54,14 @@ export async function POST(request: Request) {
     }
 
     if (!paymentId) {
-      console.warn(`[Webhook ${requestId}] Missing payment ID`);
+      webhookLogger.warn({ requestId }, "Missing payment ID");
       return NextResponse.json(
         { error: "Missing payment ID" },
         { status: 400 }
       );
     }
 
-    console.log(`[Webhook ${requestId}] Processing payment: ${paymentId}`);
+    webhookLogger.info({ requestId, paymentId }, "Processing payment webhook");
 
     // For mock payments, use mock handler
     if (paymentId.startsWith("tr_mock_")) {
@@ -68,12 +69,12 @@ export async function POST(request: Request) {
       const duration = Date.now() - startTime;
 
       if (!result.success) {
-        console.error(`[Webhook ${requestId}] Mock payment failed (${duration}ms):`, result.error);
+        webhookLogger.error({ requestId, duration, error: result.error }, "Mock payment webhook failed");
         // Still return 200 to acknowledge receipt
         return NextResponse.json({ received: true, error: result.error });
       }
 
-      console.log(`[Webhook ${requestId}] Mock payment success (${duration}ms): order=${result.data.orderId}`);
+      webhookLogger.info({ requestId, duration, orderId: result.data.orderId }, "Mock payment webhook success");
       return NextResponse.json({
         received: true,
         orderId: result.data.orderId,
@@ -86,12 +87,15 @@ export async function POST(request: Request) {
     const duration = Date.now() - startTime;
 
     if (!result.success) {
-      console.error(`[Webhook ${requestId}] Mollie webhook failed (${duration}ms):`, result.error);
+      webhookLogger.error({ requestId, duration, error: result.error }, "Mollie webhook failed");
       // Still return 200 to acknowledge receipt (Mollie expects 200)
       return NextResponse.json({ received: true, error: result.error });
     }
 
-    console.log(`[Webhook ${requestId}] Mollie webhook success (${duration}ms): status=${result.data.status}, order=${result.data.orderId}`);
+    webhookLogger.info(
+      { requestId, duration, status: result.data.status, orderId: result.data.orderId },
+      "Mollie webhook success"
+    );
     return NextResponse.json({
       received: true,
       status: result.data.status,
@@ -99,7 +103,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`[Webhook ${requestId}] Unexpected error (${duration}ms):`, error);
+    webhookLogger.error({ requestId, duration, error }, "Unexpected webhook error");
     // Return 200 anyway to prevent retries on non-recoverable errors
     return NextResponse.json({ received: true, error: "Internal error" });
   }

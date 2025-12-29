@@ -304,6 +304,7 @@ src/
 | 2025-12-29 | Token encryption   | AES-256-GCM via `encryptionService.ts`                        |
 | 2025-12-29 | Fallback handling  | Mock payments when Mollie not connected (dev only)            |
 | 2025-12-29 | Settlement display | Show Mollie settlements directly, link to Mollie dashboard    |
+| 2025-12-29 | Logging system     | Pino with structured logging, configurable levels             |
 
 ### Open Questions
 

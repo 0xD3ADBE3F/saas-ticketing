@@ -1,6 +1,7 @@
 import { env } from "../lib/env";
 import { prisma } from "../lib/prisma";
 import { mollieConnectService } from "./mollieConnectService";
+import { mollieLogger } from "../lib/logger";
 import { MollieOnboardingStatus } from "../../generated/prisma";
 
 /**
@@ -153,7 +154,7 @@ export const mollieOnboardingService = {
 
     if (!response.ok) {
       const error = await response.text();
-      console.error("Failed to exchange platform code:", error);
+      mollieLogger.error({ error, status: response.status }, "Failed to exchange platform code");
       throw new Error(`Failed to exchange platform code: ${response.status}`);
     }
 
@@ -222,7 +223,7 @@ export const mollieOnboardingService = {
 
     if (!response.ok) {
       const error = await response.text();
-      console.error("Failed to create client link:", error);
+      mollieLogger.error({ error, status: response.status }, "Failed to create client link");
       throw new Error(`Failed to create client link: ${response.status}`);
     }
 
@@ -292,7 +293,7 @@ export const mollieOnboardingService = {
       });
 
       if (!response.ok) {
-        console.error("Failed to get onboarding status:", response.status);
+        mollieLogger.error({ status: response.status }, "Failed to get onboarding status");
         return null;
       }
 

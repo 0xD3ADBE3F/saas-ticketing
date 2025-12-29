@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { mollieConnectService } from "@/server/services/mollieConnectService";
 import { mollieOnboardingService } from "@/server/services/mollieOnboardingService";
 import { prisma } from "@/server/lib/prisma";
+import { mollieLogger } from "@/server/lib/logger";
 
 /**
  * Mollie OAuth callback handler
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
 
   // Handle OAuth errors
   if (error) {
-    console.error("Mollie OAuth error:", error, errorDescription);
+    mollieLogger.error({ error, errorDescription }, "Mollie OAuth error");
     return NextResponse.redirect(
       new URL(
         `/dashboard/settings?error=${encodeURIComponent(errorDescription || error)}`,
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
 
   // Validate required parameters
   if (!code || !state) {
-    console.error("Missing code or state in Mollie callback");
+    mollieLogger.error("Missing code or state in Mollie callback");
     return NextResponse.redirect(
       new URL("/dashboard/settings?error=invalid_callback", req.url)
     );
@@ -87,7 +88,7 @@ MOLLIE_PLATFORM_REFRESH_TOKEN=${tokens.refreshToken}</pre>
       { status: 200, headers: { "Content-Type": "text/html" } }
     );
   } catch (err) {
-    console.error("Failed to exchange platform code:", err);
+    mollieLogger.error({ err }, "Failed to exchange platform code");
     return new Response(
       `<!DOCTYPE html>
       <html>
@@ -120,7 +121,7 @@ async function handleOrganizationCallback(req: NextRequest, code: string, state:
       throw new Error("Missing organizationId in state");
     }
   } catch (err) {
-    console.error("Invalid state parameter:", err);
+    mollieLogger.error({ err }, "Invalid state parameter");
     return NextResponse.redirect(
       new URL("/dashboard/settings?error=invalid_state", req.url)
     );
@@ -132,7 +133,7 @@ async function handleOrganizationCallback(req: NextRequest, code: string, state:
   });
 
   if (!org) {
-    console.error("Organization not found:", organizationId);
+    mollieLogger.error({ organizationId }, "Organization not found");
     return NextResponse.redirect(
       new URL("/dashboard/settings?error=org_not_found", req.url)
     );
@@ -163,17 +164,17 @@ async function handleOrganizationCallback(req: NextRequest, code: string, state:
       }
     } catch (profileErr) {
       // Non-fatal: profile fetch can fail, tokens are still stored
-      console.warn("Failed to fetch Mollie profile:", profileErr);
+      mollieLogger.warn({ profileErr }, "Failed to fetch Mollie profile");
     }
 
-    console.log(`Mollie connected successfully for organization ${organizationId}`);
+    mollieLogger.info({ organizationId }, "Mollie connected successfully");
 
     // Redirect to settings page with success
     return NextResponse.redirect(
       new URL("/dashboard/settings?success=connected", req.url)
     );
   } catch (err) {
-    console.error("Token exchange failed:", err);
+    mollieLogger.error({ err, organizationId }, "Token exchange failed");
     return NextResponse.redirect(
       new URL("/dashboard/settings?error=token_exchange_failed", req.url)
     );

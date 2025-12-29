@@ -4,6 +4,7 @@ import { ticketRepo } from "@/server/repos/ticketRepo";
 import { sendOrderTickets } from "@/server/services/emailService";
 import { mollieConnectService } from "@/server/services/mollieConnectService";
 import { env } from "@/server/lib/env";
+import { paymentLogger } from "@/server/lib/logger";
 import { PaymentMethod } from "@mollie/api-client";
 import crypto from "crypto";
 
@@ -88,7 +89,7 @@ export async function createMolliePayment(
   });
 
   if (!org?.mollieProfileId) {
-    console.error("Organization missing Mollie profile ID:", organizationId);
+    paymentLogger.error({ organizationId }, "Organization missing Mollie profile ID");
     return { success: false, error: "Mollie profiel niet geconfigureerd" };
   }
 
@@ -126,13 +127,13 @@ export async function createMolliePayment(
     // Create payment with application fee
     // profileId is required when using OAuth tokens (Mollie Connect)
     // testmode is required when using OAuth tokens in test mode
-    console.log("Creating Mollie payment:", {
+    paymentLogger.info({
       orderId,
       organizationId,
       totalAmount: formatAmount(order.totalAmount),
       platformFee: formatAmount(platformFeeCents),
       profileId: org.mollieProfileId,
-    });
+    }, "Creating Mollie payment");
 
     const payment = await client.payments.create({
       profileId: org.mollieProfileId,
@@ -189,7 +190,7 @@ export async function createMolliePayment(
       },
     };
   } catch (err) {
-    console.error("Mollie payment creation failed:", err);
+    paymentLogger.error({ err, orderId, organizationId }, "Mollie payment creation failed");
     return { success: false, error: "Betaling aanmaken mislukt" };
   }
 }
@@ -206,7 +207,7 @@ export async function handleMollieWebhook(
 
   if (!order) {
     // Payment might be for a different system or invalid
-    console.warn("Order not found for payment:", paymentId);
+    paymentLogger.warn({ paymentId }, "Order not found for payment");
     return { success: false, error: "Order niet gevonden" };
   }
 
@@ -251,7 +252,7 @@ export async function handleMollieWebhook(
         return { success: true, data: { status: payment.status, orderId: order.id } };
     }
   } catch (err) {
-    console.error("Mollie webhook processing failed:", err);
+    paymentLogger.error({ err, paymentId, orderId: order.id }, "Mollie webhook processing failed");
     return { success: false, error: "Webhook verwerking mislukt" };
   }
 }
