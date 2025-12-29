@@ -182,15 +182,15 @@
 ### Slice 9: Organizer "Door dashboard" (Scanning UI)
 
 - ✅ Scanning page with basic UI (ticket stats, manual input)
-- ⬜ Live stats: sold vs scanned vs duplicates (real data)
-- ⬜ Search ticket/order by email
-- ⬜ Manual ticket validation/override (admin only) + audit log
-- ⬜ Recent scans list with status indicators
+- ✅ Live stats: sold vs scanned vs duplicates (real data)
+- ✅ Search ticket/order by email
+- ✅ Manual ticket validation/override (admin only) + audit log
+- ✅ Recent scans list with status indicators
 
 **DoD**
 
-- Manual override always creates audit log entry
-- Real-time stats update after scans
+- ✅ Manual override always creates audit log entry (16 tests)
+- ✅ Real-time stats update after scans
 
 ---
 
