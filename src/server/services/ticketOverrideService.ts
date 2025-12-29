@@ -1,6 +1,5 @@
 import { prisma } from "@/server/lib/prisma";
 import { ticketRepo } from "@/server/repos/ticketRepo";
-import { scanRepo } from "@/server/repos/scanRepo";
 
 export type TicketOverrideInput = {
   ticketId: string;
