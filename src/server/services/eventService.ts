@@ -1,4 +1,4 @@
-import { eventRepo, CreateEventInput, UpdateEventInput, EventFilters } from "@/server/repos/eventRepo";
+import { eventRepo, CreateEventInput, UpdateEventInput, EventFilters, PublicEvent } from "@/server/repos/eventRepo";
 import type { Event, EventStatus } from "@/generated/prisma";
 
 /**
@@ -77,8 +77,8 @@ export type CreateEventData = {
 
 export type UpdateEventData = {
   title?: string;
-  description?: string;
-  location?: string;
+  description?: string | null;
+  location?: string | null;
   startsAt?: Date;
   endsAt?: Date;
 };
@@ -252,7 +252,7 @@ export async function getUserEvents(
 /**
  * Get public event by slug
  */
-export async function getPublicEvent(slug: string): Promise<Event | null> {
+export async function getPublicEvent(slug: string): Promise<PublicEvent | null> {
   return eventRepo.findPublicBySlug(slug);
 }
 

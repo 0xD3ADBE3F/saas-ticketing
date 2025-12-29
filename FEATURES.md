@@ -63,13 +63,13 @@
 
 ### Slice 3: TicketTypes + Capacity
 
-- ⬜ TicketType model: name, price, capacity, sale window
-- ⬜ TicketType CRUD in backend
-- ⬜ Capacity enforcement (no overselling)
+- ✅ TicketType model: name, price, capacity, sale window
+- ✅ TicketType CRUD in backend
+- ✅ Capacity enforcement (no overselling)
 
 **DoD**
 
-- Unit test: capacity guardrail
+- ✅ Unit test: capacity guardrail (24 tests)
 
 ---
 

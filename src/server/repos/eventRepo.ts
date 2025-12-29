@@ -14,8 +14,8 @@ export type CreateEventInput = {
 export type UpdateEventInput = {
   title?: string;
   slug?: string;
-  description?: string;
-  location?: string;
+  description?: string | null;
+  location?: string | null;
   startsAt?: Date;
   endsAt?: Date;
   status?: EventStatus;
@@ -24,6 +24,13 @@ export type UpdateEventInput = {
 export type EventFilters = {
   status?: EventStatus;
   search?: string;
+};
+
+export type PublicEvent = Event & {
+  organization: {
+    name: string;
+    slug: string;
+  };
 };
 
 export const eventRepo = {
@@ -105,7 +112,7 @@ export const eventRepo = {
   /**
    * Find public event by slug (only LIVE events)
    */
-  findPublicBySlug: async (slug: string): Promise<Event | null> => {
+  findPublicBySlug: async (slug: string): Promise<PublicEvent | null> => {
     return prisma.event.findFirst({
       where: {
         slug,

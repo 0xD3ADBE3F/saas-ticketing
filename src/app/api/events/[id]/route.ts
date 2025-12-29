@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getUser } from "@/server/lib/supabase";
-import { getUserOrganizations } from "@/server/services/organizationService";
 import {
   getEvent,
   updateEvent,
@@ -52,14 +51,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   const { id } = await params;
 
-  // Get the first organization for now
-  const organizations = await getUserOrganizations(user.id);
-  if (organizations.length === 0) {
-    return NextResponse.json({ error: "Geen organisatie gevonden" }, { status: 404 });
-  }
-
-  const organizationId = organizations[0].id;
-
   let body;
   try {
     body = await request.json();
@@ -79,7 +70,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (parsed.data.status) {
     const statusResult = await updateEventStatus(
       id,
-      organizationId,
       user.id,
       parsed.data.status
     );
@@ -111,7 +101,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (updateData.endsAt !== undefined) updatePayload.endsAt = new Date(updateData.endsAt);
 
   if (Object.keys(updatePayload).length > 0) {
-    const result = await updateEvent(id, organizationId, user.id, updatePayload);
+    const result = await updateEvent(id, user.id, updatePayload);
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
@@ -137,15 +127,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
   const { id } = await params;
 
-  // Get the first organization for now
-  const organizations = await getUserOrganizations(user.id);
-  if (organizations.length === 0) {
-    return NextResponse.json({ error: "Geen organisatie gevonden" }, { status: 404 });
-  }
-
-  const organizationId = organizations[0].id;
-
-  const result = await deleteEvent(id, organizationId, user.id);
+  const result = await deleteEvent(id, user.id);
   if (!result.success) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }

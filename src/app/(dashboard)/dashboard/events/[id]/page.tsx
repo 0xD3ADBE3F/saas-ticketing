@@ -2,8 +2,14 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { getUser } from "@/server/lib/supabase";
 import { getEvent } from "@/server/services/eventService";
+import {
+  getEventTicketTypes,
+  getEventTicketStats,
+} from "@/server/services/ticketTypeService";
+import { formatPrice } from "@/lib/currency";
 import { formatDateTime, formatRelativeTime, isPast } from "@/lib/date";
 import { EventStatusActions } from "@/components/events/EventStatusActions";
+import { TicketTypeList } from "@/components/ticket-types/TicketTypeList";
 
 interface EventDetailPageProps {
   params: Promise<{ id: string }>;
@@ -40,6 +46,12 @@ export default async function EventDetailPage({
 
   const event = result.data;
   const isEventPast = isPast(event.endsAt);
+
+  // Fetch ticket types and stats
+  const [ticketTypes, stats] = await Promise.all([
+    getEventTicketTypes(id, user.id),
+    getEventTicketStats(id, user.id),
+  ]);
 
   return (
     <div>
@@ -151,20 +163,18 @@ export default async function EventDetailPage({
             </dl>
           </div>
 
-          {/* Ticket Types Placeholder */}
+          {/* Ticket Types */}
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">Tickettypes</h2>
-              <button
-                disabled
-                className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg opacity-50 cursor-not-allowed"
+              <Link
+                href={`/dashboard/events/${event.id}/ticket-types/new`}
+                className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 + Tickettype
-              </button>
+              </Link>
             </div>
-            <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-              Tickettypes worden toegevoegd in een volgende fase.
-            </p>
+            <TicketTypeList ticketTypes={ticketTypes} eventId={event.id} />
           </div>
         </div>
 
@@ -176,7 +186,7 @@ export default async function EventDetailPage({
             <EventStatusActions event={event} />
           </div>
 
-          {/* Stats Placeholder */}
+          {/* Stats */}
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
             <h2 className="text-lg font-semibold mb-4">Statistieken</h2>
             <div className="space-y-3">
@@ -184,7 +194,9 @@ export default async function EventDetailPage({
                 <span className="text-gray-500 dark:text-gray-400">
                   Tickets verkocht
                 </span>
-                <span className="font-medium">0</span>
+                <span className="font-medium">
+                  {stats.totalSold} / {stats.totalCapacity}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-gray-400">
@@ -194,7 +206,15 @@ export default async function EventDetailPage({
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-gray-400">Omzet</span>
-                <span className="font-medium">€0,00</span>
+                <span className="font-medium">
+                  {formatPrice(stats.totalRevenue)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">
+                  Tickettypes
+                </span>
+                <span className="font-medium">{stats.ticketTypes}</span>
               </div>
             </div>
           </div>
