@@ -22,7 +22,7 @@ For our ticketing platform:
 
 - **Organizations** are our customers (tenants)
 - **Buyers** purchase tickets from organizations
-- **Platform fee** is charged on used tickets only
+- **Platform fee** is charged per order (using Mollie Application Fees)
 - Each organization needs their own Mollie account for payouts
 
 ---
@@ -162,7 +162,7 @@ const payment = await mollieClient.payments.create(
 
     // Application fee - goes to our platform account
     applicationFee: {
-      amount: { value: "1.25", currency: "EUR" }, // 5% platform fee
+      amount: { value: "1.25", currency: "EUR" }, // Platform fee per order
       description: "Platform fee",
     },
   },
@@ -173,24 +173,25 @@ const payment = await mollieClient.payments.create(
 );
 ```
 
-> ⚠️ **Important:** Our platform fee is only charged on **used tickets**. We need to handle this differently - likely as a separate charge/settlement after scanning, not as an upfront application fee.
+### Platform Fee Model
 
-### Platform Fee Strategy Options
+✅ **Application Fee per Order** (Mollie native)
 
-1. **Application Fee on Payment** (Mollie native)
-   - Fee charged immediately when payment succeeds
-   - ❌ Doesn't work for our model (fee only on scanned tickets)
+- Platform fee is charged **per order** when payment succeeds
+- Uses Mollie's built-in Application Fees feature
+- Fee is automatically transferred to our platform account
+- Simple and straightforward - no post-event reconciliation needed
 
-2. **Post-Event Settlement** (Our model)
-   - Track scanned tickets
-   - Calculate platform fee after event
-   - Create separate invoice/charge to organization
-   - ✅ Matches our business model
+**Fee Calculation Example:**
 
-3. **Hybrid Approach**
-   - Small base application fee on payment
-   - Additional settlement for scanned ticket fees
-   - 🤔 More complex
+```typescript
+// Calculate platform fee based on order total
+function calculatePlatformFee(orderTotal: number): number {
+  // Example: 5% of order total, minimum €0.50
+  const percentageFee = orderTotal * 0.05;
+  return Math.max(percentageFee, 0.5);
+}
+```
 
 ---
 
@@ -235,18 +236,17 @@ src/
 
 ### Decision Log
 
-| Date | Decision           | Rationale                                                  |
-| ---- | ------------------ | ---------------------------------------------------------- |
-| TBD  | Platform fee model | Need to decide on application fee vs post-event settlement |
-| TBD  | Token encryption   | Need to choose encryption method for stored tokens         |
-| TBD  | Fallback handling  | What happens if org's Mollie account has issues?           |
+| Date       | Decision           | Rationale                                                     |
+| ---------- | ------------------ | ------------------------------------------------------------- |
+| 2025-12-29 | Platform fee model | **Per order** using Mollie Application Fees - simple & native |
+| TBD        | Token encryption   | Need to choose encryption method for stored tokens            |
+| TBD        | Fallback handling  | What happens if org's Mollie account has issues?              |
 
 ### Open Questions
 
 - [ ] How to handle organizations that haven't completed Mollie onboarding?
 - [ ] Should we allow events to be published before Mollie is connected?
 - [ ] How to handle refunds when platform fee was already collected?
-- [ ] What's the reconciliation frequency for post-event fees?
 
 ---
 
