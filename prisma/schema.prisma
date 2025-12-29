@@ -1,0 +1,245 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =============================================================================
+// MULTI-TENANT CORE
+// =============================================================================
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  memberships Membership[]
+  events      Event[]
+  orders      Order[]
+  payouts     Payout[]
+
+  @@map("organizations")
+}
+
+model Membership {
+  id             String   @id @default(uuid())
+  organizationId String
+  userId         String   // Supabase auth.users.id
+  role           Role     @default(MEMBER)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@map("memberships")
+}
+
+enum Role {
+  ADMIN
+  FINANCE
+  SCANNER
+  MEMBER
+}
+
+// =============================================================================
+// EVENTS & TICKETS
+// =============================================================================
+
+model Event {
+  id             String      @id @default(uuid())
+  organizationId String
+  title          String
+  slug           String
+  description    String?
+  location       String?
+  startsAt       DateTime
+  endsAt         DateTime
+  status         EventStatus @default(DRAFT)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ticketTypes  TicketType[]
+  tickets      Ticket[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([status])
+  @@map("events")
+}
+
+enum EventStatus {
+  DRAFT
+  LIVE
+  ENDED
+  CANCELLED
+}
+
+model TicketType {
+  id           String    @id @default(uuid())
+  eventId      String
+  name         String
+  description  String?
+  price        Int       // Price in cents
+  capacity     Int
+  soldCount    Int       @default(0)
+  saleStart    DateTime?
+  saleEnd      DateTime?
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  event   Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tickets Ticket[]
+
+  @@index([eventId])
+  @@map("ticket_types")
+}
+
+model Ticket {
+  id             String       @id @default(uuid())
+  ticketTypeId   String
+  eventId        String
+  orderId        String
+  code           String       @unique // Short human-readable code
+  secretToken    String       @unique // For QR validation
+  status         TicketStatus @default(VALID)
+  usedAt         DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relations
+  ticketType TicketType @relation(fields: [ticketTypeId], references: [id])
+  event      Event      @relation(fields: [eventId], references: [id])
+  order      Order      @relation(fields: [orderId], references: [id])
+  scanLogs   ScanLog[]
+
+  @@index([eventId])
+  @@index([orderId])
+  @@index([status])
+  @@map("tickets")
+}
+
+enum TicketStatus {
+  VALID
+  USED
+  REFUNDED
+}
+
+// =============================================================================
+// ORDERS & PAYMENTS
+// =============================================================================
+
+model Order {
+  id              String      @id @default(uuid())
+  organizationId  String
+  orderNumber     String      @unique
+  buyerEmail      String
+  buyerName       String?
+  ticketTotal     Int         // Total ticket price in cents
+  serviceFee      Int         // Service fee in cents
+  totalAmount     Int         // Grand total in cents
+  status          OrderStatus @default(PENDING)
+  paymentId       String?     @unique // Mollie payment ID
+  paymentMethod   String?
+  paidAt          DateTime?
+  refundedAt      DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+  tickets      Ticket[]
+
+  @@index([organizationId])
+  @@index([buyerEmail])
+  @@index([status])
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+// =============================================================================
+// SCANNING & AUDIT
+// =============================================================================
+
+model ScanLog {
+  id             String     @id @default(uuid())
+  ticketId       String
+  scannedBy      String     // User ID who scanned
+  deviceId       String?    // Device identifier
+  result         ScanResult
+  scannedAt      DateTime   // When the scan occurred (may be offline)
+  syncedAt       DateTime?  // When synced to server (null if online)
+  offlineSync    Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+
+  // Relations
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+
+  @@index([ticketId])
+  @@index([scannedAt])
+  @@map("scan_logs")
+}
+
+enum ScanResult {
+  VALID
+  ALREADY_USED
+  INVALID
+  REFUNDED
+}
+
+// =============================================================================
+// PAYOUTS
+// =============================================================================
+
+model Payout {
+  id               String       @id @default(uuid())
+  organizationId   String
+  periodStart      DateTime
+  periodEnd        DateTime
+  grossRevenue     Int          // Total from used tickets in cents
+  platformFee      Int          // Platform fee in cents
+  netPayout        Int          // Amount to pay out in cents
+  usedTicketCount  Int
+  status           PayoutStatus @default(CALCULATED)
+  approvedAt       DateTime?
+  paidAt           DateTime?
+  transferId       String?      // Mollie transfer ID
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([status])
+  @@map("payouts")
+}
+
+enum PayoutStatus {
+  CALCULATED
+  APPROVED
+  PAID
+}
