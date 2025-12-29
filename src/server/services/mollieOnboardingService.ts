@@ -104,9 +104,9 @@ export const mollieOnboardingService = {
       client_id: env.MOLLIE_CONNECT_CLIENT_ID,
       redirect_uri: env.MOLLIE_REDIRECT_URI ?? `${env.NEXT_PUBLIC_APP_URL}/api/auth/mollie/callback`,
       response_type: "code",
-      scope: "payments.read payments.write profiles.read organizations.read onboarding.read onboarding.write",
+      scope: "payments.read payments.write profiles.read organizations.read onboarding.read onboarding.write settlements.read balances.read",
       state,
-      // approval_prompt: "auto", // Use "force" to always show consent screen
+      approval_prompt: "force", // Force consent screen to ensure new scopes are granted
     });
 
     return `https://my.mollie.com/oauth2/authorize?${params.toString()}`;
@@ -270,7 +270,7 @@ export const mollieOnboardingService = {
     url.searchParams.set("redirect_uri", redirectUri);
     url.searchParams.set("state", state);
     // Required: scope parameter with permissions needed
-    url.searchParams.set("scope", "payments.read payments.write profiles.read organizations.read onboarding.read onboarding.write");
+    url.searchParams.set("scope", "payments.read payments.write profiles.read organizations.read onboarding.read onboarding.write settlements.read balances.read");
 
     return url.toString();
   },
