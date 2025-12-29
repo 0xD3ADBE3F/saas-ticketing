@@ -75,6 +75,7 @@ model Event {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   ticketTypes  TicketType[]
   tickets      Ticket[]
+  orders       Order[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
@@ -104,8 +105,9 @@ model TicketType {
   updatedAt    DateTime  @updatedAt
 
   // Relations
-  event   Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  tickets Ticket[]
+  event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tickets    Ticket[]
+  orderItems OrderItem[]
 
   @@index([eventId])
   @@map("ticket_types")
@@ -148,6 +150,7 @@ enum TicketStatus {
 model Order {
   id              String      @id @default(uuid())
   organizationId  String
+  eventId         String
   orderNumber     String      @unique
   buyerEmail      String
   buyerName       String?
@@ -159,17 +162,38 @@ model Order {
   paymentMethod   String?
   paidAt          DateTime?
   refundedAt      DateTime?
+  expiresAt       DateTime?   // When pending order expires
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id])
+  event        Event        @relation(fields: [eventId], references: [id])
   tickets      Ticket[]
+  orderItems   OrderItem[]
 
   @@index([organizationId])
+  @@index([eventId])
   @@index([buyerEmail])
   @@index([status])
   @@map("orders")
+}
+
+model OrderItem {
+  id           String @id @default(uuid())
+  orderId      String
+  ticketTypeId String
+  quantity     Int
+  unitPrice    Int    // Price per ticket in cents (snapshot)
+  totalPrice   Int    // quantity * unitPrice in cents
+
+  // Relations
+  order      Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  ticketType TicketType @relation(fields: [ticketTypeId], references: [id])
+
+  @@unique([orderId, ticketTypeId])
+  @@index([orderId])
+  @@map("order_items")
 }
 
 enum OrderStatus {

@@ -77,14 +77,14 @@
 
 ### Slice 4: Public storefront (pre-checkout)
 
-- ⬜ Public event page with ticket selection
-- ⬜ Order summary incl. **service fee per order**
-- ⬜ Buyer info: email (+ optional name)
-- ⬜ Pending Order creation (no payment yet)
+- ✅ Public event page with ticket selection
+- ✅ Order summary incl. **service fee per order**
+- ✅ Buyer info: email (+ optional name)
+- ✅ Pending Order creation (no payment yet)
 
 **DoD**
 
-- E2E: select tickets → order created
+- ✅ Unit test: service fee calculation, capacity validation (25 tests)
 
 ---
 

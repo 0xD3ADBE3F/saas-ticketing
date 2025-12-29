@@ -158,8 +158,7 @@ describe("Event Repository - Tenant Scoping", () => {
   });
 
   describe("findPublicBySlug", () => {
-    it("should only return LIVE events", async () => {
-      const orgSlug = "test-org";
+    it("should only return LIVE events with ticket types", async () => {
       const eventSlug = "test-event";
 
       mockPrisma.event.findFirst.mockResolvedValue({
@@ -181,6 +180,22 @@ describe("Event Repository - Tenant Scoping", () => {
             select: {
               name: true,
               slug: true,
+            },
+          },
+          ticketTypes: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              price: true,
+              capacity: true,
+              soldCount: true,
+              saleStart: true,
+              saleEnd: true,
+              sortOrder: true,
+            },
+            orderBy: {
+              sortOrder: "asc",
             },
           },
         },

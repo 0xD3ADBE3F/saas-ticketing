@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getPublicEvent } from "@/server/services/eventService";
 import { formatDateTime, formatDateRange, isPast } from "@/lib/date";
+import { EventTickets } from "@/components/checkout";
 
 interface PublicEventPageProps {
   params: Promise<{ slug: string }>;
@@ -161,12 +162,11 @@ export default async function PublicEventPage({
                 <p>Ticketverkoop voor dit evenement is gesloten.</p>
               </div>
             ) : (
-              <div className="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                <p className="text-gray-500 dark:text-gray-400 mb-4">
-                  Ticketverkoop wordt binnenkort geactiveerd.
-                </p>
-                {/* Placeholder for ticket types - will be implemented in Slice 3 */}
-              </div>
+              <EventTickets
+                eventSlug={event.slug}
+                eventTitle={event.title}
+                ticketTypes={event.ticketTypes}
+              />
             )}
           </div>
         </div>

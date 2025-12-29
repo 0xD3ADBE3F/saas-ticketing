@@ -31,6 +31,17 @@ export type PublicEvent = Event & {
     name: string;
     slug: string;
   };
+  ticketTypes: {
+    id: string;
+    name: string;
+    description: string | null;
+    price: number;
+    capacity: number;
+    soldCount: number;
+    saleStart: Date | null;
+    saleEnd: Date | null;
+    sortOrder: number;
+  }[];
 };
 
 export const eventRepo = {
@@ -123,6 +134,22 @@ export const eventRepo = {
           select: {
             name: true,
             slug: true,
+          },
+        },
+        ticketTypes: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            price: true,
+            capacity: true,
+            soldCount: true,
+            saleStart: true,
+            saleEnd: true,
+            sortOrder: true,
+          },
+          orderBy: {
+            sortOrder: "asc",
           },
         },
       },
