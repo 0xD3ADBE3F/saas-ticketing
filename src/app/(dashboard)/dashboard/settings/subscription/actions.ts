@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/server/lib/supabase";
 import { getUserOrganizations } from "@/server/services/organizationService";
 import { subscriptionRepo } from "@/server/repos/subscriptionRepo";
+import { createSubscriptionPayment } from "@/server/services/mollieSubscriptionService";
+import { env } from "@/server/lib/env";
 import {
   PLAN_LIMITS,
   getPlanDisplayName,
@@ -221,58 +223,67 @@ export async function upgradePlanAction(targetPlan: PricingPlan): Promise<Upgrad
   }
 
   const currentOrg = organizations[0];
-  const currentPlan = currentOrg.currentPlan ?? "NON_PROFIT";
+  const currentPlan = currentOrg.currentPlan;
 
-  // Validate upgrade direction
-  const currentOrder = getPlanOrder(currentPlan);
-  const targetOrder = getPlanOrder(targetPlan);
+  // Validate upgrade direction (null plan can upgrade to anything)
+  if (currentPlan !== null) {
+    const currentOrder = getPlanOrder(currentPlan);
+    const targetOrder = getPlanOrder(targetPlan);
 
-  if (targetOrder <= currentOrder) {
-    return { success: false, error: "Dit is geen upgrade" };
+    if (targetOrder <= currentOrder) {
+      return { success: false, error: "Dit is geen upgrade" };
+    }
   }
 
   const targetLimits = PLAN_LIMITS[targetPlan];
 
-  // For free plan or pay-per-event, just update the plan directly
+  // For free plan or pay-per-event (no monthly fee), just update the plan directly
   if (targetLimits.monthlyPrice === 0 || targetLimits.monthlyPrice === null) {
-    // Update organization's plan directly
     await updateOrganizationPlan(currentOrg.id, targetPlan);
+
+    // Create subscription record for tracking
+    const now = new Date();
+    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+    const subscription = await subscriptionRepo.findByOrganizationId(currentOrg.id);
+
+    if (subscription) {
+      await subscriptionRepo.update(subscription.id, {
+        plan: targetPlan,
+        status: "ACTIVE",
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd,
+        cancelAtPeriodEnd: false,
+      });
+    } else {
+      await subscriptionRepo.create({
+        organizationId: currentOrg.id,
+        plan: targetPlan,
+        status: "ACTIVE",
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd,
+      });
+    }
 
     return { success: true };
   }
 
-  // For paid plans, we would create a Mollie checkout
-  // For now, return a placeholder URL
-  // TODO: Integrate with Mollie Subscriptions API
+  // For paid monthly plans, create Mollie checkout
+  // Uses Entro's platform Mollie account (NOT org's connected account)
+  const baseUrl = env.NEXT_PUBLIC_APP_URL;
+  const email = user.email ?? "";
 
-  // Create or update subscription record
-  const subscription = await subscriptionRepo.findByOrganizationId(currentOrg.id);
-  const now = new Date();
-  const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  const result = await createSubscriptionPayment(
+    currentOrg.id,
+    targetPlan,
+    email,
+    baseUrl
+  );
 
-  if (subscription) {
-    await subscriptionRepo.update(subscription.id, {
-      plan: targetPlan,
-      currentPeriodStart: now,
-      currentPeriodEnd: periodEnd,
-      cancelAtPeriodEnd: false,
-    });
-  } else {
-    await subscriptionRepo.create({
-      organizationId: currentOrg.id,
-      plan: targetPlan,
-      status: "ACTIVE",
-      currentPeriodStart: now,
-      currentPeriodEnd: periodEnd,
-    });
+  if (!result.success) {
+    return { success: false, error: result.error };
   }
 
-  // Update organization's current plan
-  await updateOrganizationPlan(currentOrg.id, targetPlan);
-
-  // In a real implementation, this would return a Mollie checkout URL
-  // For now, we'll just return success without a checkout URL
-  return { success: true };
+  return { success: true, checkoutUrl: result.checkoutUrl };
 }
 
 /**

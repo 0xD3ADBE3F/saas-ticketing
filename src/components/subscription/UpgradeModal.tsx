@@ -37,19 +37,21 @@ export function UpgradeModal({
 
       if (result.success) {
         if (result.checkoutUrl) {
-          // Redirect to Mollie checkout
+          // Redirect to Mollie checkout for paid plans
           window.location.href = result.checkoutUrl;
         } else {
-          // Free upgrade (e.g., to NON_PROFIT or free trial)
-          router.push("/dashboard/settings/subscription?upgraded=true");
-          router.refresh();
+          // Free plan activation (NON_PROFIT or PAY_PER_EVENT)
+          // Do a full page navigation to ensure fresh data
+          window.location.href =
+            "/dashboard/settings/subscription?activated=true";
         }
       } else {
         setError(result.error || "Er is een fout opgetreden");
+        setIsLoading(false);
       }
-    } catch {
+    } catch (err) {
+      console.error("Upgrade error:", err);
       setError("Er is een onverwachte fout opgetreden");
-    } finally {
       setIsLoading(false);
     }
   };

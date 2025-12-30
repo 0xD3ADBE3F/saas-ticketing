@@ -262,13 +262,18 @@ export const planLimitsService = {
     // The ticket count is already stored with the tickets themselves
     if (planLimits.limitPeriod === "event") return;
 
-    // For monthly limits, track in usage records
-    const subscription = await subscriptionRepo.findByOrganizationId(organizationId);
-    if (!subscription) return;
+    // For monthly limits, use calendar month for tracking
+    const now = new Date();
+    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
     // Calculate overage
-    const usageRecord = await subscriptionRepo.findCurrentUsageRecord(organizationId);
-    const currentSold = usageRecord?.ticketsSold ?? 0;
+    const usageRecord = await subscriptionRepo.getOrCreateUsageRecord(
+      organizationId,
+      periodStart,
+      periodEnd
+    );
+    const currentSold = usageRecord.ticketsSold;
     const newTotal = currentSold + quantity;
 
     let overageTickets = 0;
@@ -283,8 +288,8 @@ export const planLimitsService = {
 
     await subscriptionRepo.incrementTicketsSold(
       organizationId,
-      subscription.currentPeriodStart,
-      subscription.currentPeriodEnd,
+      periodStart,
+      periodEnd,
       quantity,
       overageTickets,
       overageFee

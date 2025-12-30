@@ -10,9 +10,11 @@ import { formatPrice } from "@/lib/currency";
 import { formatDateTime, formatRelativeTime, isPast } from "@/lib/date";
 import { EventStatusActions } from "@/components/events/EventStatusActions";
 import { TicketTypeList } from "@/components/ticket-types/TicketTypeList";
+import { prisma } from "@/server/lib/prisma";
 
 interface EventDetailPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ payment?: string }>;
 }
 
 const statusLabels = {
@@ -31,6 +33,7 @@ const statusColors = {
 
 export default async function EventDetailPage({
   params,
+  searchParams,
 }: EventDetailPageProps) {
   const user = await getUser();
   if (!user) {
@@ -38,6 +41,9 @@ export default async function EventDetailPage({
   }
 
   const { id } = await params;
+  const { payment } = await searchParams;
+  const paymentSuccess = payment === "success";
+
   const result = await getEvent(id, user.id);
 
   if (!result.success || !result.data) {
@@ -53,8 +59,24 @@ export default async function EventDetailPage({
     getEventTicketStats(id, user.id),
   ]);
 
+  // Fetch organization plan for showing correct button text
+  const org = await prisma.organization.findUnique({
+    where: { id: event.organizationId },
+    select: { currentPlan: true },
+  });
+  const isPayPerEvent = org?.currentPlan === "PAY_PER_EVENT";
+
   return (
     <div>
+      {/* Payment Success Message */}
+      {paymentSuccess && (
+        <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+          <p className="text-green-700 dark:text-green-400 font-medium">
+            ✅ Betaling geslaagd! Je evenement is nu live.
+          </p>
+        </div>
+      )}
+
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
         <Link
@@ -183,7 +205,7 @@ export default async function EventDetailPage({
           {/* Status Actions */}
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
             <h2 className="text-lg font-semibold mb-4">Status</h2>
-            <EventStatusActions event={event} />
+            <EventStatusActions event={event} isPayPerEvent={isPayPerEvent} />
           </div>
 
           {/* Stats */}

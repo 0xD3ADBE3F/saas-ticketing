@@ -1,6 +1,7 @@
 import { getSubscriptionAction } from "./actions";
 import { SubscriptionOverview } from "@/components/subscription/SubscriptionOverview";
 import { UsageMeter } from "@/components/subscription/UsageMeter";
+import { SubscriptionPaymentPoller } from "@/components/subscription/SubscriptionPaymentPoller";
 import Link from "next/link";
 
 export default async function SubscriptionPage() {
@@ -48,6 +49,12 @@ export default async function SubscriptionPage() {
 
   return (
     <div className="space-y-6">
+      {/* Payment Status Poller - shows loading state while webhook processes */}
+      <SubscriptionPaymentPoller
+        organizationId={subscription.organizationId}
+        currentPlan={subscription.plan}
+      />
+
       {/* Cancellation Notice */}
       {subscription.cancelAtPeriodEnd && subscription.currentPeriodEnd && (
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">

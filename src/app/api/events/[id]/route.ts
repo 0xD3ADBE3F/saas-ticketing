@@ -7,6 +7,9 @@ import {
   updateEventStatus,
   deleteEvent,
 } from "@/server/services/eventService";
+import { createEventPayment } from "@/server/services/mollieSubscriptionService";
+import { prisma } from "@/server/lib/prisma";
+import { headers } from "next/headers";
 
 const updateEventSchema = z.object({
   title: z.string().min(1, "Titel is verplicht").max(100, "Titel mag maximaal 100 karakters zijn").optional(),
@@ -73,8 +76,50 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       user.id,
       parsed.data.status
     );
+
+    // Check if payment is required (PAY_PER_EVENT plan)
+    if (!statusResult.success && "requiresPayment" in statusResult && statusResult.requiresPayment) {
+      // Get org and user email for payment
+      const membership = await prisma.membership.findFirst({
+        where: { userId: user.id },
+        include: { organization: true },
+      });
+
+      if (!membership) {
+        return NextResponse.json({ error: "Organisatie niet gevonden" }, { status: 400 });
+      }
+
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+      if (!baseUrl) {
+        return NextResponse.json({ error: "Applicatie URL niet geconfigureerd" }, { status: 500 });
+      }
+
+      // Create payment for event publication
+      const paymentResult = await createEventPayment(
+        membership.organizationId,
+        statusResult.eventId,
+        statusResult.eventTitle,
+        user.email ?? "",
+        baseUrl,
+      );
+
+      if (!paymentResult.success) {
+        return NextResponse.json({ error: paymentResult.error }, { status: 400 });
+      }
+
+      return NextResponse.json({
+        requiresPayment: true,
+        checkoutUrl: paymentResult.checkoutUrl,
+      });
+    }
+
     if (!statusResult.success) {
-      return NextResponse.json({ error: statusResult.error }, { status: 400 });
+      // Check if it has an error message (not requiresPayment variant)
+      if ("error" in statusResult) {
+        return NextResponse.json({ error: statusResult.error }, { status: 400 });
+      }
+      return NextResponse.json({ error: "Er is iets misgegaan" }, { status: 400 });
     }
 
     // If only status was updated, return the result

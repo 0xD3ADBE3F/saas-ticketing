@@ -399,10 +399,11 @@
   - Takes effect at end of current billing cycle
   - Block if current usage exceeds new plan limits
   - Show warning with usage comparison
-- ⬜ Pay-Per-Event purchase flow:
-  - One-time payment (€49) via Mollie
-  - Creates single-event "subscription" with 1 event limit
-  - Auto-expires when event ends
+- ✅ Pay-Per-Event purchase flow:
+  - One-time payment (€49) via Mollie when publishing event
+  - User clicks "Live zetten" → redirected to Mollie checkout
+  - Webhook marks event as LIVE after successful payment
+  - Payment success message on event detail page
 - ⬜ Cancellation flow:
   - Cancel at period end (no immediate revocation)
   - Downgrade to NON_PROFIT if eligible
@@ -414,11 +415,12 @@
 >
 > **Important:** Organization subscription billing uses **Entro's platform Mollie account**, NOT the organization's connected Mollie account. The connected account is only used for receiving ticket sale proceeds.
 
-- ⬜ Mollie Subscriptions API integration:
-  - Create Mollie customer on first paid subscription
-  - Create recurring subscription (ORGANIZER: €49/mo, PRO: €99/mo)
-  - Mollie handles payment collection, retries, and invoices
-  - Handle subscription webhooks (payment succeeded, failed, cancelled)
+- ✅ Mollie Subscriptions API integration:
+  - ✅ Create Mollie customer on first paid subscription
+  - ✅ Create recurring subscription (ORGANIZER: €49/mo, PRO: €99/mo)
+  - ✅ Mollie handles payment collection, retries, and invoices
+  - ✅ Handle subscription webhooks (payment succeeded, failed, cancelled)
+  - ✅ Event payment for PAY_PER_EVENT plan (€49 per event)
 - ⬜ Overage billing (charged at payout):
   - Track tickets sold per billing period
   - Calculate overage: `(ticketsSold - limit) × overageFee`
@@ -564,8 +566,9 @@ Upgrade → upgradePlanAction(PRO_ORGANIZER)
 | `DowngradeModal` component             | ✅     |
 | Server action: `upgradePlanAction()`   | ✅     |
 | Server action: `downgradePlanAction()` | ✅     |
-| Mollie checkout redirect flow          | 🟨     |
-| Webhook handler for subscriptions      | 🟨     |
+| Mollie checkout redirect flow          | ✅     |
+| Webhook handler for subscriptions      | ✅     |
+| `mollieSubscriptionService.ts`         | ✅     |
 
 **Phase 3: Billing & History** (Mollie-powered)
 
