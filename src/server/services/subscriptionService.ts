@@ -275,29 +275,44 @@ export const subscriptionService = {
       where: { id: subscriptionId },
     });
 
-    if (!subscription) return;
+    if (!subscription) {
+      console.log(`[Renewal] Subscription ${subscriptionId} not found`);
+      return;
+    }
+
+    console.log(`[Renewal] Processing subscription ${subscriptionId}, plan=${subscription.plan}, cancelAtPeriodEnd=${subscription.cancelAtPeriodEnd}, mollieSubId=${subscription.mollieSubscriptionId}`);
 
     const { periodStart, periodEnd } = getBillingPeriod(subscription.currentPeriodEnd);
 
     if (subscription.cancelAtPeriodEnd) {
+      console.log(`[Renewal] Subscription is marked for cancellation`);
+
       // Cancel Mollie subscription if exists (for ORGANIZER, PRO_ORGANIZER)
       if (subscription.mollieSubscriptionId) {
+        console.log(`[Renewal] Attempting to cancel Mollie subscription: ${subscription.mollieSubscriptionId}`);
         try {
-          await cancelMollieSubscription(subscription.mollieSubscriptionId);
+          const cancelResult = await cancelMollieSubscription(subscription.organizationId);
+          console.log(`[Renewal] Mollie cancellation result:`, cancelResult);
         } catch (error) {
-          console.error('Failed to cancel Mollie subscription:', error);
+          console.error('[Renewal] Failed to cancel Mollie subscription:', error);
           // Continue with local cancellation even if Mollie fails
         }
+      } else {
+        console.log(`[Renewal] No Mollie subscription ID found (PAY_PER_EVENT plan)`);
       }
 
       // Delete subscription record
+      console.log(`[Renewal] Deleting subscription record`);
       await subscriptionRepo.delete(subscription.id);
 
       // Clear organization's current plan
+      console.log(`[Renewal] Clearing organization's current plan`);
       await prisma.organization.update({
         where: { id: subscription.organizationId },
         data: { currentPlan: null },
       });
+
+      console.log(`[Renewal] Cancellation complete for subscription ${subscriptionId}`);
     } else {
       // Renew subscription
       await subscriptionRepo.update(subscription.id, {
