@@ -343,40 +343,216 @@
 
 ### Slice 18: Subscription & Billing Management
 
-- ⬜ Subscription plans model:
-  - **Non-Profit (Stichting)**: Free platform usage, 1 event/year limit, 1000 tickets/event, no setup fee
-    - Higher platform fee per ticket (e.g., 3% vs standard 2%)
-    - Requires KVK verification for non-profit status
-  - **Starter**: €250 one-time setup fee, unlimited events/month, 1000 tickets/event limit
-    - Standard 2% platform fee per ticket
-  - **Pro**: €999 one-time setup fee, unlimited events, unlimited tickets
-    - Standard 2% platform fee per ticket
-  - **Custom/Enterprise**: Manual pricing & setup fees, custom limits, negotiated platform fees
-- ⬜ Plan assignment UI:
-  - View current plan with setup fee status (paid/pending)
-  - Change plan (with confirmation + fee payment if applicable)
-  - Override limits for special cases
-  - Manual invoicing/credits for setup fees
-  - Non-profit verification workflow (KVK number validation)
-- ⬜ Usage monitoring:
-  - Current period: events created, tickets sold
-  - Limit warnings (approaching plan limits)
-  - Event count tracking for non-profit annual limit
-- ⬜ Platform fee configuration per organization:
-  - Default: 2% per ticket (3% for non-profits)
-  - Custom rates for special deals (Enterprise tier)
-  - Fee history (audit trail)
-- ⬜ Setup fee tracking:
-  - Payment status (pending/paid/waived)
-  - Invoice generation for setup fees
-  - Payment link integration (Mollie)
+> **Reference:** See [PRICING.md](./PRICING.md) for detailed plan definitions and fee structures.
+
+#### 18.1 Database Schema & Models
+
+- ⬜ PricingPlan enum:
+  ```
+  NON_PROFIT | PAY_PER_EVENT | ORGANIZER | PRO_ORGANIZER
+  ```
+- ⬜ Subscription model:
+  - `id`, `organizationId`, `plan` (enum)
+  - `status`: `ACTIVE | PAST_DUE | CANCELLED | TRIALING`
+  - `currentPeriodStart`, `currentPeriodEnd`
+  - `mollieSubscriptionId` (for recurring plans)
+  - `mollieCustomerId`
+  - `cancelAtPeriodEnd` (for pending downgrades)
+  - `brandingRemoved` (adds +2% platform fee)
+  - `createdAt`, `updatedAt`
+- ⬜ UsageRecord model (tracks tickets sold per period):
+  - `id`, `organizationId`, `periodStart`, `periodEnd`
+  - `ticketsSold` (cumulative count)
+  - `overageTickets` (tickets exceeding limit)
+  - `overageFeeTotal` (calculated overage charges in cents)
+- ⬜ SubscriptionInvoice model:
+  - `id`, `organizationId`, `subscriptionId`
+  - `type`: `SUBSCRIPTION | PAY_PER_EVENT | OVERAGE`
+  - `amount`, `status`: `PENDING | PAID | FAILED`
+  - `molliePaymentId`, `paidAt`
+- ⬜ Add to Organization model:
+  - `currentPlan` (default: NON_PROFIT)
+  - `subscriptionId` (relation)
+
+#### 18.2 Plan Limits Configuration
+
+| Plan          | Active Events | Ticket Limit | Limit Period | Overage Fee  | Platform Fee |
+| ------------- | ------------- | ------------ | ------------ | ------------ | ------------ |
+| NON_PROFIT    | 1             | 500          | per event    | -            | 2%           |
+| PAY_PER_EVENT | 1             | 1,000        | per event    | €0.10/ticket | 2%           |
+| ORGANIZER     | unlimited     | 3,000        | per month    | €0.08/ticket | 2%           |
+| PRO_ORGANIZER | unlimited     | 10,000       | per month    | €0.05/ticket | 2%           |
+
+- ⬜ PlanLimits service with enforcement methods:
+  - `canCreateEvent(orgId)` - check active event limit
+  - `canSellTickets(orgId, quantity)` - check ticket limit
+  - `getOverageFee(orgId)` - calculate overage for current period
+  - `isOverageAllowed(plan)` - NON_PROFIT returns false
+
+#### 18.3 Subscription Lifecycle
+
+- ⬜ Plan upgrade flow:
+  - Immediate effect
+  - Prorated billing for remaining period
+  - Reset usage counters on plan change
+- ⬜ Plan downgrade flow:
+  - Takes effect at end of current billing cycle
+  - Block if current usage exceeds new plan limits
+  - Show warning with usage comparison
+- ⬜ Pay-Per-Event purchase flow:
+  - One-time payment (€49) via Mollie
+  - Creates single-event "subscription" with 1 event limit
+  - Auto-expires when event ends
+- ⬜ Cancellation flow:
+  - Cancel at period end (no immediate revocation)
+  - Downgrade to NON_PROFIT if eligible
+  - Block if active events exceed free tier limit
+
+#### 18.4 Billing & Payments
+
+- ⬜ Mollie Subscriptions integration:
+  - Create customer on first paid subscription
+  - Create recurring subscription (ORGANIZER: €49/mo, PRO: €99/mo)
+  - Handle subscription webhooks (payment failed, cancelled)
+- ⬜ Overage billing (charged at payout):
+  - Track tickets sold per billing period
+  - Calculate overage: `(ticketsSold - limit) × overageFee`
+  - Deduct from payout alongside platform fee
+- ⬜ Branding removal fee:
+  - Toggle per organization (brandingRemoved flag)
+  - Adds +2% to platform fee (total 4%)
+  - Only available for non-PRO_ORGANIZER plans
+
+#### 18.5 Dashboard UI (Organizer-facing)
+
+- ⬜ Subscription settings page (`/dashboard/settings/subscription`):
+  - Current plan display with features
+  - Usage meter (tickets sold / limit)
+  - Billing history (invoices)
+  - Payment method management
+- ⬜ Plan selection/upgrade modal:
+  - Compare plans side-by-side
+  - Show prorated amount for upgrades
+  - Redirect to Mollie checkout
+- ⬜ Usage warnings:
+  - Banner at 80% of ticket limit
+  - Alert at 100% (for overage-enabled plans)
+  - Hard block for NON_PROFIT at limit
+
+#### 18.6 Platform Admin UI
+
+- ⬜ Organization subscription view:
+  - Current plan & status
+  - Usage stats (tickets this period)
+  - Override plan limits (special deals)
+  - Manual plan assignment
+- ⬜ Subscription reports:
+  - MRR (Monthly Recurring Revenue)
+  - Plan distribution (count per tier)
+  - Churn rate
+  - Overage revenue
+
+#### 18.7 Event-Level Fee Overrides (Platform Admin)
+
+- ⬜ Add to Event model:
+  - `platformFeeOverride` (nullable Int, basis points e.g., 200 = 2%)
+  - `overageFeeOverride` (nullable Int, cents per ticket)
+  - `feeOverrideReason` (String, required when override is set)
+  - `feeOverrideSetBy` (SuperAdmin userId)
+  - `feeOverrideSetAt` (DateTime)
+- ⬜ Fee resolution logic in `feeService`:
+
+  ```
+  getPlatformFee(event):
+    if event.platformFeeOverride != null:
+      return event.platformFeeOverride
+    if org.brandingRemoved && plan != PRO_ORGANIZER:
+      return 400 (4%)
+    return 200 (2%)
+
+  getOverageFee(event, plan):
+    if event.overageFeeOverride != null:
+      return event.overageFeeOverride
+    return PLAN_OVERAGE_FEES[plan]
+  ```
+
+- ⬜ Platform Admin UI (`/platform/events/[id]/fees`):
+  - View current effective fees (plan default vs override)
+  - Set custom platform fee (0-10% range)
+  - Set custom overage fee (€0.00 - €1.00 per ticket)
+  - Required reason field (e.g., "Partnership deal", "Charity event")
+  - Audit log entry on every change
+- ⬜ Fee override validations:
+  - Only SuperAdmins can set overrides
+  - Override cannot be negative
+  - Override change creates AdminAuditLog entry
+
+#### 18.8 Enforcement Points
+
+- ⬜ Event creation:
+  - Allow event creation in DRAFT status without restrictions
+  - Check `canCreateEvent()` for active event limits (only when going live)
+  - Show upgrade prompt if limit reached
+- ⬜ **Event publish (DRAFT → LIVE) gating:**
+  - ❌ Block if Mollie onboarding not completed (`mollieOnboardingStatus !== COMPLETED`)
+  - ❌ Block if no active subscription (must be on any plan, including NON_PROFIT)
+  - Show clear checklist UI with remaining steps:
+    - [ ] Connect payment account (Mollie)
+    - [ ] Choose a subscription plan
+  - Redirect to appropriate onboarding step when blocked
+- ⬜ Checkout flow:
+  - Check `canSellTickets()` before completing order
+  - For overage-enabled plans: allow but track overage
+  - For NON_PROFIT: hard block at 500 tickets
+- ⬜ Payout calculation:
+  - Use `getPlatformFee(event)` for fee calculation (respects overrides)
+  - Use `getOverageFee(event, plan)` for overage (respects overrides)
+  - Include branding removal fee if applicable
+
+#### 18.9 Non-Profit Verification (Required for Free Plan)
+
+- ⬜ KVK (Chamber of Commerce) verification during NON_PROFIT plan signup:
+  - User enters KVK number during plan selection
+  - **KVK API integration (TBD):** Will validate organization is registered as non-profit
+  - Until API is ready: manual verification workflow
+- ⬜ Verification status on Organization:
+  - `nonProfitStatus`: `PENDING | VERIFIED | REJECTED | NOT_APPLICABLE`
+  - `kvkNumber` (String, required for NON_PROFIT plan)
+  - `kvkVerifiedAt` (DateTime)
+  - `kvkRejectionReason` (String, nullable)
+- ⬜ Verification workflow:
+  - NON_PROFIT plan selection → enter KVK number → submit for verification
+  - Until verified: can create DRAFT events but cannot publish
+  - On verification: full NON_PROFIT plan access
+  - On rejection: must upgrade to paid plan or appeal
+- ⬜ Platform Admin verification UI:
+  - Queue of pending verifications
+  - Manual approve/reject with reason
+  - View KVK details (when API available)
+- ⬜ Auto-downgrade if verification rejected:
+  - Notify user via email
+  - Block event publishing until resolved
+  - Offer upgrade to paid plan as alternative
 
 **DoD**
 
-- Unit tests for plan limits enforcement
-- Plan changes take effect immediately
-- Usage stats update in real-time
-- Cannot downgrade if current usage exceeds new plan limits
+- ⬜ Unit tests: plan limits enforcement (all 4 plans)
+- ⬜ Unit tests: overage calculation accuracy
+- ⬜ Unit tests: upgrade/downgrade rules
+- ⬜ Unit tests: event-level fee override resolution
+- ⬜ Unit tests: event publish gating (Mollie + subscription required)
+- ⬜ Unit tests: NON_PROFIT plan requires KVK verification
+- ⬜ Integration test: Mollie subscription webhook handling
+- ⬜ Integration test: KVK API verification (when available)
+- ⬜ E2E: organizer can upgrade from NON_PROFIT to ORGANIZER
+- ⬜ E2E: overage fees appear in payout calculation
+- ⬜ E2E: platform admin can set fee override on event
+- ⬜ E2E: user cannot publish event without Mollie onboarding
+- ⬜ E2E: user cannot publish event without active subscription
+- ⬜ E2E: NON_PROFIT user cannot publish without KVK verification
+- ⬜ Cannot downgrade if current usage exceeds new plan limits
+- ⬜ Usage stats update in real-time after ticket sales
+- ⬜ Fee override changes create audit log entries
 
 ---
 

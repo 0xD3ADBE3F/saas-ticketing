@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { clientEnv } from "@/lib/env";
 
 // Icon components
 function TicketIcon({ className }: { className?: string }) {
@@ -183,60 +184,73 @@ function ArrowRightIcon({ className }: { className?: string }) {
 }
 
 export default function Home() {
+  const isLive = clientEnv.NEXT_PUBLIC_IS_LIVE;
+
+  // Coming Soon mode when not live
+  if (!isLive) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-950">
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium mb-8">
+            <BoltIcon className="w-4 h-4" />
+            <span>Binnenkort beschikbaar</span>
+          </div>
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
+            We gaan binnenkort
+            <span className="text-blue-600"> live!</span>
+          </h1>
+          <p className="text-xl text-gray-600 dark:text-gray-400 mb-10 max-w-2xl mx-auto">
+            Het ticketplatform dat geen gedoe is. Verkoop tickets met lage
+            kosten per verkocht ticket, geen maandelijkse fees. Simpel,
+            transparant en volledig gericht op de Nederlandse markt.
+          </p>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 border border-gray-200 dark:border-gray-800 shadow-xl max-w-md mx-auto">
+            <h3 className="text-lg font-semibold mb-4">
+              Wat je kunt verwachten:
+            </h3>
+            <ul className="space-y-3 text-left">
+              <li className="flex items-start gap-3">
+                <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <span className="text-gray-600 dark:text-gray-400">
+                  Slechts 2% per verkocht ticket
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <span className="text-gray-600 dark:text-gray-400">
+                  iDEAL betalingen (veilig & vertrouwd)
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <span className="text-gray-600 dark:text-gray-400">
+                  QR-code scanning (ook offline)
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <span className="text-gray-600 dark:text-gray-400">
+                  Binnen 5 minuten je eerste evenement live
+                </span>
+              </li>
+            </ul>
+          </div>
+          <p className="mt-8 text-sm text-gray-500 dark:text-gray-500">
+            Interesse? Neem contact op via{" "}
+            <a
+              href="mailto:info@getentro.app"
+              className="text-blue-600 hover:underline"
+            >
+              info@getentro.app
+            </a>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <TicketIcon className="w-8 h-8 text-blue-600" />
-              <span className="text-xl font-bold">Entro</span>
-            </div>
-            <div className="hidden md:flex items-center gap-8">
-              <a
-                href="#features"
-                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-              >
-                Features
-              </a>
-              <a
-                href="#organisers"
-                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-              >
-                Voor Organisatoren
-              </a>
-              <a
-                href="#attendees"
-                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-              >
-                Voor Bezoekers
-              </a>
-              <a
-                href="#pricing"
-                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-              >
-                Prijzen
-              </a>
-            </div>
-            <div className="flex items-center gap-4">
-              <Link
-                href="/auth/login"
-                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-              >
-                Inloggen
-              </Link>
-              <Link
-                href="/auth/register"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Start Gratis
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
-
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-950">
         <div className="max-w-7xl mx-auto">
@@ -249,6 +263,9 @@ export default function Home() {
               Tickets verkopen
               <span className="text-blue-600"> zonder gedoe</span>
             </h1>
+            <p className="text-2xl text-blue-600 dark:text-blue-400 font-semibold mb-4">
+              Van ticket tot entree, zonder gedoe.
+            </p>
             <p className="text-xl text-gray-600 dark:text-gray-400 mb-10 max-w-2xl mx-auto">
               Verkoop tickets zonder gedoe. Lage kosten per verkocht ticket,
               geen maandelijkse fees. Simpel, transparant en volledig gericht op
@@ -592,10 +609,11 @@ export default function Home() {
                     <CheckIcon className="w-4 h-4 text-purple-600" />
                   </div>
                   <div>
-                    <div className="font-semibold">Geen account nodig</div>
+                    <div className="font-semibold">Direct beschikbaar</div>
                     <div className="text-gray-600 dark:text-gray-400">
-                      Koop tickets zonder registratie. Je ontvangt ze direct per
-                      e-mail.
+                      Na het bestellen staan je tickets direct klaar, worden ze
+                      per e-mail verstuurd en kun je ze opslaan in je Apple
+                      Wallet of Android Wallet.
                     </div>
                   </div>
                 </div>
@@ -637,47 +655,131 @@ export default function Home() {
       </section>
 
       {/* How It Works */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900/50">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900/50 dark:to-gray-950">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="text-center max-w-3xl mx-auto mb-20">
             <h2 className="text-4xl font-bold mb-4">Hoe het werkt</h2>
             <p className="text-xl text-gray-600 dark:text-gray-400">
               Van aanmaken tot scannen in drie simpele stappen
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold mx-auto mb-6">
-                1
+          <div className="relative">
+            <div className="grid md:grid-cols-3 gap-8 relative md:items-stretch">
+              {/* Step 1 */}
+              <div className="relative group flex">
+                <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/10 to-blue-400/10 dark:from-blue-600/20 dark:to-blue-400/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl" />
+                <div className="relative bg-white dark:bg-gray-900 rounded-2xl p-8 border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 flex-1 flex flex-col">
+                  {/* Number Badge */}
+                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-500 text-white rounded-full flex items-center justify-center text-xl font-bold shadow-lg shadow-blue-500/30 ring-4 ring-white dark:ring-gray-900">
+                    1
+                  </div>
+
+                  {/* Icon */}
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/30 dark:to-blue-800/30 rounded-2xl flex items-center justify-center mx-auto mb-6 mt-4 group-hover:scale-110 transition-transform duration-300">
+                    <TicketIcon className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+                  </div>
+
+                  <h3 className="text-xl font-bold mb-3 text-center">
+                    Maak je evenement aan
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 text-center leading-relaxed">
+                    Vul de details in, stel je tickettypes in met prijzen en
+                    capaciteit. Binnen 5 minuten live.
+                  </p>
+
+                  {/* Arrow - Desktop */}
+                  <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 text-blue-400 dark:text-blue-600">
+                    <svg
+                      className="w-8 h-8"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold mb-3">
-                Maak je evenement aan
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Vul de details in, stel je tickettypes in met prijzen en
-                capaciteit.
-              </p>
+
+              {/* Step 2 */}
+              <div className="relative group flex">
+                <div className="absolute -inset-4 bg-gradient-to-r from-purple-600/10 to-purple-400/10 dark:from-purple-600/20 dark:to-purple-400/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl" />
+                <div className="relative bg-white dark:bg-gray-900 rounded-2xl p-8 border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10 flex-1 flex flex-col">
+                  {/* Number Badge */}
+                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-gradient-to-br from-purple-600 to-purple-500 text-white rounded-full flex items-center justify-center text-xl font-bold shadow-lg shadow-purple-500/30 ring-4 ring-white dark:ring-gray-900">
+                    2
+                  </div>
+
+                  {/* Icon */}
+                  <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-purple-50 dark:from-purple-900/30 dark:to-purple-800/30 rounded-2xl flex items-center justify-center mx-auto mb-6 mt-4 group-hover:scale-110 transition-transform duration-300">
+                    <UsersIcon className="w-10 h-10 text-purple-600 dark:text-purple-400" />
+                  </div>
+
+                  <h3 className="text-xl font-bold mb-3 text-center">
+                    Deel je evenement
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 text-center leading-relaxed">
+                    Deel de link via social media, je website of e-mail.
+                    Bezoekers kunnen direct kopen met iDEAL.
+                  </p>
+
+                  {/* Arrow - Desktop */}
+                  <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 text-purple-400 dark:text-purple-600">
+                    <svg
+                      className="w-8 h-8"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 3 */}
+              <div className="relative group flex">
+                <div className="absolute -inset-4 bg-gradient-to-r from-green-600/10 to-green-400/10 dark:from-green-600/20 dark:to-green-400/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl" />
+                <div className="relative bg-white dark:bg-gray-900 rounded-2xl p-8 border-2 border-green-200 dark:border-green-800 hover:border-green-400 dark:hover:border-green-600 transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10 flex-1 flex flex-col">
+                  {/* Number Badge */}
+                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-gradient-to-br from-green-600 to-green-500 text-white rounded-full flex items-center justify-center text-xl font-bold shadow-lg shadow-green-500/30 ring-4 ring-white dark:ring-gray-900">
+                    3
+                  </div>
+
+                  {/* Icon */}
+                  <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/30 dark:to-green-800/30 rounded-2xl flex items-center justify-center mx-auto mb-6 mt-4 group-hover:scale-110 transition-transform duration-300">
+                    <QrCodeIcon className="w-10 h-10 text-green-600 dark:text-green-400" />
+                  </div>
+
+                  <h3 className="text-xl font-bold mb-3 text-center">
+                    Scan bij de deur
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 text-center leading-relaxed">
+                    Gebruik je smartphone om QR-codes te scannen. Ook zonder
+                    internet. Real-time tracking.
+                  </p>
+
+                  {/* Checkmark indicator */}
+                  <div className="hidden md:flex absolute -right-8 top-1/2 -translate-y-1/2 w-8 h-8 bg-green-500 rounded-full items-center justify-center">
+                    <CheckIcon className="w-5 h-5 text-white" />
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold mx-auto mb-6">
-                2
+
+            {/* Bottom CTA */}
+            <div className="mt-16 text-center">
+              <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-semibold text-lg shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/40 transition-all">
+                <BoltIcon className="w-5 h-5" />
+                <span>Start vandaag nog</span>
               </div>
-              <h3 className="text-xl font-semibold mb-3">Deel je evenement</h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Deel de link via social media, je website of e-mail. Bezoekers
-                kunnen direct kopen.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold mx-auto mb-6">
-                3
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Scan bij de deur</h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Gebruik je smartphone om QR-codes te scannen. Ook zonder
-                internet.
-              </p>
             </div>
           </div>
         </div>
@@ -689,82 +791,352 @@ export default function Home() {
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-4xl font-bold mb-4">Eerlijke prijzen</h2>
             <p className="text-xl text-gray-600 dark:text-gray-400">
-              Geen maandelijkse kosten, geen verrassingen. Je betaalt alleen
-              wanneer je verkoopt.
+              Kies het plan dat bij jouw organisatie past
             </p>
           </div>
 
-          <div className="max-w-lg mx-auto">
-            <div className="bg-white dark:bg-gray-900 rounded-2xl border-2 border-blue-600 shadow-xl overflow-hidden">
-              <div className="bg-blue-600 text-white text-center py-2 text-sm font-medium">
-                Meest gekozen
-              </div>
-              <div className="p-8">
-                <h3 className="text-2xl font-bold mb-2">Pay as you go</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Perfect voor organisaties van elke grootte
+          {/* Pricing Cards */}
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            {/* Non-profit Plan */}
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-8">
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold mb-2">
+                  Non-profit & Stichtingen
+                </h3>
+                <div className="flex items-baseline gap-2 mb-4">
+                  <span className="text-5xl font-bold">€0</span>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Voor stichtingen & non-profits zonder winstoogmerk
                 </p>
+              </div>
 
-                <div className="flex items-baseline gap-2 mb-8">
-                  <span className="text-5xl font-bold">2%</span>
-                  <span className="text-gray-600 dark:text-gray-400">
-                    per verkocht ticket
+              <div className="space-y-3 mb-8">
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">1 actief event</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">
+                    <strong>500 tickets</strong> per event
                   </span>
                 </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">2% platform fee</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Online ticketverkoop</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">iDEAL betalingen</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Scan & check-in</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Basis rapportages</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-gray-500">Entro-branding</span>
+                </div>
+              </div>
 
-                <div className="space-y-4 mb-8">
-                  <div className="flex items-center gap-3">
-                    <CheckIcon className="w-5 h-5 text-green-600" />
-                    <span>Onbeperkt evenementen</span>
+              <Link
+                href="/auth/register"
+                className="block w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white text-center font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+              >
+                Start gratis
+              </Link>
+            </div>
+
+            {/* Pay-Per-Event Plan - Featured */}
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border-2 border-blue-600 shadow-xl p-8 relative">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-medium">
+                Meest gekozen
+              </div>
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold mb-2">Pay-Per-Event</h3>
+                <div className="flex items-baseline gap-2 mb-4">
+                  <span className="text-5xl font-bold">€49</span>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    per event
+                  </span>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Voor incidentele organisatoren
+                </p>
+              </div>
+
+              <div className="space-y-3 mb-8">
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">1 actief event per betaling</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">
+                    <strong>1.000 tickets</strong> per event
+                  </span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">€0,10 per extra ticket</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">2% platform fee</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Ticketshop & iDEAL</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Scan & check-in</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Kortingscodes</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-gray-500">Entro-branding</span>
+                </div>
+              </div>
+
+              <Link
+                href="/auth/register"
+                className="block w-full py-3 bg-blue-600 text-white text-center font-semibold rounded-xl hover:bg-blue-700 transition-all"
+              >
+                Start nu
+              </Link>
+            </div>
+
+            {/* Organizer Plan */}
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-8">
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold mb-2">Organizer</h3>
+                <div className="flex items-baseline gap-2 mb-1">
+                  <span className="text-5xl font-bold">€49</span>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    /maand
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  of €499/jaar (bespaar €89)
+                </p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Voor organisatoren met regelmatige events
+                </p>
+              </div>
+
+              <div className="space-y-3 mb-8">
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Onbeperkt events</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">
+                    <strong>3.000 tickets / maand</strong>
+                  </span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">€0,08 per extra ticket</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">2% platform fee</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">
+                    <strong>Alles uit Pay-Per-Event</strong>
+                  </span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Event templates</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">Snellere support</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-gray-500">Entro-branding</span>
+                </div>
+              </div>
+
+              <Link
+                href="/auth/register"
+                className="block w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white text-center font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+              >
+                Kies dit plan
+              </Link>
+            </div>
+          </div>
+
+          {/* Pro Organizer - Collapsible */}
+          <details className="max-w-4xl mx-auto bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl border border-purple-200 dark:border-purple-700 overflow-hidden group">
+            <summary className="cursor-pointer p-6 hover:bg-white/50 dark:hover:bg-gray-800/50 transition-colors list-none">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold mb-1">Pro Organizer</h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Voor professionele organisatoren -{" "}
+                    <strong>€99/maand</strong>
+                  </p>
+                </div>
+                <div className="text-purple-600 dark:text-purple-400">
+                  <svg
+                    className="w-6 h-6 transform transition-transform duration-200 group-open:rotate-180"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </summary>
+            <div className="p-6 pt-0 border-t border-purple-200 dark:border-purple-700/50">
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <CheckIcon className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">Onbeperkt events</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <CheckIcon className="w-5 h-5 text-green-600" />
-                    <span>Onbeperkt tickets verkopen</span>
+                  <div className="flex items-start gap-3">
+                    <CheckIcon className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">
+                      <strong>10.000 tickets / maand</strong>
+                    </span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <CheckIcon className="w-5 h-5 text-green-600" />
-                    <span>QR-code scanning (ook offline)</span>
+                  <div className="flex items-start gap-3">
+                    <CheckIcon className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">€0,05 per extra ticket</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <CheckIcon className="w-5 h-5 text-green-600" />
-                    <span>Real-time analytics</span>
+                  <div className="flex items-start gap-3">
+                    <CheckIcon className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">2% platform fee</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <CheckIcon className="w-5 h-5 text-green-600" />
-                    <span>iDEAL betalingen</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <CheckIcon className="w-5 h-5 text-green-600" />
-                    <span>E-mail ondersteuning</span>
+                  <div className="flex items-start gap-3">
+                    <CheckIcon className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">
+                      <strong>White-label ticketshop</strong>
+                    </span>
                   </div>
                 </div>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <CheckIcon className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">Teams & rollen</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckIcon className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">Geavanceerde exports</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckIcon className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">API-toegang</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckIcon className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">Prioriteit support</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckIcon className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">Account manager</span>
+                  </div>
+                </div>
+              </div>
+              <Link
+                href="/auth/register"
+                className="block w-full py-3 bg-purple-600 text-white text-center font-semibold rounded-xl hover:bg-purple-700 transition-all"
+              >
+                Neem contact op
+              </Link>
+            </div>
+          </details>
 
-                <Link
-                  href="/auth/register"
-                  className="block w-full py-4 bg-blue-600 text-white text-center font-semibold rounded-xl hover:bg-blue-700 transition-all"
-                >
-                  Start gratis
-                </Link>
+          {/* Branding Note */}
+          <div className="mt-8 max-w-4xl mx-auto text-center">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              💡 <strong>Entro-branding verwijderen?</strong> Tegen betaling
+              kunnen we de branding weghalen bij elk plan.
+            </p>
+          </div>
 
-                <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
-                  Servicekosten (€0,99 per bestelling) worden betaald door de
-                  koper
+          {/* Service Costs Info */}
+          <div className="mt-8 max-w-4xl mx-auto">
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6 border border-blue-200 dark:border-blue-800">
+              <h3 className="font-bold text-lg mb-4">Betalingen & fees</h3>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <p className="font-medium mb-1">
+                    Entro service fee: <strong>2% per bestelling</strong>
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Betaald door organisator bij succesvolle betaling
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium mb-1">
+                    Payment provider (Mollie):{" "}
+                    <strong>± €0,32 per transactie</strong>
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Kosten voor Entro (niet doorberekend)
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-blue-200 dark:border-blue-800/50 space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                <p>
+                  <strong>•</strong> Tickets worden geteld bij succesvolle
+                  betaling
+                </p>
+                <p>
+                  <strong>•</strong> Overage fees worden achteraf gefactureerd
+                </p>
+                <p>
+                  <strong>•</strong> Geen hard stop bij overschrijding van
+                  ticketlimiet
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="mt-12 text-center">
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Grotere volumes? We bieden aangepaste tarieven voor grote
-              organisaties.
-            </p>
-            <a
-              href="mailto:sales@getentro.app"
-              className="text-blue-600 hover:text-blue-700 font-medium"
-            >
-              Neem contact op →
-            </a>
+          {/* Switching Info */}
+          <div className="mt-8 max-w-4xl mx-auto text-center">
+            <h3 className="font-bold text-lg mb-3">Flexibel overstappen</h3>
+            <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex items-center gap-2">
+                <CheckIcon className="w-4 h-4 text-green-600" />
+                <span>Up- en downgraden op elk moment</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckIcon className="w-4 h-4 text-green-600" />
+                <span>Geen contracten of opzegtermijnen</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckIcon className="w-4 h-4 text-green-600" />
+                <span>Event fees verrekend bij overstap</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -782,8 +1154,31 @@ export default function Home() {
                 Wat zijn de kosten voor bezoekers?
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                Bezoekers betalen €0,99 servicekosten per bestelling (niet per
-                ticket). Dit is transparant en wordt getoond voor de betaling.
+                Bezoekers betalen alleen de ticketprijs. Er zijn geen extra
+                servicekosten voor bezoekers.
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+              <h3 className="font-semibold text-lg mb-2">
+                Wat zijn de kosten voor organisatoren?
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Als organisator betaal je 2% Entro service fee per bestelling.
+                Afhankelijk van je plan zijn er maandelijkse kosten:
+                Pay-Per-Event (€49 per evenement), Organizer (€49/maand), of Pro
+                Organizer (€99/maand). Non-profits betalen €0.
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+              <h3 className="font-semibold text-lg mb-2">
+                Wat gebeurt er als ik mijn ticket limiet overschrijd?
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Bij Pay-Per-Event betaal je €0,10 per extra ticket, bij
+                Organizer €0,08, en bij Pro Organizer €0,05. Non-profit heeft
+                een limiet van 500 tickets per evenement zonder overage.
               </p>
             </div>
 
@@ -793,7 +1188,19 @@ export default function Home() {
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
                 Uitbetalingen gebeuren automatisch via Mollie. Je kunt kiezen
-                voor directe uitbetaling of na afloop van je evenement.
+                voor directe uitbetaling of na afloop van je evenement. De 2%
+                Entro service fee wordt automatisch ingehouden.
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+              <h3 className="font-semibold text-lg mb-2">
+                Kan ik de Entro-branding verwijderen?
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Pro Organizer heeft geen Entro-branding. Bij andere plannen kan
+                de branding tegen betaling worden verwijderd. Neem contact met
+                ons op voor meer informatie.
               </p>
             </div>
 
@@ -802,8 +1209,10 @@ export default function Home() {
                 Kan ik gratis evenementen organiseren?
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                Ja! Voor gratis evenementen betaal je helemaal niets. De 2%
-                platformkosten gelden alleen over de ticketprijs.
+                Ja! Voor gratis evenementen betaal je alleen je plan kosten. De
+                2% Entro service fee wordt berekend over de bestelling en
+                betaald door jou als organisator. Bij gratis tickets is de
+                service fee dus €0.
               </p>
             </div>
 
@@ -824,6 +1233,16 @@ export default function Home() {
               <p className="text-gray-600 dark:text-gray-400">
                 Ja, je kunt tickets eenvoudig refunden via het dashboard. Het
                 geld wordt automatisch teruggestort naar de koper.
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+              <h3 className="font-semibold text-lg mb-2">
+                Welke betaalmethoden worden ondersteund?
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                We ondersteunen iDEAL voor alle plannen, inclusief Non-profit &
+                Stichtingen. Alle betalingen worden veilig verwerkt via Mollie.
               </p>
             </div>
           </div>
@@ -857,132 +1276,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="py-12 px-4 sm:px-6 lg:px-8 border-t border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 mb-12">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <TicketIcon className="w-6 h-6 text-blue-600" />
-                <span className="text-lg font-bold">Entro</span>
-              </div>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">
-                Het eerlijke ticketplatform voor kleine organisaties in
-                Nederland.
-              </p>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4">Product</h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <li>
-                  <a
-                    href="#features"
-                    className="hover:text-gray-900 dark:hover:text-white"
-                  >
-                    Features
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#pricing"
-                    className="hover:text-gray-900 dark:hover:text-white"
-                  >
-                    Prijzen
-                  </a>
-                </li>
-                <li>
-                  <Link
-                    href="/events"
-                    className="hover:text-gray-900 dark:hover:text-white"
-                  >
-                    Evenementen
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4">Organisatoren</h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <li>
-                  <Link
-                    href="/auth/register"
-                    className="hover:text-gray-900 dark:hover:text-white"
-                  >
-                    Account aanmaken
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/auth/login"
-                    className="hover:text-gray-900 dark:hover:text-white"
-                  >
-                    Inloggen
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/dashboard"
-                    className="hover:text-gray-900 dark:hover:text-white"
-                  >
-                    Dashboard
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4">Contact</h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <li>
-                  <a
-                    href="mailto:support@getentro.app"
-                    className="hover:text-gray-900 dark:hover:text-white"
-                  >
-                    support@getentro.app
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="mailto:sales@getentro.app"
-                    className="hover:text-gray-900 dark:hover:text-white"
-                  >
-                    sales@getentro.app
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-gray-200 dark:border-gray-800">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              © 2025 Entro (getentro.app). Alle rechten voorbehouden.
-            </p>
-            <div className="flex gap-6 mt-4 md:mt-0">
-              <a
-                href="#"
-                className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-              >
-                Privacy
-              </a>
-              <a
-                href="#"
-                className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-              >
-                Voorwaarden
-              </a>
-              <a
-                href="#"
-                className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-              >
-                Cookies
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

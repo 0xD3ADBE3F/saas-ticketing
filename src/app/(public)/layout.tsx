@@ -1,4 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
+import { Analytics } from "@vercel/analytics/next";
 
 export default function PublicLayout({
   children,
@@ -9,8 +11,22 @@ export default function PublicLayout({
     <div className="min-h-screen">
       <header className="border-b border-gray-200 dark:border-gray-800 px-6 py-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <Link href="/" className="text-xl font-bold">
-            🎟️ Entro
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/logo.svg"
+              alt="Entro"
+              width={32}
+              height={32}
+              className="dark:hidden"
+            />
+            <Image
+              src="/logo-white.png"
+              alt="Entro"
+              width={32}
+              height={32}
+              className="hidden dark:block"
+            />
+            <span className="text-xl font-bold">Entro</span>
           </Link>
           <nav className="flex gap-4">
             <Link
@@ -29,6 +45,7 @@ export default function PublicLayout({
         </div>
       </header>
       <main>{children}</main>
+      <Analytics />
     </div>
   );
 }
