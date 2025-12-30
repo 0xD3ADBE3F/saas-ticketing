@@ -127,7 +127,34 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 MOLLIE_API_KEY=test_...
 TICKET_SIGNING_SECRET=your-secret-key
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+CRON_SECRET=your-random-secret-token  # For securing cron endpoints
 ```
+
+### Cron Jobs
+
+The application requires a daily cron job to process subscription renewals and cancellations:
+
+**Endpoint:** `GET /api/cron/process-subscriptions`
+
+**When deployed on Vercel:**
+
+- Automatically configured via `vercel.json` (runs daily at 2 AM UTC)
+- No manual setup required
+
+**For other platforms or local testing:**
+
+```bash
+# Call the endpoint with authorization
+curl -X GET https://your-domain.com/api/cron/process-subscriptions \
+  -H "Authorization: Bearer your-cron-secret"
+```
+
+**What it does:**
+
+- Processes all subscriptions past their `currentPeriodEnd` date
+- Cancels Mollie subscriptions for cancelled plans
+- Deletes subscription records for cancelled plans
+- Renews active subscriptions for the next billing period
 
 ## License
 

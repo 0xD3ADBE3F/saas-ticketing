@@ -1,6 +1,7 @@
 import { prisma } from "@/server/lib/prisma";
 import { subscriptionRepo } from "@/server/repos/subscriptionRepo";
 import { planLimitsService } from "@/server/services/planLimitsService";
+import { cancelMollieSubscription } from "@/server/services/mollieSubscriptionService";
 import { getPlanLimits } from "@/server/domain/plans";
 import type {
   PricingPlan,
@@ -238,7 +239,8 @@ export const subscriptionService = {
   /**
    * Cancel subscription
    * Takes effect at end of current billing cycle
-   * Downgrades to NON_PROFIT if eligible
+   * Cancels plan completely (no downgrade to NON_PROFIT)
+   * Mollie cancellation happens in processSubscriptionRenewal at period end
    */
   cancelSubscription: async (
     organizationId: string
@@ -252,16 +254,8 @@ export const subscriptionService = {
       };
     }
 
-    // Check if can downgrade to NON_PROFIT
-    const canDowngrade = await planLimitsService.canDowngradeTo(organizationId, "NON_PROFIT");
-    if (!canDowngrade.allowed) {
-      return {
-        success: false,
-        error: `Kan niet annuleren: ${canDowngrade.reason}`,
-      };
-    }
-
     // Mark for cancellation at period end
+    // The Mollie subscription will be cancelled by the cron job when period ends
     await subscriptionRepo.update(subscription.id, {
       cancelAtPeriodEnd: true,
     });
@@ -286,19 +280,23 @@ export const subscriptionService = {
     const { periodStart, periodEnd } = getBillingPeriod(subscription.currentPeriodEnd);
 
     if (subscription.cancelAtPeriodEnd) {
-      // Downgrade to NON_PROFIT
-      await subscriptionRepo.update(subscription.id, {
-        plan: "NON_PROFIT",
-        status: "ACTIVE",
-        currentPeriodStart: periodStart,
-        currentPeriodEnd: periodEnd,
-        cancelAtPeriodEnd: false,
-        mollieSubscriptionId: undefined, // Clear Mollie subscription
-      });
+      // Cancel Mollie subscription if exists (for ORGANIZER, PRO_ORGANIZER)
+      if (subscription.mollieSubscriptionId) {
+        try {
+          await cancelMollieSubscription(subscription.mollieSubscriptionId);
+        } catch (error) {
+          console.error('Failed to cancel Mollie subscription:', error);
+          // Continue with local cancellation even if Mollie fails
+        }
+      }
 
+      // Delete subscription record
+      await subscriptionRepo.delete(subscription.id);
+
+      // Clear organization's current plan
       await prisma.organization.update({
         where: { id: subscription.organizationId },
-        data: { currentPlan: "NON_PROFIT" },
+        data: { currentPlan: null },
       });
     } else {
       // Renew subscription
@@ -394,6 +392,51 @@ export const subscriptionService = {
       isPastDue: subscription?.status === "PAST_DUE",
       pendingCancellation: subscription?.cancelAtPeriodEnd ?? false,
     };
+  },
+
+  /**
+   * Process all subscriptions that have passed their period end
+   * Called by cron job
+   */
+  processExpiredSubscriptions: async (): Promise<{
+    processed: number;
+    errors: Array<{ subscriptionId: string; error: string }>;
+  }> => {
+    const now = new Date();
+
+
+    // Find all subscriptions where current period has ended
+    // Includes both renewals and cancellations
+    const expiredSubscriptions = await prisma.subscription.findMany({
+      where: {
+        currentPeriodEnd: {
+          lte: now,
+        },
+        status: {
+          in: ['ACTIVE', 'TRIALING'],
+        },
+      },
+    });
+
+    const errors: Array<{ subscriptionId: string; error: string }> = [];
+    let processed = 0;
+
+    console.log(`[Cron] Found ${expiredSubscriptions.length} expired subscriptions to process`);
+
+    for (const subscription of expiredSubscriptions) {
+      try {
+        await subscriptionService.processSubscriptionRenewal(subscription.id);
+        processed++;
+      } catch (error) {
+        console.error(`[Cron] Failed to process subscription ${subscription.id}:`, error);
+        errors.push({
+          subscriptionId: subscription.id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return { processed, errors };
   },
 
   /**

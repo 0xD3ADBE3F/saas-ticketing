@@ -625,3 +625,96 @@ export async function getInvoicesAction(params?: {
     invoices: serializedInvoices,
   };
 }
+
+/**
+ * Cancel subscription at end of current billing period
+ * Downgrades to NON_PROFIT if eligible
+ */
+export async function cancelSubscriptionAction(): Promise<{
+  success: boolean;
+  error?: string;
+  effectiveDate?: Date;
+}> {
+  const user = await getUser();
+
+  if (!user) {
+    redirect("/auth/login");
+  }
+
+  const organizations = await getUserOrganizations(user.id);
+
+  if (organizations.length === 0) {
+    return {
+      success: false,
+      error: "Geen organisatie gevonden",
+    };
+  }
+
+  const currentOrg = organizations[0];
+
+  // Import subscriptionService dynamically to avoid circular dependencies
+  const { subscriptionService } = await import("@/server/services/subscriptionService");
+
+  const result = await subscriptionService.cancelSubscription(currentOrg.id);
+
+  // Revalidate the page to show updated subscription status
+  const { revalidatePath } = await import("next/cache");
+  revalidatePath("/dashboard/settings/subscription");
+
+  return result;
+}
+
+/**
+ * Undo a pending cancellation
+ * Clears the cancelAtPeriodEnd flag
+ */
+export async function undoCancellationAction(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  const user = await getUser();
+
+  if (!user) {
+    redirect("/auth/login");
+  }
+
+  const organizations = await getUserOrganizations(user.id);
+
+  if (organizations.length === 0) {
+    return {
+      success: false,
+      error: "Geen organisatie gevonden",
+    };
+  }
+
+  const currentOrg = organizations[0];
+
+  const subscription = await subscriptionRepo.findByOrganizationId(currentOrg.id);
+
+  if (!subscription) {
+    return {
+      success: false,
+      error: "Geen actief abonnement gevonden",
+    };
+  }
+
+  if (!subscription.cancelAtPeriodEnd) {
+    return {
+      success: false,
+      error: "Er is geen opzegging gepland",
+    };
+  }
+
+  // Clear the cancellation flag
+  await subscriptionRepo.update(subscription.id, {
+    cancelAtPeriodEnd: false,
+  });
+
+  // Revalidate the page
+  const { revalidatePath } = await import("next/cache");
+  revalidatePath("/dashboard/settings/subscription");
+
+  return {
+    success: true,
+  };
+}

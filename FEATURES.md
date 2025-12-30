@@ -555,10 +555,16 @@
   - User clicks "Live zetten" → redirected to Mollie checkout
   - Webhook marks event as LIVE after successful payment
   - Payment success message on event detail page
-- ⬜ Cancellation flow:
-  - Cancel at period end (no immediate revocation)
-  - Downgrade to NON_PROFIT if eligible
-  - Block if active events exceed free tier limit
+- ✅ Cancellation flow:
+  - ✅ Cancel at period end (no immediate revocation)
+  - ✅ Cancels plan completely (no automatic downgrade to NON_PROFIT)
+  - ✅ Organization will have no active plan after cancellation
+  - ✅ Mollie subscription cancelled by cron job at period end
+  - ✅ CancelSubscriptionModal component with confirmation
+  - ✅ Shows effective date and what happens next
+  - ✅ Undo cancellation button in warning notice
+  - ✅ Server actions: cancelSubscriptionAction() and undoCancellationAction()
+  - ✅ Cron job API endpoint: /api/cron/process-subscriptions
 
 #### 18.4 Billing & Payments (Mollie-managed)
 
@@ -657,13 +663,16 @@
 - ✅ Redirects to Mollie checkout when downgrading to another paid plan
 - ✅ Confirm / Cancel buttons
 
-**CancelSubscriptionModal**
+**CancelSubscriptionModal** ✅
 
+- ✅ Effective date notice
+- ✅ What you'll lose (features comparison)
+- ✅ Shows downgrade to NON_PROFIT plan details
+- ✅ Displays end date of current billing cycle
+- ✅ Confirm cancellation button
+- ✅ Error handling and loading states
 - ⬜ Retention offer (optional)
 - ⬜ Cancellation survey (optional)
-- ⬜ Effective date notice
-- ⬜ What you'll lose (features comparison)
-- ⬜ Confirm cancellation button
 
 ##### Usage Warning Components
 
@@ -688,7 +697,8 @@
 - ✅ `getAvailablePlansAction()` - Get all plans for comparison
 - ✅ `upgradePlanAction(targetPlan)` - Process upgrade
 - ✅ `downgradePlanAction(targetPlan)` - Schedule downgrade
-- ⬜ `cancelSubscriptionAction()` - Cancel at period end
+- ✅ `cancelSubscriptionAction()` - Cancel at period end
+- ✅ `undoCancellationAction()` - Undo pending cancellation
 
 ##### Data Flow
 
@@ -829,9 +839,11 @@ Upgrade → upgradePlanAction(PRO_ORGANIZER)
 
 | Task                                        | Status |
 | ------------------------------------------- | ------ |
-| `CancelSubscriptionModal` component         | ⬜     |
-| Server action: `cancelSubscriptionAction()` | ⬜     |
-| Reactivate subscription flow                | ⬜     |
+| `CancelSubscriptionModal` component         | ✅     |
+| Server action: `cancelSubscriptionAction()` | ✅     |
+| Server action: `undoCancellationAction()`   | ✅     |
+| Cancellation notice with undo button        | ✅     |
+| Reactivate subscription flow                | ✅     |
 | Cancellation email notification             | ⬜     |
 
 ##### File Structure
@@ -854,8 +866,8 @@ src/
     ├── PlanSelector.tsx ✅
     ├── UpgradeModal.tsx ✅
     ├── DowngradeModal.tsx ✅
-    ├── BillingHistory.tsx      # Fetches from Mollie
-    ├── CancelSubscriptionModal.tsx
+    ├── BillingHistory.tsx ✅
+    ├── CancelSubscriptionModal.tsx ✅
     ├── UsageWarningBanner.tsx
     └── CheckoutLimitBlock.tsx
 ```

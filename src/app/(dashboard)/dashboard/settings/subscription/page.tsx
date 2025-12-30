@@ -2,6 +2,7 @@ import { getSubscriptionAction } from "./actions";
 import { SubscriptionOverview } from "@/components/subscription/SubscriptionOverview";
 import { UsageMeter } from "@/components/subscription/UsageMeter";
 import { SubscriptionPaymentPoller } from "@/components/subscription/SubscriptionPaymentPoller";
+import { CancelSubscriptionButton } from "@/app/(dashboard)/dashboard/settings/subscription/CancelSubscriptionButton";
 import Link from "next/link";
 
 export default async function SubscriptionPage() {
@@ -138,24 +139,30 @@ export default async function SubscriptionPage() {
         subscription.currentPeriodEnd &&
         subscription.status !== "TRIALING" && (
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <span className="text-yellow-600 dark:text-yellow-400">⚠️</span>
-              <div>
-                <p className="font-medium text-yellow-800 dark:text-yellow-200">
-                  Wijziging gepland
-                </p>
-                <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                  Je nieuwe plan <strong>{subscription.planDisplayName}</strong>{" "}
-                  wordt actief op{" "}
-                  {subscription.currentPeriodEnd.toLocaleDateString("nl-NL", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                  . Tot die tijd kun je nog gebruik maken van alle functies van
-                  je huidige plan.
-                </p>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <span className="text-yellow-600 dark:text-yellow-400">⚠️</span>
+                <div>
+                  <p className="font-medium text-yellow-800 dark:text-yellow-200">
+                    Opzegging gepland
+                  </p>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                    Je abonnement wordt beëindigd op{" "}
+                    {subscription.currentPeriodEnd.toLocaleDateString("nl-NL", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                    . Na deze datum heb je geen actief abonnement meer. Tot die
+                    tijd kun je nog gebruik maken van alle functies van je
+                    huidige plan.
+                  </p>
+                </div>
               </div>
+              <CancelSubscriptionButton
+                subscription={subscription}
+                mode="undo"
+              />
             </div>
           </div>
         )}
@@ -263,9 +270,10 @@ export default async function SubscriptionPage() {
               </button>
 
               {!subscription.cancelAtPeriodEnd && (
-                <button className="px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-sm font-medium">
-                  Abonnement opzeggen
-                </button>
+                <CancelSubscriptionButton
+                  subscription={subscription}
+                  mode="cancel"
+                />
               )}
             </>
           )}
