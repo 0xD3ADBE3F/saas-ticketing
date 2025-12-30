@@ -31,6 +31,13 @@ model Organization {
   mollieProfileId        String?
   mollieClientLinkUrl    String?
 
+  // Subscription & Billing (Slice 18)
+  currentPlan       PricingPlan?      @default(NON_PROFIT)
+  nonProfitStatus   NonProfitStatus?  @default(NOT_APPLICABLE)
+  kvkNumber         String?           // Dutch Chamber of Commerce number
+  kvkVerifiedAt     DateTime?
+  kvkRejectionReason String?
+
   // Relations
   memberships      Membership[]
   events           Event[]
@@ -38,8 +45,11 @@ model Organization {
   payouts          Payout[]
   idempotencyKeys  IdempotencyKey[]
   scannerTerminals ScannerTerminal[]
+  subscription     Subscription?
+  usageRecords     UsageRecord[]
 
   @@index([mollieOrganizationId])
+  @@index([currentPlan])
   @@map("organizations")
 }
 
@@ -89,6 +99,13 @@ model Event {
   status         EventStatus @default(DRAFT)
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
+
+  // Fee Overrides (Slice 18 - Platform Admin)
+  platformFeeOverride  Int?       // Basis points (e.g., 200 = 2%), null = use default
+  overageFeeOverride   Int?       // Cents per ticket, null = use plan default
+  feeOverrideReason    String?    // Required when override is set
+  feeOverrideSetBy     String?    // SuperAdmin userId who set the override
+  feeOverrideSetAt     DateTime?  // When the override was set
 
   // Relations
   organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -312,6 +329,110 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// =============================================================================
+// SUBSCRIPTION & BILLING (Slice 18)
+// =============================================================================
+
+enum PricingPlan {
+  NON_PROFIT
+  PAY_PER_EVENT
+  ORGANIZER
+  PRO_ORGANIZER
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  TRIALING
+}
+
+enum InvoiceType {
+  SUBSCRIPTION
+  PAY_PER_EVENT
+  OVERAGE
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+enum NonProfitStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  NOT_APPLICABLE
+}
+
+model Subscription {
+  id                     String             @id @default(uuid())
+  organizationId         String             @unique
+  plan                   PricingPlan
+  status                 SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart     DateTime
+  currentPeriodEnd       DateTime
+  mollieSubscriptionId   String?            @unique // For recurring plans
+  mollieCustomerId       String?
+  cancelAtPeriodEnd      Boolean            @default(false)
+  brandingRemoved        Boolean            @default(false) // Adds +2% platform fee
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  // Relations
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invoices     SubscriptionInvoice[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([mollieSubscriptionId])
+  @@map("subscriptions")
+}
+
+model UsageRecord {
+  id              String   @id @default(uuid())
+  organizationId  String
+  periodStart     DateTime
+  periodEnd       DateTime
+  ticketsSold     Int      @default(0) // Cumulative count
+  overageTickets  Int      @default(0) // Tickets exceeding limit
+  overageFeeTotal Int      @default(0) // Calculated overage charges in cents
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, periodStart, periodEnd])
+  @@index([organizationId])
+  @@index([periodStart, periodEnd])
+  @@map("usage_records")
+}
+
+model SubscriptionInvoice {
+  id              String        @id @default(uuid())
+  organizationId  String
+  subscriptionId  String?
+  type            InvoiceType
+  amount          Int           // Amount in cents
+  status          InvoiceStatus @default(PENDING)
+  molliePaymentId String?       @unique
+  paidAt          DateTime?
+  description     String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([molliePaymentId])
+  @@map("subscription_invoices")
 }
 
 // =============================================================================

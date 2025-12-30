@@ -347,11 +347,11 @@
 
 #### 18.1 Database Schema & Models
 
-- ⬜ PricingPlan enum:
+- ✅ PricingPlan enum:
   ```
   NON_PROFIT | PAY_PER_EVENT | ORGANIZER | PRO_ORGANIZER
   ```
-- ⬜ Subscription model:
+- ✅ Subscription model:
   - `id`, `organizationId`, `plan` (enum)
   - `status`: `ACTIVE | PAST_DUE | CANCELLED | TRIALING`
   - `currentPeriodStart`, `currentPeriodEnd`
@@ -360,17 +360,17 @@
   - `cancelAtPeriodEnd` (for pending downgrades)
   - `brandingRemoved` (adds +2% platform fee)
   - `createdAt`, `updatedAt`
-- ⬜ UsageRecord model (tracks tickets sold per period):
+- ✅ UsageRecord model (tracks tickets sold per period):
   - `id`, `organizationId`, `periodStart`, `periodEnd`
   - `ticketsSold` (cumulative count)
   - `overageTickets` (tickets exceeding limit)
   - `overageFeeTotal` (calculated overage charges in cents)
-- ⬜ SubscriptionInvoice model:
+- ✅ SubscriptionInvoice model:
   - `id`, `organizationId`, `subscriptionId`
   - `type`: `SUBSCRIPTION | PAY_PER_EVENT | OVERAGE`
   - `amount`, `status`: `PENDING | PAID | FAILED`
   - `molliePaymentId`, `paidAt`
-- ⬜ Add to Organization model:
+- ✅ Add to Organization model:
   - `currentPlan` (default: NON_PROFIT)
   - `subscriptionId` (relation)
 
@@ -383,7 +383,7 @@
 | ORGANIZER     | unlimited     | 3,000        | per month    | €0.08/ticket | 2%           |
 | PRO_ORGANIZER | unlimited     | 10,000       | per month    | €0.05/ticket | 2%           |
 
-- ⬜ PlanLimits service with enforcement methods:
+- ✅ PlanLimits service with enforcement methods:
   - `canCreateEvent(orgId)` - check active event limit
   - `canSellTickets(orgId, quantity)` - check ticket limit
   - `getOverageFee(orgId)` - calculate overage for current period
@@ -425,19 +425,156 @@
 
 #### 18.5 Dashboard UI (Organizer-facing)
 
-- ⬜ Subscription settings page (`/dashboard/settings/subscription`):
-  - Current plan display with features
-  - Usage meter (tickets sold / limit)
-  - Billing history (invoices)
-  - Payment method management
-- ⬜ Plan selection/upgrade modal:
-  - Compare plans side-by-side
-  - Show prorated amount for upgrades
-  - Redirect to Mollie checkout
-- ⬜ Usage warnings:
-  - Banner at 80% of ticket limit
-  - Alert at 100% (for overage-enabled plans)
-  - Hard block for NON_PROFIT at limit
+> **Detailed UI Plan:** See [Subscription & Billing UI Plan](#subscription--billing-ui-plan) below.
+
+##### Routes & Pages
+
+- ⬜ `/dashboard/settings/subscription` - Main subscription management page
+- ⬜ `/dashboard/settings/subscription/upgrade` - Plan upgrade flow
+- ⬜ `/dashboard/settings/subscription/billing` - Billing history & invoices
+- ⬜ `/dashboard/settings/subscription/payment-method` - Payment method management
+
+##### Components
+
+**SubscriptionOverview** (`src/components/subscription/SubscriptionOverview.tsx`)
+
+- ⬜ Current plan card with name, price, status badge
+- ⬜ Plan features list (checkmarks)
+- ⬜ Next billing date & amount
+- ⬜ "Change Plan" / "Upgrade" CTA button
+- ⬜ Cancel subscription link (only for paid plans)
+
+**UsageMeter** (`src/components/subscription/UsageMeter.tsx`)
+
+- ⬜ Visual progress bar (tickets used / limit)
+- ⬜ Color states: green (<80%), yellow (80-99%), red (100%+)
+- ⬜ Numeric display: "2,450 / 3,000 tickets this month"
+- ⬜ Period indicator: "Resets Jan 1, 2026"
+- ⬜ Overage indicator (for plans with overage): "+150 overage tickets (€12.00)"
+
+**PlanComparisonCard** (`src/components/subscription/PlanComparisonCard.tsx`)
+
+- ⬜ Plan name & price (monthly or per-event)
+- ⬜ Ticket limit display
+- ⬜ Features list with check/cross icons
+- ⬜ Current plan badge
+- ⬜ "Select" / "Current Plan" / "Downgrade" button states
+- ⬜ Recommended/Popular badge (for PRO_ORGANIZER)
+
+**PlanSelector** (`src/components/subscription/PlanSelector.tsx`)
+
+- ⬜ Grid layout: 4 plans side-by-side (responsive to 2x2 on mobile)
+- ⬜ Toggle: Monthly vs Annual billing (future)
+- ⬜ Comparison table below cards
+- ⬜ Proration calculator for upgrades
+
+**BillingHistory** (`src/components/subscription/BillingHistory.tsx`)
+
+- ⬜ Table: Date | Description | Amount | Status | Invoice
+- ⬜ Filter by: type (subscription, overage, pay-per-event)
+- ⬜ Download invoice PDF link
+- ⬜ Pagination for long history
+
+**PaymentMethodCard** (`src/components/subscription/PaymentMethodCard.tsx`)
+
+- ⬜ Current method display (iDEAL, credit card last 4 digits)
+- ⬜ "Update Payment Method" button → Mollie checkout
+- ⬜ Failed payment warning banner
+
+**UpgradeModal** (`src/components/subscription/UpgradeModal.tsx`)
+
+- ⬜ From/To plan comparison
+- ⬜ Prorated amount calculation display
+- ⬜ Effective date notice
+- ⬜ Confirm & redirect to Mollie
+
+**DowngradeModal** (`src/components/subscription/DowngradeModal.tsx`)
+
+- ⬜ Current vs target plan comparison
+- ⬜ Usage check warning (if usage exceeds new limit)
+- ⬜ Effective date: "Takes effect on [billing cycle end]"
+- ⬜ Confirm / Cancel buttons
+
+**CancelSubscriptionModal** (`src/components/subscription/CancelSubscriptionModal.tsx`)
+
+- ⬜ Retention offer (optional)
+- ⬜ Cancellation survey (optional)
+- ⬜ Effective date notice
+- ⬜ What you'll lose (features comparison)
+- ⬜ Confirm cancellation button
+
+##### Usage Warning Components
+
+**UsageWarningBanner** (`src/components/subscription/UsageWarningBanner.tsx`)
+
+- ⬜ Displayed in dashboard header at 80%+ usage
+- ⬜ States:
+  - 80-99%: Yellow warning "You've used 85% of your ticket limit"
+  - 100%+ (overage plans): Orange "You've exceeded your limit (+150 tickets)"
+  - 100% (NON_PROFIT): Red "Ticket limit reached - upgrade to continue selling"
+- ⬜ "View Usage" and "Upgrade" action buttons
+
+**CheckoutLimitBlock** (`src/components/subscription/CheckoutLimitBlock.tsx`)
+
+- ⬜ Shown during checkout when limit would be exceeded
+- ⬜ NON_PROFIT: Hard block with upgrade CTA
+- ⬜ Other plans: Warning with overage fee preview
+
+##### API Routes
+
+- ⬜ `GET /api/subscription` - Get current subscription & usage
+- ⬜ `POST /api/subscription/upgrade` - Initiate plan upgrade
+- ⬜ `POST /api/subscription/downgrade` - Schedule plan downgrade
+- ⬜ `POST /api/subscription/cancel` - Cancel subscription
+- ⬜ `GET /api/subscription/invoices` - List billing history
+- ⬜ `GET /api/subscription/usage` - Get current period usage stats
+- ⬜ `POST /api/subscription/payment-method` - Update payment method via Mollie
+
+##### Server Actions (Alternative to API)
+
+- ⬜ `getSubscriptionAction()` - Fetch subscription with usage
+- ⬜ `upgradePlanAction(targetPlan)` - Process upgrade
+- ⬜ `downgradePlanAction(targetPlan)` - Schedule downgrade
+- ⬜ `cancelSubscriptionAction()` - Cancel at period end
+
+##### Data Flow
+
+```
+Page Load → getSubscriptionAction()
+         → subscriptionRepo.getByOrgId()
+         → usageRepo.getCurrentPeriod()
+         → Returns: { subscription, usage, invoices }
+
+Upgrade → upgradePlanAction(PRO_ORGANIZER)
+       → planLimitsService.canUpgradeTo()
+       → subscriptionService.upgradePlan()
+       → mollieService.createCheckout() → Redirect
+       → Webhook: mollieService.handlePayment()
+       → subscriptionRepo.updatePlan()
+```
+
+##### UI States
+
+| State               | Display                                         |
+| ------------------- | ----------------------------------------------- |
+| Loading             | Skeleton cards                                  |
+| No subscription     | Plan selection page (first-time)                |
+| Active subscription | Full dashboard with usage                       |
+| Past due            | Warning banner + update payment CTA             |
+| Cancelled (pending) | Notice: "Cancels on [date]" + reactivate option |
+| Downgrade scheduled | Notice: "Downgrades to [plan] on [date]"        |
+
+##### Mobile Responsiveness
+
+- ⬜ Plan cards: 4 columns → 2 columns → 1 column
+- ⬜ Usage meter: Horizontal bar → Circular gauge on mobile
+- ⬜ Billing table: Horizontal scroll or card view on mobile
+
+##### Error Handling
+
+- ⬜ Payment failed: Show retry option + update payment method
+- ⬜ Downgrade blocked: Show which limits are exceeded
+- ⬜ Network error: Retry button with cached data display
 
 #### 18.6 Platform Admin UI
 
@@ -454,13 +591,13 @@
 
 #### 18.7 Event-Level Fee Overrides (Platform Admin)
 
-- ⬜ Add to Event model:
+- ✅ Add to Event model:
   - `platformFeeOverride` (nullable Int, basis points e.g., 200 = 2%)
   - `overageFeeOverride` (nullable Int, cents per ticket)
   - `feeOverrideReason` (String, required when override is set)
   - `feeOverrideSetBy` (SuperAdmin userId)
   - `feeOverrideSetAt` (DateTime)
-- ⬜ Fee resolution logic in `feeService`:
+- ✅ Fee resolution logic in `feeService`:
 
   ```
   getPlatformFee(event):
@@ -534,13 +671,192 @@
   - Block event publishing until resolved
   - Offer upgrade to paid plan as alternative
 
+---
+
+#### Subscription & Billing UI Plan
+
+##### Implementation Phases
+
+**Phase 1: Core Subscription Page (Priority: High)**
+
+| Task                                           | Estimate | Dependencies         |
+| ---------------------------------------------- | -------- | -------------------- |
+| Create `/dashboard/settings` layout            | 2h       | -                    |
+| Create `/dashboard/settings/subscription` page | 4h       | Subscription service |
+| `SubscriptionOverview` component               | 4h       | -                    |
+| `UsageMeter` component                         | 3h       | UsageRecord repo     |
+| `PlanComparisonCard` component                 | 3h       | Plan limits config   |
+| Server action: `getSubscriptionAction()`       | 2h       | Subscription repo    |
+
+**Phase 2: Plan Changes (Priority: High)**
+
+| Task                                      | Estimate | Dependencies           |
+| ----------------------------------------- | -------- | ---------------------- |
+| `PlanSelector` page component             | 4h       | Phase 1                |
+| `UpgradeModal` component                  | 3h       | -                      |
+| `DowngradeModal` component                | 3h       | -                      |
+| Server action: `upgradePlanAction()`      | 3h       | Mollie integration     |
+| Server action: `downgradePlanAction()`    | 2h       | Subscription service   |
+| Mollie checkout redirect flow             | 4h       | Mollie SDK             |
+| Webhook handler for subscription payments | 4h       | Existing webhook infra |
+
+**Phase 3: Billing & History (Priority: Medium)**
+
+| Task                                            | Estimate | Dependencies             |
+| ----------------------------------------------- | -------- | ------------------------ |
+| `/dashboard/settings/subscription/billing` page | 3h       | Phase 1                  |
+| `BillingHistory` component                      | 4h       | SubscriptionInvoice repo |
+| Invoice PDF generation                          | 6h       | -                        |
+| `PaymentMethodCard` component                   | 3h       | Mollie API               |
+| Payment method update flow                      | 4h       | Mollie hosted checkout   |
+
+**Phase 4: Usage Warnings (Priority: High)**
+
+| Task                           | Estimate | Dependencies      |
+| ------------------------------ | -------- | ----------------- |
+| `UsageWarningBanner` component | 2h       | UsageRecord repo  |
+| Dashboard header integration   | 1h       | Phase 4.1         |
+| `CheckoutLimitBlock` component | 3h       | Phase 4.1         |
+| Checkout flow integration      | 2h       | Existing checkout |
+
+**Phase 5: Cancel & Reactivate (Priority: Low)**
+
+| Task                                        | Estimate | Dependencies         |
+| ------------------------------------------- | -------- | -------------------- |
+| `CancelSubscriptionModal` component         | 3h       | -                    |
+| Server action: `cancelSubscriptionAction()` | 2h       | Subscription service |
+| Reactivate subscription flow                | 3h       | Mollie API           |
+| Cancellation email notification             | 2h       | Email service        |
+
+##### File Structure
+
+```
+src/
+├── app/
+│   └── (dashboard)/
+│       └── dashboard/
+│           └── settings/
+│               ├── layout.tsx              # Settings sidebar layout
+│               ├── page.tsx                # Redirect to /subscription
+│               └── subscription/
+│                   ├── page.tsx            # Main subscription page
+│                   ├── upgrade/
+│                   │   └── page.tsx        # Plan selection/upgrade
+│                   ├── billing/
+│                   │   └── page.tsx        # Billing history
+│                   └── actions.ts          # Server actions
+├── components/
+│   └── subscription/
+│       ├── index.ts                        # Barrel export
+│       ├── SubscriptionOverview.tsx
+│       ├── UsageMeter.tsx
+│       ├── PlanComparisonCard.tsx
+│       ├── PlanSelector.tsx
+│       ├── BillingHistory.tsx
+│       ├── PaymentMethodCard.tsx
+│       ├── UpgradeModal.tsx
+│       ├── DowngradeModal.tsx
+│       ├── CancelSubscriptionModal.tsx
+│       ├── UsageWarningBanner.tsx
+│       └── CheckoutLimitBlock.tsx
+└── server/
+    └── services/
+        └── subscriptionService.ts          # Already exists ✅
+```
+
+##### Design Mockups (ASCII)
+
+**Subscription Overview Page**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Settings > Subscription                                     │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌──────────────────────────┐  ┌──────────────────────────┐ │
+│  │ Current Plan             │  │ Usage This Month         │ │
+│  │ ════════════════════════ │  │ ════════════════════════ │ │
+│  │ 🏢 ORGANIZER             │  │                          │ │
+│  │    €49/maand             │  │ ████████████░░░░ 75%     │ │
+│  │                          │  │ 2,250 / 3,000 tickets    │ │
+│  │ Next billing: Jan 1      │  │                          │ │
+│  │ Amount: €49.00           │  │ Resets: Jan 1, 2026      │ │
+│  │                          │  │                          │ │
+│  │ [Change Plan]            │  │ [View Details]           │ │
+│  └──────────────────────────┘  └──────────────────────────┘ │
+│                                                              │
+│  Plan Features                                               │
+│  ─────────────────────────────────────────────────────────── │
+│  ✅ Unlimited events          ✅ Analytics dashboard        │
+│  ✅ 3,000 tickets/month       ✅ API access                 │
+│  ✅ Priority support          ⚠️ Entro branding (remove +2%)│
+│                                                              │
+│  ─────────────────────────────────────────────────────────── │
+│  [View Billing History]       [Update Payment Method]        │
+│  [Cancel Subscription]                                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Plan Selector Page**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Choose Your Plan                                            │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌──────────┐│
+│ │ Non-profit  │ │Pay-Per-Event│ │  Organizer  │ │Pro Org.  ││
+│ │             │ │             │ │  ⭐ CURRENT │ │ POPULAR  ││
+│ │    €0       │ │    €49      │ │    €49      │ │   €99    ││
+│ │             │ │  per event  │ │  per month  │ │ per month││
+│ │             │ │             │ │             │ │          ││
+│ │ 500 tickets │ │1000 tickets │ │3000 tickets │ │10K ticket││
+│ │ per event   │ │ per event   │ │ per month   │ │ per month││
+│ │             │ │             │ │             │ │          ││
+│ │ ❌ Overage  │ │ €0.10/extra │ │ €0.08/extra │ │€0.05/extr││
+│ │             │ │             │ │             │ │          ││
+│ │ [Downgrade] │ │   [Buy]     │ │  Current    │ │[Upgrade] ││
+│ └─────────────┘ └─────────────┘ └─────────────┘ └──────────┘│
+│                                                              │
+│ Upgrading to Pro Organizer:                                  │
+│ • Prorated charge: €25.00 (15 days remaining)                │
+│ • New monthly rate: €99.00                                   │
+│ • Effective immediately                                      │
+│                                                              │
+│                              [Confirm Upgrade →]             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Usage Warning Banner (Dashboard Header)**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ⚠️ You've used 85% of your monthly ticket limit (2,550/3000)│
+│    Upgrade to Pro Organizer for 10,000 tickets/month        │
+│                                    [View Usage] [Upgrade →] │
+└─────────────────────────────────────────────────────────────┘
+```
+
+##### Acceptance Criteria
+
+- [ ] User can view current subscription plan and status
+- [ ] User can see real-time usage metrics (tickets sold this period)
+- [ ] User can upgrade plan with immediate effect
+- [ ] User can downgrade plan (effective at period end)
+- [ ] User receives warning at 80% usage
+- [ ] NON_PROFIT users are blocked at 500 tickets
+- [ ] Billing history shows all invoices
+- [ ] User can update payment method
+- [ ] Mobile-responsive design
+- [ ] All actions create audit log entries
+
 **DoD**
 
-- ⬜ Unit tests: plan limits enforcement (all 4 plans)
-- ⬜ Unit tests: overage calculation accuracy
-- ⬜ Unit tests: upgrade/downgrade rules
-- ⬜ Unit tests: event-level fee override resolution
-- ⬜ Unit tests: event publish gating (Mollie + subscription required)
+- ✅ Unit tests: plan limits enforcement (all 4 plans) - 52 tests
+- ✅ Unit tests: overage calculation accuracy
+- ✅ Unit tests: upgrade/downgrade rules
+- ✅ Unit tests: event-level fee override resolution
+- ✅ Unit tests: event publish gating (Mollie + subscription required)
 - ⬜ Unit tests: NON_PROFIT plan requires KVK verification
 - ⬜ Integration test: Mollie subscription webhook handling
 - ⬜ Integration test: KVK API verification (when available)
@@ -550,7 +866,7 @@
 - ⬜ E2E: user cannot publish event without Mollie onboarding
 - ⬜ E2E: user cannot publish event without active subscription
 - ⬜ E2E: NON_PROFIT user cannot publish without KVK verification
-- ⬜ Cannot downgrade if current usage exceeds new plan limits
+- ✅ Cannot downgrade if current usage exceeds new plan limits
 - ⬜ Usage stats update in real-time after ticket sales
 - ⬜ Fee override changes create audit log entries
 
