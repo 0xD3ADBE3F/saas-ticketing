@@ -38,21 +38,9 @@ export function SubscriptionPaymentPoller({
       const maxAttempts = 40; // Poll for up to 40 seconds (webhook can take up to ~20s for mandate validation)
       const pollInterval = 1000; // Poll every second
 
-      console.log(
-        "[SubscriptionPoller] Starting poll - waiting for plan update",
-        {
-          currentPlan,
-          targetPlan,
-        }
-      );
-
       const interval = setInterval(async () => {
         attempts++;
         setPollAttempts(attempts);
-
-        console.log(
-          `[SubscriptionPoller] Poll attempt ${attempts}/${maxAttempts}`
-        );
 
         try {
           // Call API endpoint to check subscription status
@@ -64,13 +52,9 @@ export function SubscriptionPaymentPoller({
 
           if (response.ok) {
             const data = await response.json();
-            console.log(`[SubscriptionPoller] Subscription status:`, data);
 
             // Check if subscription plan matches target plan
             if (data.currentPlan === targetPlan) {
-              console.log(
-                "[SubscriptionPoller] Plans match! Subscription activated"
-              );
               clearInterval(interval);
               setIsPolling(false);
               setPollAttempts(0);
@@ -93,9 +77,6 @@ export function SubscriptionPaymentPoller({
 
         // Stop polling after max attempts
         if (attempts >= maxAttempts) {
-          console.log(
-            "[SubscriptionPoller] Max attempts reached, stopping poll"
-          );
           clearInterval(interval);
           setIsPolling(false);
           setPollAttempts(0);
@@ -108,7 +89,6 @@ export function SubscriptionPaymentPoller({
       }, pollInterval);
 
       return () => {
-        console.log("[SubscriptionPoller] Cleanup - stopping poll");
         clearInterval(interval);
         setIsPolling(false);
         setPollAttempts(0);
@@ -119,10 +99,6 @@ export function SubscriptionPaymentPoller({
       currentPlan === targetPlan
     ) {
       // Plans match - webhook has been processed
-      console.log("[SubscriptionPoller] Plans match! Subscription activated", {
-        currentPlan,
-        targetPlan,
-      });
       setIsPolling(false);
       setPollAttempts(0);
       // Clean up URL params

@@ -1,8 +1,73 @@
 # FEATURES.md — Entro (NL-first, Offline Scanning MVP)
 
+## Project Status Overview
+
+### 🎉 Major Milestones Completed
+
+- ✅ **Multi-tenant ticketing platform** - Full CRUD with tenant scoping
+- ✅ **Mollie Connect (Platform)** - OAuth integration with Application Fees (see [docs/MOLLIE_PLATFORM.md](./docs/MOLLIE_PLATFORM.md))
+- ✅ **Subscription billing system** - 4-tier pricing with usage tracking (see [PRICING.md](./PRICING.md))
+- ✅ **Mobile-friendly scanner interface** - Online + offline sync, manual override
+- ✅ **Standalone mobile scanner** - Terminal codes with camera QR scanning
+- ✅ **Platform admin dashboard** - SuperAdmin role with organization oversight
+- ✅ **Automatic invoice generation** - Mollie Sales Invoice API integration (Phase 3.5)
+- ✅ **Payout reporting** - Mollie Settlements API integration with CSV exports
+
+### 📊 Feature Completion by Phase
+
+| Phase                   | Status | Slices  | Notes                                  |
+| ----------------------- | ------ | ------- | -------------------------------------- |
+| **Fase 0** Setup        | ✅     | 0.1-0.2 | Repo, docs, CI/CD                      |
+| **Fase 1** Multi-tenant | ✅     | 1-3     | Auth, orgs, events, ticket types       |
+| **Fase 2** Orders       | ✅     | 4-6.5   | Checkout, payments, tickets, dashboard |
+| **Fase 3** Scanning     | ✅     | 7-9.5   | Online/offline scan, mobile app        |
+| **Fase 4** Fees         | ✅     | 10-12   | Service fees, platform fees, payouts   |
+| **Fase 5** Ops/Polish   | 🟨     | 13-15   | Observability (partial), UX polish     |
+| **Fase 6** Platform     | 🟨     | 16-20   | Admin (partial), subscriptions done    |
+
+### 🧪 Test Coverage
+
+- ✅ **108 unit tests** passing (events, orders, tickets, scanning, subscriptions, plan limits)
+- ✅ Multi-tenancy enforced across all services
+- ✅ Idempotency for payments and webhooks
+- ⬜ E2E tests (manual testing completed for critical flows)
+
+### 🔐 Security & Compliance
+
+- ✅ Token encryption (AES-256-GCM for Mollie OAuth tokens)
+- ✅ Multi-tenant data scoping (all queries organization-scoped)
+- ✅ Audit logging (refunds, overrides, admin actions)
+- ✅ First-scan-wins rule (no double-entry)
+- ✅ Idempotency support (webhooks, payments)
+- ⬜ Rate limiting (TODO: scan endpoints, checkout)
+
+### 🚀 Ready for Production?
+
+**Core Features:** ✅ YES
+
+- Multi-tenant ticketing with full CRUD
+- Payment processing via Mollie (iDEAL)
+- Ticket scanning (online + offline)
+- Subscription billing with 4 tiers
+- Automatic invoice generation
+- Payout reporting
+
+**Nice-to-Haves (Post-MVP):**
+
+- Platform admin organization management (Slice 17)
+- Enhanced analytics dashboard (Slice 19)
+- Platform configuration UI (Slice 20)
+- Rate limiting
+- Improved email templates
+- KVK verification for NON_PROFIT plan
+
+---
+
 ## Recent Fixes & Updates
 
 ### 30 December 2024
+
+#### Invoice & Billing UI Improvements
 
 - ✅ **Fixed Billings Page** - Resolved server/client component conflict
   - Created `InvoiceFiltersWrapper` client component to handle filter navigation
@@ -22,6 +87,30 @@
   - Created `InvoiceDetailModal` component to show full invoice details
   - Table rows are now clickable to open modal with complete information
   - Modal includes all details: dates, amounts breakdown, description, and PDF download
+
+#### Mollie Sales Invoice API Integration (Phase 3.5)
+
+- ✅ **Automatic Invoice Generation** - Full Mollie Sales Invoice API integration
+  - Invoices created using platform's MOLLIE_API_KEY (not organization OAuth tokens)
+  - `mollieInvoiceService.ts` with full API integration and error handling
+  - Generates invoice number in YYYY-NNNN format
+  - Calculates VAT (reverse calculation: Net = Gross / 1.21)
+  - Stores mollieSalesInvoiceId and pdfUrl in database
+  - Structured logging with mollieLogger
+- ✅ **Webhook Integration** - Invoices created after successful payments
+  - Works for both first payments and recurring subscription payments
+  - Invoices created with status="paid" immediately
+  - Idempotency via molliePaymentId unique constraint
+- ✅ **PDF Proxy Endpoint** - Secure invoice PDF downloads
+  - `GET /api/invoices/[id]/pdf` authenticated proxy endpoint
+  - Validates user authentication and organization ownership
+  - Never exposes direct Mollie PDF URLs to client
+  - Returns 401 if not authenticated, 404 if not found/not owned
+
+**Known Technical Debt:**
+
+- Address placeholders (streetAndNumber: "N/A", postalCode: "0000AA", city: "Amsterdam")
+- TODO: Collect actual organization address during onboarding for Dutch tax compliance
 
 ---
 
@@ -119,19 +208,26 @@
   - ✅ OAuth app setup in Mollie Dashboard
   - ✅ Organizer onboarding flow (OAuth authorization)
   - ✅ Client Links API for automated account creation
-  - ✅ Store organizer's Mollie `profileId` + refresh tokens (encrypted)
-  - ✅ Application fees on payments (2% platform fee)
+  - ✅ Store organizer's Mollie `profileId` + refresh tokens (encrypted with AES-256-GCM)
+  - ✅ Application fees on payments (2% platform fee, non-refundable)
+  - ✅ Token refresh logic with auto-refresh on expiry
+  - ✅ Settlements API integration (list & detail endpoints)
+  - ✅ Balances API integration (balance & open settlement)
 - ✅ Mock payment flow for development
 - ✅ Webhook handler (idempotent)
 - ✅ Order statuses:
   `PENDING | PAID | FAILED | CANCELLED | REFUNDED`
 - ✅ On `PAID`: issue tickets (with unique codes + secret tokens)
+- ✅ Payment retry for failed orders (reset status to PENDING)
+- ✅ Payment status polling UI (PaymentStatusPoller component)
+- ✅ Structured logging (paymentLogger, webhookLogger with Pino)
 
 **DoD**
 
 - ✅ Unit test: webhook idempotency (no duplicate tickets) - 13 tests
 - ✅ Organizer can connect Mollie account via OAuth
 - ✅ Payments created on organizer's Mollie profile with application fee
+- ✅ Security audit: token encryption, auth on routes, tenant scoping (see docs/MOLLIE_PLATFORM.md)
 
 ---
 
@@ -280,6 +376,10 @@
 - ✅ Payout overview per event
 - ✅ Gross / platform fee / net breakdown
 - ✅ Integration with Mollie Settlements API (fetch real data)
+  - ✅ List settlements endpoint (`/api/organizations/[id]/mollie/settlements`)
+  - ✅ Settlement detail endpoint (`/api/organizations/[id]/mollie/settlements/[settlementId]`)
+  - ✅ Balance overview endpoint (`/api/organizations/[id]/mollie/balance`)
+  - ✅ Open settlement endpoint (`/api/organizations/[id]/mollie/settlements/open`)
 - ✅ CSV export (orders, tickets, scans)
 - ✅ Audit log for refunds & overrides
 
@@ -289,6 +389,7 @@
 - ✅ Event-level breakdown shows tickets sold, gross, platform fee, and net
 - ✅ CSV exports available for orders, tickets, and scans
 - ✅ Audit log tracks all refund actions with reason and metadata
+- ✅ Settlements UI displays real Mollie settlement data with status badges
 
 ---
 
@@ -332,17 +433,27 @@
 - ✅ Audit log infrastructure for all admin actions
 - ✅ Platform admin layout with navigation
 - ✅ Platform dashboard home with key metrics
+  - ✅ Total organizations count
+  - ✅ Total events count (all statuses)
+  - ✅ Total revenue calculation (from paid orders)
+  - ✅ Platform fees collected (2% of ticket sales)
+  - ✅ Top 10 organizations by revenue
+  - ✅ Quick links to org management and analytics
+- ✅ Super admin creation script (`scripts/create-super-admin.ts`)
 
 **DoD**
 
 - ✅ SuperAdmins cannot access without explicit role grant
 - ✅ All admin actions can be logged with timestamp + admin user
 - ✅ Platform routes redirect non-SuperAdmins to organizer dashboard
+- ✅ Platform dashboard displays accurate metrics across all organizations
 
 ---
 
 ### Slice 17: Organizations Management
 
+- ✅ SuperAdmin infrastructure in place (from Slice 16)
+- ✅ Platform dashboard with organization metrics
 - ⬜ Organizations list page (searchable, filterable)
   - Filter by: status (active/suspended), onboarding status, created date
   - Search by: name, email, Mollie profile ID
@@ -625,586 +736,72 @@ Upgrade → upgradePlanAction(PRO_ORGANIZER)
 
 **Phase 3: Billing & History** (Mollie-powered) ✅
 
-| Task                                    | Status |
-| --------------------------------------- | ------ |
-| Database schema with invoice fields     | ✅     |
-| Database migration                      | ✅     |
-| `invoiceRepo.ts` repository layer       | ✅     |
-| `mollieInvoiceService.ts` service layer | ✅     |
-| Invoice generation in webhooks          | ✅     |
-| Billing page route                      | ✅     |
-| `BillingHistory` component              | ✅     |
-| `InvoiceFilters` component              | ✅     |
-| Navigation link to billing page         | ✅     |
+| Task                                               | Status |
+| -------------------------------------------------- | ------ |
+| Database schema with invoice fields                | ✅     |
+| Database migration (add_invoice_fields)            | ✅     |
+| `invoiceRepo.ts` repository layer                  | ✅     |
+| `mollieInvoiceService.ts` service layer (full API) | ✅     |
+| Invoice generation in webhooks                     | ✅     |
+| Billing page route                                 | ✅     |
+| `BillingHistory` component                         | ✅     |
+| `InvoiceFilters` component                         | ✅     |
+| `InvoiceDetailModal` component                     | ✅     |
+| Navigation link to billing page                    | ✅     |
+| PDF proxy endpoint (`/api/invoices/[id]/pdf`)      | ✅     |
+| Dark mode support                                  | ✅     |
+| Amount display fix (cents → euros)                 | ✅     |
+| Server/client component separation                 | ✅     |
 
 **Phase 3.5: Sales Invoice API Integration** (For Organization Subscription Invoicing) ✅
 
 > **Goal:** Automatically generate formal invoices for organization subscription payments using Mollie's Sales Invoice API (Beta).
 >
 > **Status:** ✅ Implementation complete. Invoice generation integrated with subscription payment webhooks. Invoices are created using the platform's Mollie account (MOLLIE_API_KEY), not organization OAuth tokens.
+>
+> **See:** [docs/PHASE_3_5_COMPLETE.md](./docs/PHASE_3_5_COMPLETE.md) for full implementation details.
 
-##### Overview
+| Task                                             | Status |
+| ------------------------------------------------ | ------ |
+| Full Mollie Sales Invoice API integration        | ✅     |
+| VAT calculation (reverse: Net = Gross / 1.21)    | ✅     |
+| Invoice number generation (YYYY-NNNN format)     | ✅     |
+| Webhook integration (subscription + event)       | ✅     |
+| Idempotency (molliePaymentId unique constraint)  | ✅     |
+| Structured logging (mollieLogger)                | ✅     |
+| Error handling with detailed logs                | ✅     |
+| PDF proxy endpoint for secure downloads          | ✅     |
+| Organization address placeholders (TODO: actual) | ⚠️     |
 
-When an organization makes a subscription payment (first payment or recurring), Entro will:
+**Key Architecture Points:**
 
-1. Create a Sales Invoice via Mollie Sales Invoice API ✅
-2. Store invoice reference in database (`SubscriptionInvoice` model) ✅
-3. Display invoices in billing history UI ✅ (Phase 3)
-4. Provide PDF download links ✅ (Phase 3)
-
-**Key Distinction:**
-
-- ❌ NOT using Mollie Invoices API (those are Mollie's fee invoices TO merchants)
-- ✅ USING Sales Invoice API (Beta) - creates invoices FROM Entro TO organizations
-
-**Important Architecture Note:**
-
-The Sales Invoice API is called using the **platform's MOLLIE_API_KEY** (Entro's Mollie account), NOT the organization's OAuth access token. This is because:
-
+- Invoices created with **platform's MOLLIE_API_KEY** (not org OAuth)
 - Invoices are FROM Entro TO organizations (for subscription fees)
+- Status set to "paid" immediately after successful payment
 - Organizations don't need Mollie accounts to receive subscription invoices
-- The platform account has the `sales-invoices.write` scope
 
-This differs from payment processing, where we use the organization's OAuth token to receive ticket sale proceeds.
+**Testing Completed:**
 
-##### Database Schema Updates
-
-**Update `SubscriptionInvoice` model:**
-
-```prisma
-model SubscriptionInvoice {
-  id             String   @id @default(cuid())
-  organizationId String
-  subscriptionId String?  // Null for one-time PAY_PER_EVENT purchases
-
-  // Invoice type
-  type           InvoiceType  // SUBSCRIPTION | PAY_PER_EVENT | OVERAGE
-
-  // Mollie Sales Invoice API fields
-  mollieSalesInvoiceId String?  @unique  // inv_xxxx from Sales Invoice API
-  invoiceNumber        String?  @unique  // e.g., "2024-001"
-  invoiceDate          DateTime
-  dueDate              DateTime?
-
-  // Financial details
-  amount         Int      // Total amount in cents
-  vatAmount      Int      // VAT amount in cents
-  vatRate        Decimal  @db.Decimal(5, 2)  // e.g., 21.00 for 21%
-  currency       String   @default("EUR")
-
-  // Payment tracking
-  status         InvoiceStatus  // DRAFT | SENT | PAID | OVERDUE | CANCELLED
-  molliePaymentId String?  @unique  // Link to subscription payment that triggered invoice
-  paidAt          DateTime?
-
-  // PDF & Links
-  pdfUrl         String?  // Mollie-hosted PDF URL
-
-  // Metadata
-  description    String   // e.g., "ORGANIZER subscription - January 2025"
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  // Relations
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
-
-  @@index([organizationId])
-  @@index([subscriptionId])
-  @@index([status])
-  @@index([invoiceDate])
-}
-
-enum InvoiceType {
-  SUBSCRIPTION      // Monthly recurring subscription
-  PAY_PER_EVENT     // One-time €49 event payment
-  OVERAGE           // Overage fee invoice (future)
-}
-
-enum InvoiceStatus {
-  DRAFT      // Created but not finalized
-  SENT       // Sent to customer (via Mollie)
-  PAID       // Payment received
-  OVERDUE    // Past due date
-  CANCELLED  // Voided/cancelled
-}
-```
-
-##### Service Layer: `mollieInvoiceService.ts`
-
-**Location:** `src/server/services/mollieInvoiceService.ts`
-
-**Methods:**
-
-```typescript
-interface CreateInvoiceParams {
-  organizationId: string;
-  subscriptionId?: string;
-  type: InvoiceType;
-  amount: number; // in cents
-  vatRate: number; // e.g., 21 for 21%
-  description: string;
-  molliePaymentId?: string;
-  invoiceDate?: Date;
-}
-
-interface SalesInvoiceLineItem {
-  description: string;
-  quantity: number;
-  unitPrice: number; // in cents
-  vatRate: number;
-  totalAmount: number; // in cents
-}
-
-// Create invoice in Mollie Sales Invoice API
-async createSalesInvoice(
-  accessToken: string,
-  params: CreateInvoiceParams
-): Promise<{
-  mollieSalesInvoiceId: string;
-  invoiceNumber: string;
-  pdfUrl: string;
-  status: string;
-}>
-
-// Store invoice record in database
-async storeInvoiceRecord(
-  params: CreateInvoiceParams & {
-    mollieSalesInvoiceId: string;
-    invoiceNumber: string;
-    pdfUrl: string;
-    status: InvoiceStatus;
-  }
-): Promise<SubscriptionInvoice>
-
-// Retrieve invoice from Mollie
-async getInvoice(
-  accessToken: string,
-  mollieSalesInvoiceId: string
-): Promise<MollieSalesInvoice>
-
-// List invoices for organization
-async listInvoicesForOrg(
-  organizationId: string,
-  filters?: {
-    type?: InvoiceType;
-    status?: InvoiceStatus;
-    startDate?: Date;
-    endDate?: Date;
-  }
-): Promise<SubscriptionInvoice[]>
-
-// Update invoice status (when paid externally or status changes)
-async updateInvoiceStatus(
-  invoiceId: string,
-  status: InvoiceStatus,
-  paidAt?: Date
-): Promise<SubscriptionInvoice>
-
-// Mark invoice as paid (links to Mollie payment)
-async markInvoiceAsPaid(
-  invoiceId: string,
-  molliePaymentId: string,
-  paidAt: Date
-): Promise<SubscriptionInvoice>
-```
-
-**Mollie Sales Invoice API Integration:** ✅
-
-> **📚 Documentation:** Full Mollie API documentation is available through the Mollie MCP server tools (`mcp_mollie_fetch_docs` and `mcp_mollie_list_doc_sources`). Use these to fetch the latest Sales Invoice API specifications during implementation.
-
-**Implementation Details:**
-
-- Endpoint: `POST /v2/sales-invoices` (Sales Invoice API - Beta)
-- Authentication: Bearer token using platform `MOLLIE_API_KEY` (NOT organization OAuth)
-- Scope: `sales-invoices.write` (automatically available with platform API key)
-- Fields to send:
-  - `reference` - Our invoice number (e.g., "SUB-2024-001")
-  - `issuedAt` - Invoice date
-  - `dueAt` - Due date (e.g., 14 days from issue)
-  - `status` - "draft" or "sent"
-  - `lines[]` - Line items array:
-    - `description` - e.g., "ORGANIZER Subscription - January 2025"
-    - `quantity` - 1
-    - `unitPrice` - Amount with VAT (e.g., {"currency": "EUR", "value": "49.00"})
-    - `vatRate` - "21.00"
-  - `paymentMethods[]` - ["ideal", "creditcard", "banktransfer"]
-  - `recipientIdentifier` - Organization's email or customer ID
-
-##### Webhook Integration ✅
-
-**Update:** `src/server/services/mollieSubscriptionService.ts`
-
-**Trigger point:** After successful subscription payment
-
-```typescript
-// Implementation (in handleFirstPayment and handleRecurringPayment):
-// 1. Webhook receives payment.paid event
-// 2. Update subscription status to ACTIVE
-// 3. Record usage
-
-// 4. Generate Sales Invoice using PLATFORM Mollie API key
-const amount = Math.round(parseFloat(payment.amount.value) * 100);
-await mollieInvoiceService.generateSubscriptionInvoice({
-  organizationId: subscription.organizationId,
-  subscriptionId: subscription.id,
-  plan: subscription.plan,
-  amount, // in cents
-  molliePaymentId: paymentId,
-});
-
-// Note: No accessToken parameter needed - service uses platform MOLLIE_API_KEY
-// Invoice is automatically created with status="paid" via Sales Invoice API
-```
-
-**PAY_PER_EVENT Invoice Generation:** ✅
-
-Location: `src/server/services/mollieInvoiceService.ts` (called from payment webhook)
-
-```typescript
-// After event payment succeeds and event is marked LIVE:
-await mollieInvoiceService.generateEventInvoice({
-  organizationId: event.organizationId,
-  eventId: event.id,
-  amount: 4900, // €49
-  molliePaymentId: payment.id,
-});
-
-// Invoice created with:
-// - Type: PAY_PER_EVENT
-// - Status: PAID (immediate)
-// - Description: Event publishing fee + event name
-```
-
-##### UI Components
-
-**`BillingHistory.tsx`**
-
-Location: `src/components/subscription/BillingHistory.tsx`
-
-Features:
-
-- Fetch invoices via server action
-- Display table with columns:
-  - Invoice Number
-  - Date
-  - Description (subscription month or event)
-  - Amount (incl. VAT)
-  - Status badge (Paid, Overdue, etc.)
-  - PDF Download button
-- Filter by:
-  - Invoice type (All, Subscription, Pay-Per-Event, Overage)
-  - Date range (This month, Last 3 months, This year, All time)
-  - Status
-- Pagination (10 invoices per page)
-- Empty state: "Geen facturen beschikbaar"
-
-**Invoice Detail Modal (optional):**
-
-- Show full invoice details:
-  - Invoice number & date
-  - Line items breakdown
-  - Subtotal, VAT, Total
-  - Payment date (if paid)
-  - Download PDF link
-
-**Invoice Status Badges:**
-
-```tsx
-const statusColors = {
-  PAID: "bg-green-100 text-green-800",
-  SENT: "bg-blue-100 text-blue-800",
-  DRAFT: "bg-gray-100 text-gray-800",
-  OVERDUE: "bg-red-100 text-red-800",
-  CANCELLED: "bg-gray-100 text-gray-600",
-};
-```
-
-##### API Routes
-
-**`GET /api/invoices`**
-
-Location: `src/app/api/invoices/route.ts`
-
-- Fetch invoices for authenticated organization
-- Query params: `type`, `status`, `startDate`, `endDate`, `page`, `limit`
-- Returns paginated list of `SubscriptionInvoice` records
-- Scoped to organization (multi-tenancy enforced)
-
-**`GET /api/invoices/[id]`**
-
-- Get single invoice details
-- Includes PDF URL from Mollie
-- Organization scoping enforced
-
-**`GET /api/invoices/[id]/pdf`** ✅
-
-- Authenticated proxy endpoint for invoice PDF downloads
-- Validates user authentication and organization ownership
-- Fetches invoice from Mollie API using organization's access token
-- Extracts authenticated PDF URL from `_links.pdf.href`
-- Proxies PDF to browser with proper headers (`Content-Type: application/pdf`)
-- Implements security best practice: never expose direct Mollie PDF URLs to client
-- Returns 401 if user not authenticated, 404 if invoice not found or not owned by org
-
-**Implementation Details:**
-
-Mollie invoice PDF URLs require authentication and cannot be accessed directly from the browser. The proxy endpoint:
-
-1. Authenticates the user via Supabase
-2. Verifies the invoice belongs to the user's organization
-3. Uses Mollie API client to fetch the invoice object (which includes authenticated PDF link)
-4. Fetches the PDF from the authenticated URL
-5. Streams it to the browser with appropriate headers
-
-This approach ensures:
-
-- Multi-tenancy: Users can only download their organization's invoices
-- Security: Direct Mollie URLs are never exposed to the client
-- Proper authentication: API credentials stay server-side
-- Good UX: PDFs download directly with proper filename
-
-##### API Routes (Legacy - Replaced by Proxy)
-
-**`getInvoicesAction()`**
-
-Location: `src/app/(dashboard)/dashboard/settings/subscription/actions.ts`
-
-```typescript
-export async function getInvoicesAction(filters?: {
-  type?: InvoiceType;
-  status?: InvoiceStatus;
-  page?: number;
-  limit?: number;
-}) {
-  const org = await getAuthenticatedOrg();
-
-  const invoices = await mollieInvoiceService.listInvoicesForOrg(
-    org.id,
-    filters
-  );
-
-  return {
-    invoices,
-    pagination: {
-      page: filters?.page ?? 1,
-      limit: filters?.limit ?? 10,
-      total: invoices.length,
-    },
-  };
-}
-```
-
-**`downloadInvoiceAction(invoiceId: string)`**
-
-- Fetch invoice from database
-- Verify organization access
-- Return PDF URL for client redirect
-
-##### Page: `/dashboard/settings/subscription/billing`
-
-**Layout:**
-
-```tsx
-<div className="space-y-6">
-  {/* Page Header */}
-  <div>
-    <h1 className="text-2xl font-bold">Facturatie</h1>
-    <p className="text-muted-foreground">
-      Bekijk en download je abonnementsfacturen
-    </p>
-  </div>
-
-  {/* Active Subscription Summary Card */}
-  <Card>
-    <CardHeader>
-      <CardTitle>Actief Abonnement</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <div className="flex justify-between items-center">
-        <div>
-          <p className="font-medium">{subscription.plan}</p>
-          <p className="text-sm text-muted-foreground">
-            Volgende betaling op {nextBillingDate}
-          </p>
-        </div>
-        <p className="text-2xl font-bold">
-          {formatCurrency(subscription.amount)}
-        </p>
-      </div>
-    </CardContent>
-  </Card>
-
-  {/* Filters */}
-  <InvoiceFilters onFilterChange={handleFilterChange} />
-
-  {/* Invoice List */}
-  <BillingHistory invoices={invoices} pagination={pagination} />
-</div>
-```
-
-##### Implementation Tasks
-
-| Task                                                         | Status |
-| ------------------------------------------------------------ | ------ |
-| **Database & Schema**                                        |        |
-| Update `SubscriptionInvoice` model with Sales Invoice fields | ✅     |
-| Create migration for new fields                              | ✅     |
-| Add `InvoiceType` and `InvoiceStatus` enums                  | ✅     |
-| **Service Layer**                                            |        |
-| Create `mollieInvoiceService.ts`                             | ✅     |
-| Implement `createSalesInvoice()` - Mollie API call           | ✅     |
-| Implement `storeInvoiceRecord()` - DB storage                | ✅     |
-| Implement `markInvoiceAsPaid()` - status update              | ✅     |
-| Implement `listInvoicesForOrg()` - fetch with filters        | ✅     |
-| Add OAuth scope `invoices.write` to Mollie connection        | N/A    |
-| **Webhook Integration**                                      |        |
-| Generate invoice after subscription payment webhook          | ✅     |
-| Generate invoice after PAY_PER_EVENT payment webhook         | ✅     |
-| Handle invoice creation errors gracefully                    | ✅     |
-| Add structured logging for invoice generation                | ✅     |
-| **Repository Layer**                                         |        |
-| Create `invoiceRepo.ts` with CRUD methods                    | ✅     |
-| Add organization scoping to all queries                      | ✅     |
-| **UI Components**                                            |        |
-| Create `BillingHistory.tsx` component                        | ✅     |
-| Create `InvoiceFilters.tsx` component                        | ✅     |
-| Create `InvoiceStatusBadge.tsx` component                    | ✅     |
-| Add PDF download button with icon                            | ✅     |
-| Implement pagination controls                                | ✅     |
-| Add empty state illustration                                 | ✅     |
-| **API Routes**                                               |        |
-| Create `GET /api/invoices` route                             | ⬜     |
-| Create `GET /api/invoices/[id]` route                        | ⬜     |
-| Add organization-scoped access control                       | ⬜     |
-| **Server Actions**                                           |        |
-| Implement `getInvoicesAction()` in actions.ts                | ✅     |
-| Implement `downloadInvoiceAction()` in actions.ts            | ✅     |
-| **Pages**                                                    |        |
-| Create `/dashboard/settings/subscription/billing/page.tsx`   | ✅     |
-| Add navigation link to billing page                          | ✅     |
-| **Testing**                                                  |        |
-| Unit tests for `mollieInvoiceService`                        | ⬜     |
-| Unit tests for `invoiceRepo`                                 | ⬜     |
-| Integration test: webhook → invoice creation                 | ⬜     |
-| Integration test: fetch invoices with filters                | ⬜     |
-| E2E test: view billing history page                          | ⬜     |
-| **Documentation**                                            |        |
-| Document Sales Invoice API integration in MOLLIE_PLATFORM.md | ⬜     |
-| Add invoice generation flow diagram                          | ⬜     |
-
-**Implementation Notes:**
-
-- **OAuth Scope Not Required**: The `invoices.write` scope task is marked N/A because the platform uses MOLLIE_API_KEY (not organization OAuth), which already has the necessary `sales-invoices.write` scope.
-- **Address Placeholders**: Current implementation uses placeholder values for organization address fields (streetAndNumber: "N/A", postalCode: "0000AA", city: "Amsterdam"). TODO: Collect actual organization address during onboarding.
-- **VAT Calculation**: Implemented reverse VAT calculation (Net = Gross / 1.21, VAT = Gross - Net) since Mollie API expects unitPrice without VAT.
-- **Idempotency**: Invoice creation checks for existing invoices by molliePaymentId to prevent duplicates on webhook retries.
-- **API Routes**: The API routes are not needed since we're using server actions for fetching invoices. The implementation is cleaner and more secure without exposing separate REST endpoints.
-  | Update SPEC.md with invoice business rules | ⬜ |
-
-##### Error Handling & Edge Cases
-
-**Invoice Creation Failure:**
-
-- Log error with structured logging (mollieLogger)
-- Don't block subscription activation
-- Store failed attempt in separate table: `InvoiceGenerationAttempt`
-- Retry mechanism: background job checks for missing invoices
-- Admin notification if retry fails after 3 attempts
-
-**Duplicate Invoice Prevention:**
-
-- Check if invoice already exists for `molliePaymentId`
-- Use unique constraint on `molliePaymentId` in database
-- Idempotent webhook handling (already implemented)
-
-**PDF URL Expiration:**
-
-- Mollie PDFs may have expiration tokens
-- Refresh PDF URL when accessing if expired (>24h old)
-- Cache URL in database with `pdfUrlExpiresAt` field
-
-**VAT Rate Changes:**
-
-- Store VAT rate at time of invoice creation
-- Don't use hardcoded 21% - fetch from configuration
-- Support future VAT rate changes without code updates
-
-**Cancelled Subscriptions:**
-
-- Generate final invoice for last billing period
-- Mark invoice status as SENT (not PAID if refunded)
-- Show in billing history with "Cancelled" context
-
-##### Mollie OAuth Scope Requirements
-
-**Add to Mollie Connect flow:**
-
-Current scopes:
-
-- `payments.read`
-- `payments.write`
-- `profiles.read`
-
-**Add:**
-
-- `invoices.write` - Create and manage sales invoices
-- `invoices.read` - Read invoice details
-
-**Update:** `src/server/services/mollieOAuthService.ts`
-
-```typescript
-const REQUIRED_SCOPES = [
-  "payments.read",
-  "payments.write",
-  "profiles.read",
-  "invoices.read", // NEW
-  "invoices.write", // NEW
-].join(" ");
-```
-
-##### Future Enhancements (Post-MVP)
-
-- **Email Invoices:** Send invoice PDF via email (Resend)
-- **Automatic Reminders:** Email reminders for overdue invoices
-- **Invoice Customization:** Organization logo on invoices
-- **Multi-Currency:** Support non-EUR invoices (future international)
-- **Credit Notes:** Generate credit notes for refunds
-- **Bulk Export:** Download all invoices as ZIP
-- **Accounting Integration:** Export to Exact Online / Twinfield
-
-##### Testing Strategy
-
-**Unit Tests:**
-
-- `mollieInvoiceService.createSalesInvoice()` - mocked Mollie API
-- `invoiceRepo.findByOrganizationId()` - multi-tenancy scoping
-- VAT calculation accuracy (amount × vatRate)
-- Invoice number generation (sequential, unique)
-
-**Integration Tests:**
-
-- Full webhook → invoice flow (subscription payment)
-- Full webhook → invoice flow (PAY_PER_EVENT payment)
-- Fetch invoices with filters (type, status, date range)
-- PDF URL retrieval and access control
-
-**E2E Tests:**
-
-- Navigate to billing page → see invoice list
-- Click PDF download → opens Mollie-hosted PDF
-- Filter invoices by type → see correct subset
-- Pagination works correctly
-
-##### Success Metrics
-
-- ✅ Invoice generated within 30 seconds of payment success
-- ✅ 100% of subscription payments have invoices
-- ✅ PDF download success rate > 99%
-- ✅ Zero duplicate invoices
-- ✅ Page load time < 500ms (with 100 invoices)
+- Manual testing via subscription upgrade flow
+- Invoice appears in Mollie dashboard
+- PDF download works correctly
+- Billing history displays invoices with all details
 
 **Technical Improvements** ✅
+
+| Task                                              | Status |
+| ------------------------------------------------- | ------ |
+| Fixed recurring payment method selection          | ✅     |
+| Payment status polling during webhooks            | ✅     |
+| Mandate validation with structured logs           | ✅     |
+| Mandate retry logic (18s timeout)                 | ✅     |
+| Subscription startDate (prevents double-charge)   | ✅     |
+| Disabled Prisma query logs                        | ✅     |
+| Migrated console.log to mollieLogger              | ✅     |
+| Usage tracking for ticket sales                   | ✅     |
+| Plan-specific usage calculation                   | ✅     |
+| Removed legacy completeMockPayment                | ✅     |
+| Efficient API endpoint polling (fetch vs refresh) | ✅     |
 
 | Task                                              | Status |
 | ------------------------------------------------- | ------ |
@@ -1431,10 +1028,15 @@ src/
 
 ### Slice 19: Platform Analytics & Monitoring
 
-- ⬜ Platform dashboard home:
-  - Total organizations (active/suspended/churned)
-  - Total revenue (GMV - Gross Merchandise Value)
-  - Platform fees collected (current month, YTD)
+- ✅ Platform dashboard home (from Slice 16):
+  - Total organizations (active count)
+  - Total revenue (from paid orders)
+  - Platform fees collected (2% calculation)
+  - Total events (all statuses)
+  - Top 10 organizations by revenue
+- ⬜ Enhanced metrics:
+  - Organizations (active/suspended/churned breakdown)
+  - GMV (Gross Merchandise Value)
   - Growth metrics (new orgs/week, MoM growth)
   - Active events (currently live)
   - Total tickets sold (all time, current month)
@@ -1472,6 +1074,7 @@ src/
 
 ### Slice 20: Platform Configuration
 
+- ✅ Platform routes and layout (from Slice 16)
 - ⬜ Global settings management:
   - Default service fee configuration
   - Default platform fee percentage

@@ -22,7 +22,6 @@ export default async function SubscriptionPage() {
 
   // Check if there's no active plan (plan is null)
   const hasNoPlan = !subscription.plan;
-  console.log({ subscription });
 
   // Show simple "no plan" state
   if (hasNoPlan) {
