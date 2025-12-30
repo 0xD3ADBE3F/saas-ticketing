@@ -40,6 +40,7 @@ export type CancelSubscriptionResult =
 
 /**
  * Create or get Mollie customer for organization
+ * If a new customer is created, it's automatically stored in the subscription record
  */
 async function getOrCreateMollieCustomer(
   organizationId: string,
@@ -64,6 +65,23 @@ async function getOrCreateMollieCustomer(
       platform: "entro",
     },
   });
+
+  mollieLogger.info(
+    { customerId: customer.id, organizationId },
+    "Created new Mollie customer"
+  );
+
+  // Store the customer ID in the subscription record if it exists
+  // This ensures we reuse the same customer for future payments
+  if (subscription) {
+    await subscriptionRepo.update(subscription.id, {
+      mollieCustomerId: customer.id,
+    });
+    mollieLogger.info(
+      { customerId: customer.id, subscriptionId: subscription.id },
+      "Stored Mollie customer ID in subscription"
+    );
+  }
 
   return customer.id;
 }
@@ -540,7 +558,28 @@ export async function createEventPayment(
       return { success: false, error: "Organisatie heeft geen pay-per-event plan" };
     }
 
-    // Get or create Mollie customer
+    // Ensure a subscription record exists so we can store the Mollie customer ID
+    // This allows reusing the same customer for multiple event publications
+    let subscription = await subscriptionRepo.findByOrganizationId(organizationId);
+    if (!subscription) {
+      const now = new Date();
+      const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+
+      subscription = await subscriptionRepo.create({
+        organizationId,
+        plan: "PAY_PER_EVENT",
+        status: "ACTIVE",
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd,
+      });
+
+      mollieLogger.info(
+        { subscriptionId: subscription.id, organizationId },
+        "Created PAY_PER_EVENT subscription record"
+      );
+    }
+
+    // Get or create Mollie customer (will be stored in subscription if new)
     const customerId = await getOrCreateMollieCustomer(
       organizationId,
       org.name,
