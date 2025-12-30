@@ -8,9 +8,9 @@ interface ScanStatsProps {
 }
 
 interface Stats {
-  totalTicketsSold: number;
+  totalSold: number;
   totalScanned: number;
-  duplicateScanAttempts: number;
+  totalDuplicates: number;
   scanPercentage: number;
 }
 
@@ -68,7 +68,7 @@ export function ScanStats({ eventId, refreshKey }: ScanStatsProps) {
 
   if (!stats) return null;
 
-  const remaining = stats.totalTicketsSold - stats.totalScanned;
+  const remaining = stats.totalSold - stats.totalScanned;
 
   return (
     <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4 md:p-6">
@@ -78,7 +78,7 @@ export function ScanStats({ eventId, refreshKey }: ScanStatsProps) {
         {/* Total Sold */}
         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
           <div className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-            {stats.totalTicketsSold}
+            {stats.totalSold}
           </div>
           <div className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1">
             Verkocht
@@ -117,13 +117,13 @@ export function ScanStats({ eventId, refreshKey }: ScanStatsProps) {
       </div>
 
       {/* Duplicate attempts */}
-      {stats.duplicateScanAttempts > 0 && (
+      {stats.totalDuplicates > 0 && (
         <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
           <div className="flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400">
             <span>⚠️</span>
             <span>
-              {stats.duplicateScanAttempts} dubbele scan
-              {stats.duplicateScanAttempts !== 1 ? "s" : ""} gedetecteerd
+              {stats.totalDuplicates} dubbele scan
+              {stats.totalDuplicates !== 1 ? "s" : ""} gedetecteerd
             </span>
           </div>
         </div>

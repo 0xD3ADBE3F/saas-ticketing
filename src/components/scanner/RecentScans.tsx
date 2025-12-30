@@ -9,13 +9,14 @@ interface RecentScansProps {
 
 interface Scan {
   id: string;
-  scannedAt: string;
+  ticketId: string;
+  ticketCode: string;
   result: string;
-  ticket: {
-    code: string;
-    ticketType: { name: string };
-    order: { buyerEmail: string };
-  };
+  scannedAt: string;
+  scannedBy: string;
+  deviceId: string | null;
+  ticketType: string;
+  buyerEmail: string | null;
 }
 
 export function RecentScans({ eventId, refreshKey }: RecentScansProps) {
@@ -136,10 +137,10 @@ export function RecentScans({ eventId, refreshKey }: RecentScansProps) {
                 <div className="flex items-start justify-between gap-4 mb-2">
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-gray-900 dark:text-white mb-1">
-                      {scan.ticket.ticketType.name}
+                      {scan.ticketType}
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                      {scan.ticket.order.buyerEmail}
+                      {scan.buyerEmail || "Geen e-mail"}
                     </div>
                   </div>
                   <span
@@ -152,7 +153,7 @@ export function RecentScans({ eventId, refreshKey }: RecentScansProps) {
                 </div>
 
                 <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                  <span className="font-mono">{scan.ticket.code}</span>
+                  <span className="font-mono">{scan.ticketCode}</span>
                   <time>
                     {new Date(scan.scannedAt).toLocaleString("nl-NL", {
                       day: "2-digit",

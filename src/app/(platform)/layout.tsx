@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { getUser } from "@/server/lib/supabase";
 import { getSuperAdmin } from "@/server/lib/platformAdmin";
@@ -37,7 +38,16 @@ function PlatformNav({ adminEmail }: { adminEmail: string }) {
       {/* Desktop Sidebar */}
       <nav className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">
         <div className="flex items-center h-16 px-6 border-b border-gray-200 dark:border-gray-800">
-          <h1 className="text-xl font-bold text-red-600">Platform Admin</h1>
+          <Image
+            src="/logo-white.png"
+            alt="Entro"
+            width={100}
+            height={32}
+            className="dark:invert"
+          />
+          <span className="ml-2 text-xs font-medium text-red-600 bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded">
+            Admin
+          </span>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
@@ -78,7 +88,16 @@ function PlatformNav({ adminEmail }: { adminEmail: string }) {
 
       {/* Mobile Top Bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 z-50">
-        <h1 className="text-lg font-bold text-red-600">Platform Admin</h1>
+        <div className="flex items-center gap-2">
+          <Image
+            src="/logo-white.png"
+            alt="Entro"
+            width={80}
+            height={26}
+            className="dark:invert"
+          />
+          <span className="text-xs font-medium text-red-600">Admin</span>
+        </div>
         <div className="text-xs text-gray-600 dark:text-gray-400">
           {adminEmail}
         </div>

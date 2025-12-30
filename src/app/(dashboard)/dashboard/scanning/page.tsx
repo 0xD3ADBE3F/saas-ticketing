@@ -118,8 +118,30 @@ export default async function ScanningPage() {
         ))}
       </div>
 
+      {/* Mobile Scanner Card */}
+      <div className="mt-8 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="font-semibold text-purple-900 dark:text-purple-300 mb-2">
+              📱 Mobiele Scanner
+            </h3>
+            <p className="text-sm text-purple-800 dark:text-purple-400 mb-4">
+              Maak terminal codes aan voor je deur-personeel. Zij kunnen op hun
+              mobiel tickets scannen zonder in te loggen.
+            </p>
+            <Link
+              href="/dashboard/scanning/terminals"
+              className="inline-block px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+            >
+              Terminal Codes Beheren →
+            </Link>
+          </div>
+          <div className="text-4xl">🎫</div>
+        </div>
+      </div>
+
       {/* Info Box */}
-      <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+      <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
         <h3 className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
           📖 Scanner Functies
         </h3>

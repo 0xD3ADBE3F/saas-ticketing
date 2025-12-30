@@ -24,6 +24,7 @@ export type ScanTicketResult = {
   ticket?: {
     id: string;
     code: string;
+    eventId: string;
     eventTitle: string;
     ticketTypeName: string;
     status: TicketStatus;
@@ -128,6 +129,7 @@ export async function scanTicket(input: ScanTicketInput): Promise<ScanTicketResu
       ticket: {
         id: ticket.id,
         code: ticket.code,
+        eventId: ticket.event.id,
         eventTitle: ticket.event.title,
         ticketTypeName: ticket.ticketType.name,
         status: ticket.status,
@@ -158,6 +160,7 @@ export async function scanTicket(input: ScanTicketInput): Promise<ScanTicketResu
       ticket: {
         id: ticket.id,
         code: ticket.code,
+        eventId: ticket.event.id,
         eventTitle: ticket.event.title,
         ticketTypeName: ticket.ticketType.name,
         status: ticket.status,
@@ -187,6 +190,7 @@ export async function scanTicket(input: ScanTicketInput): Promise<ScanTicketResu
       ticket: {
         id: ticket.id,
         code: ticket.code,
+        eventId: ticket.event.id,
         eventTitle: ticket.event.title,
         ticketTypeName: ticket.ticketType.name,
         status: ticket.status,
@@ -235,6 +239,7 @@ export async function scanTicket(input: ScanTicketInput): Promise<ScanTicketResu
       ticket: {
         id: ticket.id,
         code: ticket.code,
+        eventId: ticket.event.id,
         eventTitle: ticket.event.title,
         ticketTypeName: ticket.ticketType.name,
         status: "USED",
@@ -265,6 +270,7 @@ export async function scanTicket(input: ScanTicketInput): Promise<ScanTicketResu
       ticket: {
         id: ticket.id,
         code: ticket.code,
+        eventId: ticket.event.id,
         eventTitle: ticket.event.title,
         ticketTypeName: ticket.ticketType.name,
         status: ticket.status,

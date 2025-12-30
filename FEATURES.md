@@ -194,6 +194,30 @@
 
 ---
 
+### Slice 9.5: Standalone Mobile Scanner
+
+- ✅ ScannerTerminal model for simplified authentication
+- ✅ Terminal code system (6-char codes: ABC123 format)
+- ✅ Terminal management API (create, list, activate/deactivate, delete)
+- ✅ Terminal authentication API with JWT tokens (24h validity)
+- ✅ Mobile scan API (reuses backend from Slice 7/8)
+- ✅ Standalone scanner layout (mobile-optimized, dark theme)
+- ✅ Terminal login page (6-digit code input)
+- ✅ Event selection page (for terminals with multi-event access)
+- ✅ Camera-based QR scanner (html5-qrcode library)
+- ✅ Scan result display (visual feedback: green/red/orange)
+- ✅ Live stats display on scanner page
+- ✅ Terminal management UI in dashboard (admin only)
+
+**DoD**
+
+- ✅ Door staff can login with 6-char terminal code
+- ✅ Camera QR scanner works on mobile devices
+- ✅ Scan results show visual feedback with vibration
+- ✅ Admin can create/manage terminal codes in dashboard
+
+---
+
 ## Fase 4 — Fees, Reporting & Payouts (Slice 10–12)
 
 ### Slice 10: Service fee per order (buyer-paid)

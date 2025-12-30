@@ -32,11 +32,12 @@ model Organization {
   mollieClientLinkUrl    String?
 
   // Relations
-  memberships     Membership[]
-  events          Event[]
-  orders          Order[]
-  payouts         Payout[]
-  idempotencyKeys IdempotencyKey[]
+  memberships      Membership[]
+  events           Event[]
+  orders           Order[]
+  payouts          Payout[]
+  idempotencyKeys  IdempotencyKey[]
+  scannerTerminals ScannerTerminal[]
 
   @@index([mollieOrganizationId])
   @@map("organizations")
@@ -90,10 +91,11 @@ model Event {
   updatedAt      DateTime    @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  ticketTypes  TicketType[]
-  tickets      Ticket[]
-  orders       Order[]
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ticketTypes      TicketType[]
+  tickets          Ticket[]
+  orders           Order[]
+  scannerTerminals ScannerTerminal[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
@@ -265,6 +267,31 @@ model ScannerDevice {
   @@index([organizationId])
   @@index([deviceId])
   @@map("scanner_devices")
+}
+
+// Scanner terminal codes for standalone mobile scanner authentication
+model ScannerTerminal {
+  id             String    @id @default(uuid())
+  organizationId String
+  eventId        String?   // Optional: restrict terminal to specific event
+  code           String    @unique // 6-character uppercase code (e.g., "ABC123")
+  name           String    // Display name (e.g., "Entrance 1", "VIP Gate")
+  isActive       Boolean   @default(true)
+  expiresAt      DateTime? // Optional expiration
+  lastUsedAt     DateTime?
+  createdBy      String    // User ID who created this terminal
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event        Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([eventId])
+  @@index([code])
+  @@index([isActive])
+  @@map("scanner_terminals")
 }
 
 model AuditLog {

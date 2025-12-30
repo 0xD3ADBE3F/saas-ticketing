@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -33,9 +34,8 @@ export function DashboardNav({
       {/* Desktop Sidebar */}
       <nav className="hidden md:flex w-64 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 p-4 flex-col fixed inset-y-0 left-0 z-30">
         <div className="mb-8">
-          <Link href="/" className="text-xl font-bold flex items-center gap-2">
-            <span className="text-2xl">🎟️</span>
-            <span>Entro</span>
+          <Link href="/" className="flex items-center">
+            <Image src="/logo-white.png" alt="Entro" width={120} height={40} />
           </Link>
         </div>
 
@@ -83,9 +83,14 @@ export function DashboardNav({
 
       {/* Mobile Header */}
       <header className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 z-40 flex items-center justify-between px-4">
-        <Link href="/" className="text-lg font-bold flex items-center gap-2">
-          <span>🎟️</span>
-          <span>Entro</span>
+        <Link href="/" className="flex items-center">
+          <Image
+            src="/logo-white.png"
+            alt="Entro"
+            width={100}
+            height={32}
+            className="dark:invert"
+          />
         </Link>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
