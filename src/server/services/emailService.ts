@@ -243,7 +243,7 @@ export async function sendTicketEmail(data: TicketEmailData): Promise<EmailResul
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     const result = await resend.emails.send({
-      from: process.env.EMAIL_FROM || "Entro <tickets@getentro.app>",
+      from: process.env.EMAIL_FROM || "Entro <noreply@email.stormzaak.nl>",
       to: data.to,
       subject,
       html,

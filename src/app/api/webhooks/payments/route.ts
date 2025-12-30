@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { handlePaymentWebhook, completeMockPayment } from "@/server/services/paymentService";
+import { handlePaymentWebhook } from "@/server/services/paymentService";
 import { handleMollieWebhook } from "@/server/services/molliePaymentService";
 import { webhookLogger } from "@/server/lib/logger";
 import { z } from "zod";
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 
     // For mock payments, use mock handler
     if (paymentId.startsWith("tr_mock_")) {
-      const result = await completeMockPayment(paymentId);
+      const result = await handlePaymentWebhook(paymentId);
       const duration = Date.now() - startTime;
 
       if (!result.success) {
@@ -74,11 +74,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ received: true, error: result.error });
       }
 
-      webhookLogger.info({ requestId, duration, orderId: result.data.orderId }, "Mock payment webhook success");
+      webhookLogger.info({ requestId, duration, status: result.data.status }, "Mock payment webhook success");
       return NextResponse.json({
         received: true,
-        orderId: result.data.orderId,
-        ticketCount: result.data.ticketCount,
+        status: result.data.status,
       });
     }
 

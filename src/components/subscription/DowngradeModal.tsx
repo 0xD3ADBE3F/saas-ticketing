@@ -38,9 +38,15 @@ export function DowngradeModal({
       const result = await downgradePlanAction(toPlan.plan);
 
       if (result.success) {
-        router.push("/dashboard/settings/subscription?downgraded=true");
-        router.refresh();
-        onClose();
+        // If there's a checkout URL, redirect to it (downgrading to another paid plan)
+        if (result.checkoutUrl) {
+          window.location.href = result.checkoutUrl;
+        } else {
+          // Otherwise, show success and refresh
+          router.push("/dashboard/settings/subscription?downgraded=true");
+          router.refresh();
+          onClose();
+        }
       } else {
         setError(result.error || "Er is een fout opgetreden");
       }

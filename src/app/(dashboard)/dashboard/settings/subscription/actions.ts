@@ -6,6 +6,7 @@ import { getUserOrganizations } from "@/server/services/organizationService";
 import { subscriptionRepo } from "@/server/repos/subscriptionRepo";
 import { createSubscriptionPayment } from "@/server/services/mollieSubscriptionService";
 import { env } from "@/server/lib/env";
+import { prisma } from "@/server/lib/prisma";
 import {
   PLAN_LIMITS,
   getPlanDisplayName,
@@ -76,14 +77,6 @@ export async function getSubscriptionAction(): Promise<SubscriptionData | null> 
   // Get subscription details
   const subscription = await subscriptionRepo.findByOrganizationId(currentOrg.id);
 
-  // Get current period usage
-  const now = new Date();
-  const usage = await subscriptionRepo.getOrCreateUsageRecord(
-    currentOrg.id,
-    getMonthStart(now),
-    getMonthEnd(now)
-  );
-
   // If no plan, return minimal data
   if (!plan) {
     return {
@@ -106,7 +99,7 @@ export async function getSubscriptionAction(): Promise<SubscriptionData | null> 
       cancelAtPeriodEnd: false,
       brandingRemoved: false,
 
-      ticketsSold: usage.ticketsSold,
+      ticketsSold: 0,
       overageTickets: 0,
       overageFeeTotal: 0,
       usagePercentage: 0,
@@ -118,8 +111,45 @@ export async function getSubscriptionAction(): Promise<SubscriptionData | null> 
   // Plan exists - get limits and features
   const planLimits = PLAN_LIMITS[plan];
 
+  // Calculate usage based on plan type
+  let ticketsSold = 0;
+  let overageTickets = 0;
+  let overageFeeTotal = 0;
+
+  if (planLimits.limitPeriod === "month") {
+    // For monthly plans, use usage records
+    const now = new Date();
+    const usage = await subscriptionRepo.getOrCreateUsageRecord(
+      currentOrg.id,
+      getMonthStart(now),
+      getMonthEnd(now)
+    );
+    ticketsSold = usage.ticketsSold;
+    overageTickets = usage.overageTickets;
+    overageFeeTotal = usage.overageFeeTotal;
+  } else {
+    // For event-based plans, count tickets from all LIVE events
+    ticketsSold = await prisma.ticket.count({
+      where: {
+        event: {
+          organizationId: currentOrg.id,
+          status: "LIVE",
+        },
+        order: {
+          status: "PAID",
+        },
+      },
+    });
+
+    // Calculate overage if applicable
+    if (ticketsSold > planLimits.ticketLimit && isOverageAllowed(plan)) {
+      overageTickets = ticketsSold - planLimits.ticketLimit;
+      overageFeeTotal = overageTickets * (planLimits.overageFee ?? 0);
+    }
+  }
+
   // Calculate usage percentage
-  const usagePercentage = Math.round((usage.ticketsSold / planLimits.ticketLimit) * 100);
+  const usagePercentage = Math.round((ticketsSold / planLimits.ticketLimit) * 100);
 
   // Build features list based on plan
   const features = getPlanFeatures(plan, subscription?.brandingRemoved ?? false);
@@ -144,9 +174,9 @@ export async function getSubscriptionAction(): Promise<SubscriptionData | null> 
     cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd ?? false,
     brandingRemoved: subscription?.brandingRemoved ?? false,
 
-    ticketsSold: usage.ticketsSold,
-    overageTickets: usage.overageTickets,
-    overageFeeTotal: usage.overageFeeTotal,
+    ticketsSold,
+    overageTickets,
+    overageFeeTotal,
     usagePercentage,
 
     features,
@@ -202,6 +232,7 @@ export type UpgradeResult = {
 export type DowngradeResult = {
   success: boolean;
   effectiveDate?: Date;
+  checkoutUrl?: string; // Present when downgrading to another paid plan
   error?: string;
 };
 
@@ -313,20 +344,40 @@ export async function downgradePlanAction(targetPlan: PricingPlan): Promise<Down
     return { success: false, error: "Dit is geen downgrade" };
   }
 
-  // Check usage limits
+  // Check usage limits - calculate based on plan type
   const targetLimits = PLAN_LIMITS[targetPlan];
-  const now = new Date();
-  const usage = await subscriptionRepo.getOrCreateUsageRecord(
-    currentOrg.id,
-    getMonthStart(now),
-    getMonthEnd(now)
-  );
+  const currentLimits = PLAN_LIMITS[currentPlan];
+  let currentTicketsSold = 0;
+
+  if (currentLimits.limitPeriod === "month") {
+    // For monthly plans, use usage records
+    const now = new Date();
+    const usage = await subscriptionRepo.getOrCreateUsageRecord(
+      currentOrg.id,
+      getMonthStart(now),
+      getMonthEnd(now)
+    );
+    currentTicketsSold = usage.ticketsSold;
+  } else {
+    // For event-based plans, count tickets from all LIVE events
+    currentTicketsSold = await prisma.ticket.count({
+      where: {
+        event: {
+          organizationId: currentOrg.id,
+          status: "LIVE",
+        },
+        order: {
+          status: "PAID",
+        },
+      },
+    });
+  }
 
   // Block if usage exceeds limit and target plan doesn't allow overage
-  if (usage.ticketsSold > targetLimits.ticketLimit && !isOverageAllowed(targetPlan)) {
+  if (currentTicketsSold > targetLimits.ticketLimit && !isOverageAllowed(targetPlan)) {
     return {
       success: false,
-      error: `Je hebt ${usage.ticketsSold} tickets verkocht deze maand. ${getPlanDisplayName(targetPlan)} heeft een limiet van ${targetLimits.ticketLimit} tickets zonder overage mogelijkheid.`,
+      error: `Je hebt ${currentTicketsSold} tickets verkocht ${currentLimits.limitPeriod === "month" ? "deze maand" : "voor je actieve evenement"}. ${getPlanDisplayName(targetPlan)} heeft een limiet van ${targetLimits.ticketLimit} tickets zonder overage mogelijkheid.`,
     };
   }
 
@@ -334,21 +385,55 @@ export async function downgradePlanAction(targetPlan: PricingPlan): Promise<Down
   const subscription = await subscriptionRepo.findByOrganizationId(currentOrg.id);
 
   if (subscription) {
-    // Schedule downgrade at period end
+    // Cancel Mollie subscription if exists
+    if (subscription.mollieSubscriptionId && subscription.mollieCustomerId) {
+      try {
+        const { cancelMollieSubscription } = await import("@/server/services/mollieSubscriptionService");
+        await cancelMollieSubscription(currentOrg.id);
+      } catch (error) {
+        console.error("Failed to cancel Mollie subscription during downgrade:", error);
+        // Continue anyway - we'll mark it for cancellation in our DB
+      }
+    }
+
+    // Check if target plan also needs a monthly subscription
+    const targetLimits = PLAN_LIMITS[targetPlan];
+    const targetNeedsSubscription = targetLimits.monthlyPrice !== null && targetLimits.monthlyPrice > 0;
+
+    if (targetNeedsSubscription) {
+      // Downgrading to another paid plan (e.g., PRO_ORGANIZER → ORGANIZER)
+      // Create a new Mollie subscription for the target plan
+      const baseUrl = env.NEXT_PUBLIC_APP_URL;
+      const email = user.email ?? "";
+
+      const result = await createSubscriptionPayment(
+        currentOrg.id,
+        targetPlan,
+        email,
+        baseUrl
+      );
+
+      if (!result.success) {
+        return { success: false, error: result.error };
+      }
+
+      return { success: true, checkoutUrl: result.checkoutUrl };
+    }
+
+    // Downgrading to a free or pay-per-event plan
+    // Update to target plan immediately and mark for cancellation at period end
+    await updateOrganizationPlan(currentOrg.id, targetPlan);
     await subscriptionRepo.update(subscription.id, {
-      cancelAtPeriodEnd: true,
-      // Store target plan somewhere - for now we'll just set it directly
-      // In a real implementation, you'd have a pendingPlan field
+      plan: targetPlan,
+      cancelAtPeriodEnd: true, // Mark that this is a scheduled downgrade
     });
 
-    // For simplicity in MVP, apply immediately if no paid subscription
+    // If no paid subscription, apply immediately (no period to wait for)
     if (!subscription.mollieSubscriptionId) {
-      await updateOrganizationPlan(currentOrg.id, targetPlan);
+      const now = new Date();
       await subscriptionRepo.update(subscription.id, {
-        plan: targetPlan,
         cancelAtPeriodEnd: false,
       });
-
       return { success: true, effectiveDate: now };
     }
 
@@ -358,6 +443,7 @@ export async function downgradePlanAction(targetPlan: PricingPlan): Promise<Down
     };
   } else {
     // No subscription, just update the plan
+    const now = new Date();
     await updateOrganizationPlan(currentOrg.id, targetPlan);
 
     return { success: true, effectiveDate: now };

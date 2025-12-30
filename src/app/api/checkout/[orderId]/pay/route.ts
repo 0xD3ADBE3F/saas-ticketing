@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createPayment, completeMockPayment } from "@/server/services/paymentService";
+import { createPayment } from "@/server/services/paymentService";
 import { createMolliePayment } from "@/server/services/molliePaymentService";
 import { mollieConnectService } from "@/server/services/mollieConnectService";
 import { orderRepo } from "@/server/repos/orderRepo";

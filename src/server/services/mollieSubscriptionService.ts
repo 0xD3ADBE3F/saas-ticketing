@@ -131,9 +131,29 @@ export async function createSubscriptionPayment(
     const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
 
     if (subscription) {
+      // If upgrading from another paid plan, cancel the old Mollie subscription first
+      if (subscription.mollieSubscriptionId && subscription.mollieCustomerId) {
+        try {
+          await mollieClient.customerSubscriptions.cancel(
+            subscription.mollieSubscriptionId,
+            { customerId: subscription.mollieCustomerId }
+          );
+          mollieLogger.info(
+            { oldSubscriptionId: subscription.mollieSubscriptionId, targetPlan },
+            "Cancelled old Mollie subscription for upgrade"
+          );
+        } catch (error) {
+          mollieLogger.error({ error }, "Failed to cancel old Mollie subscription during upgrade");
+          // Continue anyway - the new subscription will replace it
+        }
+      }
+
       await subscriptionRepo.update(subscription.id, {
+        plan: targetPlan, // Update to new plan immediately
         mollieCustomerId: customerId,
+        mollieSubscriptionId: undefined, // Clear old subscription ID
         status: "TRIALING", // Awaiting first payment
+        cancelAtPeriodEnd: false, // Clear any pending cancellation
       });
     } else {
       await subscriptionRepo.create({
@@ -190,18 +210,47 @@ export async function createMollieSubscription(
     mollieLogger.info({ amount: (monthlyPrice / 100).toFixed(2) }, "Creating Mollie subscription");
 
     // Check if customer has a valid mandate
-    const mandates = await mollieClient.customerMandates.list({ customerId });
-    const validMandate = mandates.find(m => m.status === "valid");
+    // Retry logic: Mollie may take a few seconds to validate the mandate after first payment
+    let validMandate = null;
+    let attempts = 0;
+    const maxAttempts = 3;
+    const delayMs = 2000; // 2 seconds between attempts
+
+    while (!validMandate && attempts < maxAttempts) {
+      attempts++;
+      mollieLogger.info({ customerId, attempt: attempts }, "Checking for valid mandate");
+
+      const mandatesList = await mollieClient.customerMandates.iterate({ customerId });
+      const mandates = [];
+      for await (const mandate of mandatesList) {
+        mandates.push(mandate);
+      }
+      validMandate = mandates.find(m => m.status === "valid") ?? null;
+
+      if (!validMandate && attempts < maxAttempts) {
+        // Wait before retrying (only if not the last attempt)
+        mollieLogger.info({ delayMs, nextAttempt: attempts + 1 }, "No valid mandate yet, waiting before retry");
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      } else if (!validMandate) {
+        // Last attempt failed, log all mandates for debugging
+        mollieLogger.error({ customerId, mandates, attempts }, "No valid mandate found after all retries");
+        return {
+          success: false,
+          error: "Geen geldig mandaat gevonden. De eerste betaling wordt nog verwerkt. Probeer het over een paar minuten opnieuw."
+        };
+      }
+    }
 
     if (!validMandate) {
-      mollieLogger.error({ customerId, mandates }, "No valid mandate found for customer");
+      // This should never happen due to the loop logic, but TypeScript needs the check
+      mollieLogger.error({ customerId, attempts }, "No valid mandate found");
       return {
         success: false,
-        error: "Geen geldig mandaat gevonden. De eerste betaling moet eerst verwerkt worden."
+        error: "Geen geldig mandaat gevonden"
       };
     }
 
-    mollieLogger.info({ mandateId: validMandate.id }, "Found valid mandate");
+    mollieLogger.info({ mandateId: validMandate.id, attempts }, "Found valid mandate");
 
     // Calculate start date: beginning of next month
     // First payment covers current period, subscription starts next period
@@ -234,6 +283,7 @@ export async function createMollieSubscription(
         mollieSubscriptionId: mollieSubscription.id,
         plan: targetPlan,
         status: "ACTIVE",
+        cancelAtPeriodEnd: false, // Clear any pending cancellation
       });
     }
 

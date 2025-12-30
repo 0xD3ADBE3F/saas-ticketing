@@ -133,41 +133,6 @@ export async function createPayment(
 }
 
 /**
- * Complete a mock payment (simulate successful iDEAL payment)
- * In production, this would be called by Mollie webhook
- */
-export async function completeMockPayment(
-  paymentId: string
-): Promise<PaymentResult<{ orderId: string; ticketCount: number }>> {
-  const mockPayment = mockPayments.get(paymentId);
-
-  if (!mockPayment) {
-    return { success: false, error: "Betaling niet gevonden" };
-  }
-
-  // Idempotent: if already paid, return success
-  if (mockPayment.status === "paid") {
-    const order = await orderRepo.findByPaymentId(paymentId);
-    if (order && order.status === "PAID") {
-      const ticketCount = await prisma.ticket.count({
-        where: { orderId: order.id },
-      });
-      return {
-        success: true,
-        data: { orderId: order.id, ticketCount },
-      };
-    }
-  }
-
-  // Update mock payment status
-  mockPayment.status = "paid";
-  mockPayments.set(paymentId, mockPayment);
-
-  // Process the payment (update order + issue tickets)
-  return processPaymentSuccess(paymentId);
-}
-
-/**
  * Process a successful payment
  * - Updates order status to PAID
  * - Issues tickets for each order item

@@ -3,6 +3,7 @@ import { orderRepo } from "@/server/repos/orderRepo";
 import { ticketRepo } from "@/server/repos/ticketRepo";
 import { sendOrderTickets } from "@/server/services/emailService";
 import { mollieConnectService } from "@/server/services/mollieConnectService";
+import { planLimitsService } from "@/server/services/planLimitsService";
 import { env } from "@/server/lib/env";
 import { paymentLogger } from "@/server/lib/logger";
 import { PaymentMethod } from "@mollie/api-client";
@@ -344,6 +345,21 @@ async function processPaymentSuccess(
 
     return ticketsToCreate.length;
   });
+
+  // Record ticket sale in usage tracking (for monthly plans)
+  const totalTicketsSold = order.orderItems.reduce((sum, item) => sum + item.quantity, 0);
+  const event = await prisma.event.findUnique({
+    where: { id: order.eventId },
+    select: { organizationId: true },
+  });
+
+  if (event) {
+    await planLimitsService.recordTicketSale(
+      event.organizationId,
+      order.eventId,
+      totalTicketsSold
+    );
+  }
 
   // Send ticket email (non-blocking)
   try {

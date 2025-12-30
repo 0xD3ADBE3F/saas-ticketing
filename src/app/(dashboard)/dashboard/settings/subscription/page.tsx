@@ -55,28 +55,62 @@ export default async function SubscriptionPage() {
         currentPlan={subscription.plan}
       />
 
-      {/* Cancellation Notice */}
-      {subscription.cancelAtPeriodEnd && subscription.currentPeriodEnd && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+      {/* Upgrade in Progress Notice */}
+      {subscription.status === "TRIALING" && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
           <div className="flex items-start gap-3">
-            <span className="text-yellow-600 dark:text-yellow-400">⚠️</span>
+            <span className="text-blue-600 dark:text-blue-400">⏳</span>
             <div>
-              <p className="font-medium text-yellow-800 dark:text-yellow-200">
-                Je abonnement wordt opgezegd
+              <p className="font-medium text-blue-800 dark:text-blue-200">
+                Je upgrade wordt verwerkt
               </p>
-              <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                Je abonnement eindigt op{" "}
-                {subscription.currentPeriodEnd.toLocaleDateString("nl-NL", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
-                . Je kunt tot die tijd nog gebruik maken van alle functies.
+              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                Je upgrade naar <strong>{subscription.planDisplayName}</strong>{" "}
+                wordt momenteel verwerkt.
+                {subscription.currentPeriodEnd && (
+                  <>
+                    {" "}
+                    Het nieuwe plan wordt actief vanaf{" "}
+                    {subscription.currentPeriodEnd.toLocaleDateString("nl-NL", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                    .
+                  </>
+                )}
               </p>
             </div>
           </div>
         </div>
       )}
+
+      {/* Cancellation/Downgrade Notice */}
+      {subscription.cancelAtPeriodEnd &&
+        subscription.currentPeriodEnd &&
+        subscription.status !== "TRIALING" && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-yellow-600 dark:text-yellow-400">⚠️</span>
+              <div>
+                <p className="font-medium text-yellow-800 dark:text-yellow-200">
+                  Wijziging gepland
+                </p>
+                <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                  Je nieuwe plan <strong>{subscription.planDisplayName}</strong>{" "}
+                  wordt actief op{" "}
+                  {subscription.currentPeriodEnd.toLocaleDateString("nl-NL", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                  . Tot die tijd kun je nog gebruik maken van alle functies van
+                  je huidige plan.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
       {/* Past Due Warning */}
       {subscription.status === "PAST_DUE" && (
