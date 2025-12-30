@@ -21,6 +21,7 @@ export function SubscriptionPaymentPoller({
   const paymentStatus = searchParams.get("payment");
   const targetPlan = searchParams.get("plan");
   const [isPolling, setIsPolling] = useState(false);
+  const [pollAttempts, setPollAttempts] = useState(0);
 
   useEffect(() => {
     // Only poll if:
@@ -34,27 +35,70 @@ export function SubscriptionPaymentPoller({
     ) {
       setIsPolling(true);
       let attempts = 0;
-      const maxAttempts = 30; // Poll for up to 30 seconds
+      const maxAttempts = 40; // Poll for up to 40 seconds (webhook can take up to ~20s for mandate validation)
       const pollInterval = 1000; // Poll every second
+
+      console.log(
+        "[SubscriptionPoller] Starting poll - waiting for plan update",
+        {
+          currentPlan,
+          targetPlan,
+        }
+      );
 
       const interval = setInterval(async () => {
         attempts++;
+        setPollAttempts(attempts);
+
+        console.log(
+          `[SubscriptionPoller] Poll attempt ${attempts}/${maxAttempts}`
+        );
 
         try {
-          // Trigger a router refresh to fetch fresh data from the server
-          router.refresh();
+          // Call API endpoint to check subscription status
+          const response = await fetch("/api/subscription/status", {
+            headers: {
+              "x-organization-id": organizationId,
+            },
+          });
 
-          // After refresh, check if the plan has updated
-          // The component will re-render with updated currentPlan
-          // If plans match, we'll clean up in the next render
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`[SubscriptionPoller] Subscription status:`, data);
+
+            // Check if subscription plan matches target plan
+            if (data.currentPlan === targetPlan) {
+              console.log(
+                "[SubscriptionPoller] Plans match! Subscription activated"
+              );
+              clearInterval(interval);
+              setIsPolling(false);
+              setPollAttempts(0);
+              // Clean up URL params
+              const url = new URL(window.location.href);
+              url.searchParams.delete("payment");
+              url.searchParams.delete("plan");
+              router.replace(url.pathname + url.search);
+              return;
+            }
+          } else {
+            console.error(
+              "Error fetching subscription status:",
+              response.status
+            );
+          }
         } catch (error) {
           console.error("Error polling subscription status:", error);
         }
 
         // Stop polling after max attempts
         if (attempts >= maxAttempts) {
+          console.log(
+            "[SubscriptionPoller] Max attempts reached, stopping poll"
+          );
           clearInterval(interval);
           setIsPolling(false);
+          setPollAttempts(0);
           // Clean up URL params even if webhook didn't complete
           const url = new URL(window.location.href);
           url.searchParams.delete("payment");
@@ -64,8 +108,10 @@ export function SubscriptionPaymentPoller({
       }, pollInterval);
 
       return () => {
+        console.log("[SubscriptionPoller] Cleanup - stopping poll");
         clearInterval(interval);
         setIsPolling(false);
+        setPollAttempts(0);
       };
     } else if (
       paymentStatus === "success" &&
@@ -73,7 +119,12 @@ export function SubscriptionPaymentPoller({
       currentPlan === targetPlan
     ) {
       // Plans match - webhook has been processed
+      console.log("[SubscriptionPoller] Plans match! Subscription activated", {
+        currentPlan,
+        targetPlan,
+      });
       setIsPolling(false);
+      setPollAttempts(0);
       // Clean up URL params
       const url = new URL(window.location.href);
       url.searchParams.delete("payment");
@@ -82,18 +133,19 @@ export function SubscriptionPaymentPoller({
     }
   }, [organizationId, currentPlan, targetPlan, paymentStatus, router]);
 
-  // Show loading state while polling
+  // Show loading indicator while polling
   if (isPolling) {
     return (
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
         <div className="flex items-start gap-3">
           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-          <div>
+          <div className="flex-1">
             <p className="font-medium text-blue-800 dark:text-blue-200">
-              Betaling verwerken...
+              Abonnement wordt ingesteld...
             </p>
             <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-              Je betaling wordt verwerkt. Dit kan enkele seconden duren.
+              Je betaling is geslaagd en je abonnement wordt nu geactiveerd. Dit
+              kan tot 20 seconden duren.
             </p>
           </div>
         </div>

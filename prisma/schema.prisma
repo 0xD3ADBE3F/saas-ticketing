@@ -47,6 +47,7 @@ model Organization {
   scannerTerminals ScannerTerminal[]
   subscription     Subscription?
   usageRecords     UsageRecord[]
+  invoices         SubscriptionInvoice[]
 
   @@index([mollieOrganizationId])
   @@index([currentPlan])
@@ -356,8 +357,12 @@ enum InvoiceType {
 }
 
 enum InvoiceStatus {
+  DRAFT
+  SENT
   PENDING
   PAID
+  OVERDUE
+  CANCELLED
   FAILED
 }
 
@@ -417,21 +422,41 @@ model SubscriptionInvoice {
   organizationId  String
   subscriptionId  String?
   type            InvoiceType
-  amount          Int           // Amount in cents
+
+  // Mollie Sales Invoice API fields
+  mollieSalesInvoiceId String?   @unique  // inv_xxxx from Sales Invoice API
+  invoiceNumber        String?   @unique  // e.g., "2024-001"
+  invoiceDate          DateTime  @default(now())
+  dueDate              DateTime?
+
+  // Financial details
+  amount          Int           // Total amount in cents
+  vatAmount       Int           @default(0) // VAT amount in cents
+  vatRate         Decimal       @default(21.00) @db.Decimal(5, 2)  // e.g., 21.00 for 21%
+  currency        String        @default("EUR")
+
+  // Payment tracking
   status          InvoiceStatus @default(PENDING)
   molliePaymentId String?       @unique
   paidAt          DateTime?
+
+  // PDF & Links
+  pdfUrl          String?       // Mollie-hosted PDF URL
+
+  // Metadata
   description     String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
   // Relations
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
   @@index([subscriptionId])
   @@index([status])
   @@index([molliePaymentId])
+  @@index([invoiceDate])
   @@map("subscription_invoices")
 }
 

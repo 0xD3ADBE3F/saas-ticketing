@@ -598,31 +598,49 @@ Upgrade → upgradePlanAction(PRO_ORGANIZER)
 | Webhook handler for subscriptions      | ✅     |
 | `mollieSubscriptionService.ts`         | ✅     |
 
-**Phase 3: Billing & History** (Mollie-powered) 🟨
+**Phase 3: Billing & History** (Mollie-powered) ✅
 
 | Task                                    | Status |
 | --------------------------------------- | ------ |
-| Billing page route                      | ⬜     |
-| `BillingHistory` component (Mollie API) | ⬜     |
-| Link to Mollie invoices                 | ⬜     |
+| Database schema with invoice fields     | ✅     |
+| Database migration                      | ✅     |
+| `invoiceRepo.ts` repository layer       | ✅     |
+| `mollieInvoiceService.ts` service layer | ✅     |
+| Invoice generation in webhooks          | ✅     |
+| Billing page route                      | ✅     |
+| `BillingHistory` component              | ✅     |
+| `InvoiceFilters` component              | ✅     |
+| Navigation link to billing page         | ✅     |
 
-**Phase 3.5: Sales Invoice API Integration** (For Organization Subscription Invoicing) ⬜
+**Phase 3.5: Sales Invoice API Integration** (For Organization Subscription Invoicing) ✅
 
 > **Goal:** Automatically generate formal invoices for organization subscription payments using Mollie's Sales Invoice API (Beta).
+>
+> **Status:** ✅ Implementation complete. Invoice generation integrated with subscription payment webhooks. Invoices are created using the platform's Mollie account (MOLLIE_API_KEY), not organization OAuth tokens.
 
 ##### Overview
 
 When an organization makes a subscription payment (first payment or recurring), Entro will:
 
-1. Create a Sales Invoice via Mollie Sales Invoice API
-2. Store invoice reference in database (`SubscriptionInvoice` model)
-3. Display invoices in billing history UI
-4. Provide PDF download links
+1. Create a Sales Invoice via Mollie Sales Invoice API ✅
+2. Store invoice reference in database (`SubscriptionInvoice` model) ✅
+3. Display invoices in billing history UI ✅ (Phase 3)
+4. Provide PDF download links ✅ (Phase 3)
 
 **Key Distinction:**
 
 - ❌ NOT using Mollie Invoices API (those are Mollie's fee invoices TO merchants)
 - ✅ USING Sales Invoice API (Beta) - creates invoices FROM Entro TO organizations
+
+**Important Architecture Note:**
+
+The Sales Invoice API is called using the **platform's MOLLIE_API_KEY** (Entro's Mollie account), NOT the organization's OAuth access token. This is because:
+
+- Invoices are FROM Entro TO organizations (for subscription fees)
+- Organizations don't need Mollie accounts to receive subscription invoices
+- The platform account has the `sales-invoices.write` scope
+
+This differs from payment processing, where we use the organization's OAuth token to receive ticket sale proceeds.
 
 ##### Database Schema Updates
 
@@ -766,12 +784,15 @@ async markInvoiceAsPaid(
 ): Promise<SubscriptionInvoice>
 ```
 
-**Mollie Sales Invoice API Integration:**
+**Mollie Sales Invoice API Integration:** ✅
 
 > **📚 Documentation:** Full Mollie API documentation is available through the Mollie MCP server tools (`mcp_mollie_fetch_docs` and `mcp_mollie_list_doc_sources`). Use these to fetch the latest Sales Invoice API specifications during implementation.
 
-- Endpoint: `POST /v2/invoices` (Sales Invoice API - Beta)
-- OAuth required with `invoices.write` scope
+**Implementation Details:**
+
+- Endpoint: `POST /v2/sales-invoices` (Sales Invoice API - Beta)
+- Authentication: Bearer token using platform `MOLLIE_API_KEY` (NOT organization OAuth)
+- Scope: `sales-invoices.write` (automatically available with platform API key)
 - Fields to send:
   - `reference` - Our invoice number (e.g., "SUB-2024-001")
   - `issuedAt` - Invoice date
@@ -785,66 +806,49 @@ async markInvoiceAsPaid(
   - `paymentMethods[]` - ["ideal", "creditcard", "banktransfer"]
   - `recipientIdentifier` - Organization's email or customer ID
 
-##### Webhook Integration
+##### Webhook Integration ✅
 
-**Update:** `src/app/api/webhooks/subscriptions/route.ts`
+**Update:** `src/server/services/mollieSubscriptionService.ts`
 
 **Trigger point:** After successful subscription payment
 
 ```typescript
-// Current flow:
+// Implementation (in handleFirstPayment and handleRecurringPayment):
 // 1. Webhook receives payment.paid event
 // 2. Update subscription status to ACTIVE
 // 3. Record usage
 
-// ADD:
-// 4. Generate Sales Invoice
-const invoice = await mollieInvoiceService.createSalesInvoice(accessToken, {
+// 4. Generate Sales Invoice using PLATFORM Mollie API key
+const amount = Math.round(parseFloat(payment.amount.value) * 100);
+await mollieInvoiceService.generateSubscriptionInvoice({
   organizationId: subscription.organizationId,
   subscriptionId: subscription.id,
-  type: "SUBSCRIPTION",
-  amount: subscription.plan === "ORGANIZER" ? 4900 : 9900, // cents
-  vatRate: 21, // NL VAT rate
-  description: `${subscription.plan} Subscription - ${format(new Date(), "MMMM yyyy")}`,
-  molliePaymentId: payment.id,
-  invoiceDate: new Date(),
+  plan: subscription.plan,
+  amount, // in cents
+  molliePaymentId: paymentId,
 });
 
-// 5. Store invoice in database
-await mollieInvoiceService.storeInvoiceRecord(invoice);
-
-// 6. Mark as paid immediately (since payment already succeeded)
-await mollieInvoiceService.markInvoiceAsPaid(
-  invoice.id,
-  payment.id,
-  new Date()
-);
+// Note: No accessToken parameter needed - service uses platform MOLLIE_API_KEY
+// Invoice is automatically created with status="paid" via Sales Invoice API
 ```
 
-**PAY_PER_EVENT Invoice Generation:**
+**PAY_PER_EVENT Invoice Generation:** ✅
 
-Location: `src/app/api/webhooks/payments/route.ts` (event payment webhook)
+Location: `src/server/services/mollieInvoiceService.ts` (called from payment webhook)
 
 ```typescript
 // After event payment succeeds and event is marked LIVE:
-if (order.type === "PAY_PER_EVENT") {
-  const invoice = await mollieInvoiceService.createSalesInvoice(accessToken, {
-    organizationId: event.organizationId,
-    type: "PAY_PER_EVENT",
-    amount: 4900, // €49
-    vatRate: 21,
-    description: `Event Publishing Fee - ${event.title}`,
-    molliePaymentId: payment.id,
-    invoiceDate: new Date(),
-  });
+await mollieInvoiceService.generateEventInvoice({
+  organizationId: event.organizationId,
+  eventId: event.id,
+  amount: 4900, // €49
+  molliePaymentId: payment.id,
+});
 
-  await mollieInvoiceService.storeInvoiceRecord(invoice);
-  await mollieInvoiceService.markInvoiceAsPaid(
-    invoice.id,
-    payment.id,
-    new Date()
-  );
-}
+// Invoice created with:
+// - Type: PAY_PER_EVENT
+// - Status: PAID (immediate)
+// - Description: Event publishing fee + event name
 ```
 
 ##### UI Components
@@ -998,41 +1002,41 @@ export async function getInvoicesAction(filters?: {
 | Task                                                         | Status |
 | ------------------------------------------------------------ | ------ |
 | **Database & Schema**                                        |        |
-| Update `SubscriptionInvoice` model with Sales Invoice fields | ⬜     |
-| Create migration for new fields                              | ⬜     |
-| Add `InvoiceType` and `InvoiceStatus` enums                  | ⬜     |
+| Update `SubscriptionInvoice` model with Sales Invoice fields | ✅     |
+| Create migration for new fields                              | ✅     |
+| Add `InvoiceType` and `InvoiceStatus` enums                  | ✅     |
 | **Service Layer**                                            |        |
-| Create `mollieInvoiceService.ts`                             | ⬜     |
-| Implement `createSalesInvoice()` - Mollie API call           | ⬜     |
-| Implement `storeInvoiceRecord()` - DB storage                | ⬜     |
-| Implement `markInvoiceAsPaid()` - status update              | ⬜     |
-| Implement `listInvoicesForOrg()` - fetch with filters        | ⬜     |
-| Add OAuth scope `invoices.write` to Mollie connection        | ⬜     |
+| Create `mollieInvoiceService.ts`                             | ✅     |
+| Implement `createSalesInvoice()` - Mollie API call           | ✅     |
+| Implement `storeInvoiceRecord()` - DB storage                | ✅     |
+| Implement `markInvoiceAsPaid()` - status update              | ✅     |
+| Implement `listInvoicesForOrg()` - fetch with filters        | ✅     |
+| Add OAuth scope `invoices.write` to Mollie connection        | N/A    |
 | **Webhook Integration**                                      |        |
-| Generate invoice after subscription payment webhook          | ⬜     |
-| Generate invoice after PAY_PER_EVENT payment webhook         | ⬜     |
-| Handle invoice creation errors gracefully                    | ⬜     |
-| Add structured logging for invoice generation                | ⬜     |
+| Generate invoice after subscription payment webhook          | ✅     |
+| Generate invoice after PAY_PER_EVENT payment webhook         | ✅     |
+| Handle invoice creation errors gracefully                    | ✅     |
+| Add structured logging for invoice generation                | ✅     |
 | **Repository Layer**                                         |        |
-| Create `invoiceRepo.ts` with CRUD methods                    | ⬜     |
-| Add organization scoping to all queries                      | ⬜     |
+| Create `invoiceRepo.ts` with CRUD methods                    | ✅     |
+| Add organization scoping to all queries                      | ✅     |
 | **UI Components**                                            |        |
-| Create `BillingHistory.tsx` component                        | ⬜     |
-| Create `InvoiceFilters.tsx` component                        | ⬜     |
-| Create `InvoiceStatusBadge.tsx` component                    | ⬜     |
-| Add PDF download button with icon                            | ⬜     |
-| Implement pagination controls                                | ⬜     |
-| Add empty state illustration                                 | ⬜     |
+| Create `BillingHistory.tsx` component                        | ✅     |
+| Create `InvoiceFilters.tsx` component                        | ✅     |
+| Create `InvoiceStatusBadge.tsx` component                    | ✅     |
+| Add PDF download button with icon                            | ✅     |
+| Implement pagination controls                                | ✅     |
+| Add empty state illustration                                 | ✅     |
 | **API Routes**                                               |        |
 | Create `GET /api/invoices` route                             | ⬜     |
 | Create `GET /api/invoices/[id]` route                        | ⬜     |
 | Add organization-scoped access control                       | ⬜     |
 | **Server Actions**                                           |        |
-| Implement `getInvoicesAction()` in actions.ts                | ⬜     |
-| Implement `downloadInvoiceAction()` in actions.ts            | ⬜     |
+| Implement `getInvoicesAction()` in actions.ts                | ✅     |
+| Implement `downloadInvoiceAction()` in actions.ts            | ✅     |
 | **Pages**                                                    |        |
-| Create `/dashboard/settings/subscription/billing/page.tsx`   | ⬜     |
-| Add navigation link to billing page                          | ⬜     |
+| Create `/dashboard/settings/subscription/billing/page.tsx`   | ✅     |
+| Add navigation link to billing page                          | ✅     |
 | **Testing**                                                  |        |
 | Unit tests for `mollieInvoiceService`                        | ⬜     |
 | Unit tests for `invoiceRepo`                                 | ⬜     |
@@ -1042,7 +1046,15 @@ export async function getInvoicesAction(filters?: {
 | **Documentation**                                            |        |
 | Document Sales Invoice API integration in MOLLIE_PLATFORM.md | ⬜     |
 | Add invoice generation flow diagram                          | ⬜     |
-| Update SPEC.md with invoice business rules                   | ⬜     |
+
+**Implementation Notes:**
+
+- **OAuth Scope Not Required**: The `invoices.write` scope task is marked N/A because the platform uses MOLLIE_API_KEY (not organization OAuth), which already has the necessary `sales-invoices.write` scope.
+- **Address Placeholders**: Current implementation uses placeholder values for organization address fields (streetAndNumber: "N/A", postalCode: "0000AA", city: "Amsterdam"). TODO: Collect actual organization address during onboarding.
+- **VAT Calculation**: Implemented reverse VAT calculation (Net = Gross / 1.21, VAT = Gross - Net) since Mollie API expects unitPrice without VAT.
+- **Idempotency**: Invoice creation checks for existing invoices by molliePaymentId to prevent duplicates on webhook retries.
+- **API Routes**: The API routes are not needed since we're using server actions for fetching invoices. The implementation is cleaner and more secure without exposing separate REST endpoints.
+  | Update SPEC.md with invoice business rules | ⬜ |
 
 ##### Error Handling & Edge Cases
 

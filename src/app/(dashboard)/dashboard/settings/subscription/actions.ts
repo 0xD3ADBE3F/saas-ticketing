@@ -13,7 +13,8 @@ import {
   getPlanPriceDescription,
   isOverageAllowed,
 } from "@/server/domain/plans";
-import type { PricingPlan, SubscriptionStatus } from "@/generated/prisma";
+import { invoiceRepo } from "@/server/repos/invoiceRepo";
+import type { PricingPlan, SubscriptionStatus, SubscriptionInvoice, InvoiceType, InvoiceStatus } from "@/generated/prisma";
 
 export type SubscriptionData = {
   // Organization info
@@ -119,14 +120,14 @@ export async function getSubscriptionAction(): Promise<SubscriptionData | null> 
   if (planLimits.limitPeriod === "month") {
     // For monthly plans, use usage records
     const now = new Date();
-    const usage = await subscriptionRepo.getOrCreateUsageRecord(
+    const usageRecord = await subscriptionRepo.getOrCreateUsageRecord(
       currentOrg.id,
       getMonthStart(now),
       getMonthEnd(now)
     );
-    ticketsSold = usage.ticketsSold;
-    overageTickets = usage.overageTickets;
-    overageFeeTotal = usage.overageFeeTotal;
+    ticketsSold = usageRecord.ticketsSold;
+    overageTickets = usageRecord.overageTickets;
+    overageFeeTotal = usageRecord.overageFeeTotal;
   } else {
     // For event-based plans, count tickets from all LIVE events
     ticketsSold = await prisma.ticket.count({
@@ -542,4 +543,56 @@ function getPlanFeatures(plan: PricingPlan, brandingRemoved: boolean): PlanFeatu
   };
 
   return [...baseFeatures, ...planSpecificFeatures[plan]];
+}
+
+// =============================================================================
+// INVOICE ACTIONS
+// =============================================================================
+
+/**
+ * Get invoices for the current organization
+ */
+export async function getInvoicesAction(params?: {
+  type?: InvoiceType;
+  status?: InvoiceStatus;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{
+  invoices: SubscriptionInvoice[];
+  total: number;
+  page: number;
+  limit: number;
+}> {
+  const user = await getUser();
+
+  if (!user) {
+    throw new Error("Niet ingelogd");
+  }
+
+  const organizations = await getUserOrganizations(user.id);
+
+  if (organizations.length === 0) {
+    throw new Error("Geen organisatie gevonden");
+  }
+
+  const currentOrg = organizations[0];
+
+  const page = params?.page ?? 1;
+  const limit = params?.limit ?? 20;
+
+  const result = await invoiceRepo.listInvoicesWithFilters(
+    currentOrg.id,
+    {
+      type: params?.type,
+      status: params?.status,
+      startDate: params?.startDate ? new Date(params.startDate) : undefined,
+      endDate: params?.endDate ? new Date(params.endDate) : undefined,
+      page,
+      limit,
+    }
+  );
+
+  return result;
 }

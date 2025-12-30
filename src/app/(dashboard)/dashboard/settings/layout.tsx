@@ -6,6 +6,11 @@ import { usePathname } from "next/navigation";
 const settingsNav = [
   { href: "/dashboard/settings", label: "Algemeen", icon: "⚙️", exact: true },
   { href: "/dashboard/settings/subscription", label: "Abonnement", icon: "💳" },
+  {
+    href: "/dashboard/settings/subscription/billing",
+    label: "Facturatie",
+    icon: "📄",
+  },
 ];
 
 export default function SettingsLayout({

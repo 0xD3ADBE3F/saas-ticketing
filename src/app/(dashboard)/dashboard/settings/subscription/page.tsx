@@ -19,11 +19,16 @@ export default async function SubscriptionPage() {
 
   // Check if there's no active plan (plan is null)
   const hasNoPlan = !subscription.plan;
-
+  console.log({ subscription });
   // Show simple "no plan" state
   if (hasNoPlan) {
     return (
       <div className="space-y-6">
+        {/* Payment Status Poller - shows loading state while webhook processes */}
+        <SubscriptionPaymentPoller
+          organizationId={subscription.organizationId}
+          currentPlan={subscription.plan}
+        />
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-8 text-center">
           <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
             <span className="text-3xl">📋</span>

@@ -4,6 +4,7 @@ import { subscriptionRepo } from "@/server/repos/subscriptionRepo";
 import { prisma } from "@/server/lib/prisma";
 import { getPlanLimits, getPlanDisplayName } from "@/server/domain/plans";
 import { mollieLogger } from "@/server/lib/logger";
+import { mollieInvoiceService } from "@/server/services/mollieInvoiceService";
 import type { PricingPlan } from "@/generated/prisma";
 
 // =============================================================================
@@ -210,11 +211,11 @@ export async function createMollieSubscription(
     mollieLogger.info({ amount: (monthlyPrice / 100).toFixed(2) }, "Creating Mollie subscription");
 
     // Check if customer has a valid mandate
-    // Retry logic: Mollie may take a few seconds to validate the mandate after first payment
+    // Retry logic: Mollie may take up to 15 seconds to validate the mandate after first payment
     let validMandate = null;
     let attempts = 0;
-    const maxAttempts = 3;
-    const delayMs = 2000; // 2 seconds between attempts
+    const maxAttempts = 6; // Increased from 3 to 6 attempts
+    const delayMs = 3000; // Increased from 2 to 3 seconds between attempts (total ~18 seconds)
 
     while (!validMandate && attempts < maxAttempts) {
       attempts++;
@@ -394,6 +395,16 @@ export async function handleSubscriptionPayment(
             return { success: false, error: result.error };
           }
           mollieLogger.info({ subscriptionId: result.subscriptionId }, "Mollie subscription created");
+
+          // Generate invoice for the first payment
+          const amount = Math.round(parseFloat(payment.amount.value) * 100);
+          await mollieInvoiceService.generateSubscriptionInvoice({
+            organizationId,
+            subscriptionId: subscription.id,
+            plan: targetPlan,
+            amount,
+            molliePaymentId: paymentId,
+          });
         } else {
           mollieLogger.error({ organizationId }, "No mollieCustomerId found for org");
           return { success: false, error: "No customer ID" };
@@ -458,13 +469,13 @@ export async function handleRecurringPayment(
           currentPeriodEnd: periodEnd,
         });
 
-        // Create invoice record
-        await subscriptionRepo.createInvoice({
+        // Generate invoice for this recurring payment
+        const amount = Math.round(parseFloat(payment.amount.value) * 100);
+        await mollieInvoiceService.generateSubscriptionInvoice({
           organizationId: subscription.organizationId,
           subscriptionId: subscription.id,
-          type: "SUBSCRIPTION",
-          amount: Math.round(parseFloat(payment.amount.value) * 100),
-          description: payment.description ?? "Maandelijks abonnement",
+          plan: subscription.plan,
+          amount,
           molliePaymentId: paymentId,
         });
         break;
