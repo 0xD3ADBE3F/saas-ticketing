@@ -66,14 +66,19 @@ async function main() {
   console.log("   Organization:", testOrg.name);
   console.log("   Email:", testOrg.email);
   console.log("   Plan: PROFESSIONAL");
-  console.log("   Amount: €49.00\n");
+  console.log("   Amount: €49.00 (excl. VAT)\n");
 
   try {
+    const amountExclVAT = 4900; // €49.00 in cents (excl. VAT)
+    const VAT_RATE = 21;
+    const vatAmount = Math.round(amountExclVAT * (VAT_RATE / 100)); // Calculate VAT
+
     const invoice = await mollieInvoiceService.generateSubscriptionInvoice({
       organizationId: testOrg.id,
       subscriptionId: subscription.id,
       plan: "PROFESSIONAL",
-      amount: 4900, // €49.00 in cents
+      amountExclVAT, // Net amount excluding VAT
+      vatAmount, // VAT amount
       molliePaymentId: "tr_test_" + Date.now(), // Fake payment ID for testing
     });
 
@@ -83,7 +88,9 @@ async function main() {
     console.log("   Mollie Sales Invoice ID:", invoice.mollieSalesInvoiceId || "N/A");
     console.log("   PDF URL:", invoice.pdfUrl || "N/A");
     console.log("   Status:", invoice.status);
-    console.log("   Amount:", `€${(invoice.amount / 100).toFixed(2)}`);
+    console.log("   Net Amount:", `€${(invoice.amount / 100).toFixed(2)}`);
+    console.log("   VAT Amount:", `€${(invoice.vatAmount / 100).toFixed(2)}`);
+    console.log("   Total Amount:", `€${((invoice.amount + invoice.vatAmount) / 100).toFixed(2)}`);
 
     if (invoice.pdfUrl) {
       console.log("\n📥 PDF available at:", invoice.pdfUrl);

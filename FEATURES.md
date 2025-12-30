@@ -598,7 +598,7 @@
 
 - ✅ `/dashboard/settings/subscription` - Main subscription management page
 - ✅ `/dashboard/settings/subscription/upgrade` - Plan upgrade flow
-- ⬜ `/dashboard/settings/subscription/billing` - Billing history (Mollie-powered)
+- ✅ `/dashboard/settings/subscription/billing` - Billing history (Mollie-powered)
 
 ##### Components
 
@@ -636,10 +636,10 @@
 
 **BillingHistory** (Mollie-powered)
 
-- ⬜ Fetch payment history from Mollie Subscriptions API
-- ⬜ Display: Date | Description | Amount | Status
-- ⬜ Link to Mollie-hosted invoice PDF
-- ⬜ Show subscription status (active, past_due, cancelled)
+- ✅ Fetch payment history from Mollie Subscriptions API
+- ✅ Display: Date | Description | Amount | Status
+- ✅ Link to Mollie-hosted invoice PDF
+- ✅ Show subscription status (active, past_due, cancelled)
 
 **UpgradeModal** ✅
 
@@ -761,17 +761,16 @@ Upgrade → upgradePlanAction(PRO_ORGANIZER)
 >
 > **See:** [docs/PHASE_3_5_COMPLETE.md](./docs/PHASE_3_5_COMPLETE.md) for full implementation details.
 
-| Task                                             | Status |
-| ------------------------------------------------ | ------ |
-| Full Mollie Sales Invoice API integration        | ✅     |
-| VAT calculation (reverse: Net = Gross / 1.21)    | ✅     |
-| Invoice number generation (YYYY-NNNN format)     | ✅     |
-| Webhook integration (subscription + event)       | ✅     |
-| Idempotency (molliePaymentId unique constraint)  | ✅     |
-| Structured logging (mollieLogger)                | ✅     |
-| Error handling with detailed logs                | ✅     |
-| PDF proxy endpoint for secure downloads          | ✅     |
-| Organization address placeholders (TODO: actual) | ⚠️     |
+| Task                                            | Status |
+| ----------------------------------------------- | ------ |
+| Full Mollie Sales Invoice API integration       | ✅     |
+| VAT calculation (reverse: Net = Gross / 1.21)   | ✅     |
+| Invoice number generation (YYYY-NNNN format)    | ✅     |
+| Webhook integration (subscription + event)      | ✅     |
+| Idempotency (molliePaymentId unique constraint) | ✅     |
+| Structured logging (mollieLogger)               | ✅     |
+| Error handling with detailed logs               | ✅     |
+| PDF proxy endpoint for secure downloads         | ✅     |
 
 **Key Architecture Points:**
 
@@ -956,28 +955,58 @@ src/
 
 #### 18.9 Non-Profit Verification (Required for Free Plan)
 
-- ⬜ KVK (Chamber of Commerce) verification during NON_PROFIT plan signup:
-  - User enters KVK number during plan selection
-  - **KVK API integration (TBD):** Will validate organization is registered as non-profit
-  - Until API is ready: manual verification workflow
-- ⬜ Verification status on Organization:
-  - `nonProfitStatus`: `PENDING | VERIFIED | REJECTED | NOT_APPLICABLE`
-  - `kvkNumber` (String, required for NON_PROFIT plan)
-  - `kvkVerifiedAt` (DateTime)
-  - `kvkRejectionReason` (String, nullable)
-- ⬜ Verification workflow:
-  - NON_PROFIT plan selection → enter KVK number → submit for verification
-  - Until verified: can create DRAFT events but cannot publish
-  - On verification: full NON_PROFIT plan access
-  - On rejection: must upgrade to paid plan or appeal
+> **Database Schema:** ✅ Already implemented
+>
+> - `Organization.kvkNumber` (String, nullable)
+> - `Organization.kvkVerifiedAt` (DateTime, nullable)
+> - `Organization.kvkRejectionReason` (String, nullable)
+> - `Organization.nonProfitStatus`: `PENDING | VERIFIED | REJECTED | NOT_APPLICABLE`
+>
+> **Mollie KVK Verification:** ⚠️ Limited availability
+>
+> - Mollie's Onboarding API **does not expose KVK verification status** directly
+> - Mollie collects `registrationNumber` (KVK) during onboarding via Client Links API
+> - Mollie performs KYC/KVK verification internally, but only returns: `status: "needs-data" | "in-review" | "completed"`
+> - Organization API does not include legal entity type (stichting vs BV)
+> - **Conclusion:** Cannot reliably fetch from Mollie whether organization is a non-profit
+
+**Recommended Approach:**
+
+**Option 1: KVK API Direct Integration** (Preferred)
+
+- Use [KVK Zoeken API](https://developers.kvk.nl/apis/zoeken) (official Dutch Chamber of Commerce API)
+- Free tier: 10 requests/day (sufficient for manual verification)
+- Paid tier: €50/month for automated checks
+- Returns: legal form (`rechtsvorm`), e.g., "Stichting", "Vereniging", "BV", "Eenmanszaak"
+- Implementation:
+  1. User enters KVK number during NON_PROFIT plan selection
+  2. Backend calls KVK API: `GET /api/v1/basisprofielen/{kvkNummer}`
+  3. Check if `rechtsvorm` is "Stichting" or "Vereniging"
+  4. Auto-verify if match, otherwise require manual admin review
+
+**Option 2: Manual Verification Workflow** (MVP Fallback)
+
+- ⬜ User enters KVK number during NON_PROFIT plan signup
+- ⬜ Status set to `PENDING`
+- ⬜ Platform Admin UI shows pending verifications queue
+- ⬜ Admin manually looks up KVK number on kvk.nl
+- ⬜ Admin approves (status → `VERIFIED`) or rejects with reason (status → `REJECTED`)
+- ⬜ Until verified: can create DRAFT events but cannot publish to LIVE
+
+**Verification Workflow:**
+
+- ⬜ NON_PROFIT plan selection → enter KVK number → submit for verification
+- ⬜ `planLimitsService.canPublishEvent()` checks `nonProfitStatus === 'VERIFIED'` for NON_PROFIT plan
+- ⬜ On verification: full NON_PROFIT plan access unlocked
+- ⬜ On rejection: notify user via email, must upgrade to paid plan or appeal
 - ⬜ Platform Admin verification UI:
-  - Queue of pending verifications
-  - Manual approve/reject with reason
-  - View KVK details (when API available)
+  - Queue of pending verifications (filterable: pending/verified/rejected)
+  - Manual approve/reject with mandatory reason field
+  - View KVK details via link to kvk.nl or API response
 - ⬜ Auto-downgrade if verification rejected:
-  - Notify user via email
   - Block event publishing until resolved
-  - Offer upgrade to paid plan as alternative
+  - Email notification with rejection reason
+  - Option to appeal or upgrade to PAY_PER_EVENT plan
 
 **DoD (Slice 18)**
 
@@ -1026,7 +1055,7 @@ src/
 
 ---
 
-### Slice 19: Platform Analytics & Monitoring
+### Slice 19: Platform Analytics (Platform Admin) & Monitoring
 
 - ✅ Platform dashboard home (from Slice 16):
   - Total organizations (active count)

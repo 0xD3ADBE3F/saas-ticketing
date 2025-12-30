@@ -23,7 +23,8 @@ export interface CreateSalesInvoiceParams {
   organizationId: string;
   subscriptionId?: string;
   type: InvoiceType;
-  amount: number; // in cents
+  amountExclVAT: number; // in cents, net amount EXCLUDING VAT
+  vatAmount: number; // in cents, VAT amount
   description: string;
   molliePaymentId?: string;
   invoiceDate?: Date;
@@ -75,13 +76,14 @@ function formatAmount(cents: number): string {
 export async function createSalesInvoice(
   params: CreateSalesInvoiceParams
 ): Promise<SubscriptionInvoice> {
-  const { organizationId, subscriptionId, type, amount, description, molliePaymentId, invoiceDate } = params;
+  const { organizationId, subscriptionId, type, amountExclVAT, vatAmount, description, molliePaymentId, invoiceDate } = params;
 
   mollieLogger.info({
     message: "Creating Mollie Sales Invoice",
     organizationId,
     type,
-    amount,
+    amountExclVAT,
+    vatAmount,
   });
 
   try {
@@ -133,9 +135,8 @@ export async function createSalesInvoice(
       );
     }
 
-    // Calculate VAT and net amount
-    const netAmount = Math.round(amount / (1 + VAT_RATE / 100)); // Reverse calculate net from gross
-    const vatAmount = amount - netAmount;
+    // Calculate total amount (net + VAT)
+    const vatRatePercent = amountExclVAT > 0 ? Math.round((vatAmount / amountExclVAT) * 100) : VAT_RATE;
 
     const now = new Date();
     const dueDate = new Date(now);
@@ -167,10 +168,10 @@ export async function createSalesInvoice(
           {
             description,
             quantity: 1,
-            vatRate: VAT_RATE.toFixed(2),
+            vatRate: vatRatePercent.toFixed(2),
             unitPrice: {
               currency: "EUR",
-              value: formatAmount(netAmount), // Net amount without VAT
+              value: formatAmount(amountExclVAT), // Net amount without VAT
             },
           },
         ],
@@ -198,9 +199,9 @@ export async function createSalesInvoice(
       invoiceNumber: mollieInvoice.invoiceNumber, // Use Mollie's generated invoice number
       invoiceDate: invoiceDate || now,
       dueDate,
-      amount,
+      amount: amountExclVAT, // Net amount (excl. VAT)
       vatAmount,
-      vatRate: VAT_RATE,
+      vatRate: vatRatePercent,
       currency: "EUR",
       status: "PAID", // Marked as paid since payment already succeeded
       molliePaymentId,
@@ -300,10 +301,11 @@ export async function generateSubscriptionInvoice(params: {
   organizationId: string;
   subscriptionId: string;
   plan: string;
-  amount: number; // in cents
+  amountExclVAT: number; // in cents, net amount EXCLUDING VAT
+  vatAmount: number; // in cents, VAT amount
   molliePaymentId: string;
 }): Promise<SubscriptionInvoice> {
-  const { organizationId, subscriptionId, plan, amount, molliePaymentId } = params;
+  const { organizationId, subscriptionId, plan, amountExclVAT, vatAmount, molliePaymentId } = params;
 
   const now = new Date();
   const monthName = now.toLocaleDateString("nl-NL", { month: "long", year: "numeric" });
@@ -314,7 +316,8 @@ export async function generateSubscriptionInvoice(params: {
     organizationId,
     subscriptionId,
     type: "SUBSCRIPTION",
-    amount,
+    amountExclVAT,
+    vatAmount,
     description,
     molliePaymentId,
   });
@@ -329,10 +332,11 @@ export async function generateSubscriptionInvoice(params: {
 export async function generateEventInvoice(params: {
   organizationId: string;
   eventTitle: string;
-  amount: number; // in cents (should be 4900 = €49)
+  amountExclVAT: number; // in cents, net amount EXCLUDING VAT
+  vatAmount: number; // in cents, VAT amount
   molliePaymentId: string;
 }): Promise<SubscriptionInvoice> {
-  const { organizationId, eventTitle, amount, molliePaymentId } = params;
+  const { organizationId, eventTitle, amountExclVAT, vatAmount, molliePaymentId } = params;
 
   const description = `Event Publishing Fee - ${eventTitle}`;
 
@@ -340,7 +344,8 @@ export async function generateEventInvoice(params: {
   const invoice = await createSalesInvoice({
     organizationId,
     type: "PAY_PER_EVENT",
-    amount,
+    amountExclVAT,
+    vatAmount,
     description,
     molliePaymentId,
   });

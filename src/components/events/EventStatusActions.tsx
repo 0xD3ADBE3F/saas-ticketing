@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Event, EventStatus } from "@/generated/prisma";
+import { EventPublishPaymentModal } from "./EventPublishPaymentModal";
 
 interface EventStatusActionsProps {
   event: Event;
@@ -21,7 +22,7 @@ const statusTransitions: Record<
   DRAFT: [
     {
       label: "Live zetten",
-      payPerEventLabel: "Betaal & Publiceer (€49)",
+      payPerEventLabel: "Betaal & Publiceer (€59,29)",
       next: "LIVE",
       variant: "primary",
     },
@@ -50,6 +51,7 @@ export function EventStatusActions({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState<EventStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const transitions = statusTransitions[event.status];
 
@@ -63,13 +65,22 @@ export function EventStatusActions({
     }
 
     if (newStatus === "LIVE") {
-      const message = isPayPerEvent
-        ? "Je wordt doorgestuurd naar Mollie om €49 te betalen. Na succesvolle betaling wordt je evenement automatisch live gezet."
-        : "Weet je zeker dat je dit evenement live wilt zetten? Het wordt dan zichtbaar voor het publiek.";
-      const confirmed = window.confirm(message);
-      if (!confirmed) return;
+      // Show modal for pay-per-event, confirm dialog for others
+      if (isPayPerEvent) {
+        setShowPaymentModal(true);
+        return;
+      } else {
+        const confirmed = window.confirm(
+          "Weet je zeker dat je dit evenement live wilt zetten? Het wordt dan zichtbaar voor het publiek."
+        );
+        if (!confirmed) return;
+      }
     }
 
+    await processStatusChange(newStatus);
+  };
+
+  const processStatusChange = async (newStatus: EventStatus) => {
     setIsLoading(newStatus);
     setError(null);
 
@@ -100,6 +111,11 @@ export function EventStatusActions({
     } finally {
       setIsLoading(null);
     }
+  };
+
+  const handlePaymentConfirm = () => {
+    setShowPaymentModal(false);
+    processStatusChange("LIVE");
   };
 
   if (transitions.length === 0) {
@@ -140,8 +156,8 @@ export function EventStatusActions({
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
           {isPayPerEvent ? (
             <>
-              💰 Je betaalt €49 per evenement. Na betaling wordt je evenement
-              direct live gezet.
+              💰 Je betaalt €49 (excl. BTW) per evenement. Na betaling wordt je
+              evenement direct live gezet.
             </>
           ) : (
             <>
@@ -151,6 +167,14 @@ export function EventStatusActions({
           )}
         </p>
       )}
+
+      {/* Payment Modal */}
+      <EventPublishPaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onConfirm={handlePaymentConfirm}
+        isLoading={isLoading === "LIVE"}
+      />
     </div>
   );
 }

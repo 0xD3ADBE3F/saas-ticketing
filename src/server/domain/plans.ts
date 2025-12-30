@@ -90,6 +90,12 @@ export const BRANDING_REMOVAL_FEE_BPS = 200;
 export const SERVICE_FEE_CENTS = 99;
 
 /**
+ * Dutch VAT rate (21%)
+ * All plan prices are EXCLUDING VAT. VAT is added when creating payments.
+ */
+export const VAT_RATE = 21;
+
+/**
  * Get plan limits for a given plan
  */
 export function getPlanLimits(plan: PricingPlan): PlanLimits {

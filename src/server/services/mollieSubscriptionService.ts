@@ -99,10 +99,10 @@ export async function createSubscriptionPayment(
   const mollieClient = getPlatformMollieClient();
 
   const planLimits = getPlanLimits(targetPlan);
-  const monthlyPrice = planLimits.monthlyPrice;
+  const monthlyPriceExclVAT = planLimits.monthlyPrice;
 
   // Only paid plans have monthly price
-  if (!monthlyPrice || monthlyPrice === 0) {
+  if (!monthlyPriceExclVAT || monthlyPriceExclVAT === 0) {
     return { success: false, error: "Dit plan vereist geen betaling" };
   }
 
@@ -123,13 +123,17 @@ export async function createSubscriptionPayment(
       email
     );
 
+    // Calculate total amount including VAT (prices are stored EXCLUDING VAT)
+    const VAT_RATE = 21;
+    const monthlyPriceInclVAT = Math.round(monthlyPriceExclVAT * (1 + VAT_RATE / 100));
+
     // Create first payment to establish mandate
     // Note: Don't specify method - Mollie will show methods that support mandates (iDEAL, creditcard, etc.)
     // iDEAL payment creates a SEPA Direct Debit mandate for future recurring charges
     const payment = await mollieClient.payments.create({
       amount: {
         currency: "EUR",
-        value: (monthlyPrice / 100).toFixed(2), // Convert cents to euros
+        value: (monthlyPriceInclVAT / 100).toFixed(2), // Convert cents to euros (incl. VAT)
       },
       customerId,
       sequenceType: SequenceType.first, // This creates a mandate for future payments
@@ -140,6 +144,9 @@ export async function createSubscriptionPayment(
         type: "subscription_first_payment",
         organizationId,
         targetPlan,
+        amountExclVAT: monthlyPriceExclVAT.toString(),
+        vatAmount: (monthlyPriceInclVAT - monthlyPriceExclVAT).toString(),
+        vatRate: VAT_RATE.toString(),
       },
     });
 
@@ -215,18 +222,22 @@ export async function createMollieSubscription(
   const mollieClient = getPlatformMollieClient();
 
   const planLimits = getPlanLimits(targetPlan);
-  const monthlyPrice = planLimits.monthlyPrice;
+  const monthlyPriceExclVAT = planLimits.monthlyPrice;
 
   mollieLogger.info({ organizationId, targetPlan, customerId }, "Creating Mollie subscription");
 
-  if (!monthlyPrice || monthlyPrice === 0) {
+  if (!monthlyPriceExclVAT || monthlyPriceExclVAT === 0) {
     mollieLogger.error({ targetPlan }, "Plan has no monthly price");
     return { success: false, error: "Dit plan vereist geen abonnement" };
   }
 
   try {
+    // Calculate total amount including VAT (prices are stored EXCLUDING VAT)
+    const VAT_RATE = 21;
+    const monthlyPriceInclVAT = Math.round(monthlyPriceExclVAT * (1 + VAT_RATE / 100));
+
     // Create recurring subscription
-    mollieLogger.info({ amount: (monthlyPrice / 100).toFixed(2) }, "Creating Mollie subscription");
+    mollieLogger.info({ amountExclVAT: (monthlyPriceExclVAT / 100).toFixed(2), amountInclVAT: (monthlyPriceInclVAT / 100).toFixed(2) }, "Creating Mollie subscription");
 
     // Check if customer has a valid mandate
     // Retry logic: Mollie may take up to 15 seconds to validate the mandate after first payment
@@ -281,7 +292,7 @@ export async function createMollieSubscription(
       customerId,
       amount: {
         currency: "EUR",
-        value: (monthlyPrice / 100).toFixed(2),
+        value: (monthlyPriceInclVAT / 100).toFixed(2),
       },
       interval: "1 month",
       startDate: startDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
@@ -290,6 +301,9 @@ export async function createMollieSubscription(
       metadata: {
         organizationId,
         plan: targetPlan,
+        amountExclVAT: monthlyPriceExclVAT.toString(),
+        vatAmount: (monthlyPriceInclVAT - monthlyPriceExclVAT).toString(),
+        vatRate: VAT_RATE.toString(),
       },
     });
 
@@ -380,6 +394,9 @@ export async function handleSubscriptionPayment(
       type?: string;
       organizationId?: string;
       targetPlan?: PricingPlan;
+      amountExclVAT?: string;
+      vatAmount?: string;
+      vatRate?: string;
     };
 
     if (metadata.type !== "subscription_first_payment") {
@@ -415,12 +432,15 @@ export async function handleSubscriptionPayment(
           mollieLogger.info({ subscriptionId: result.subscriptionId }, "Mollie subscription created");
 
           // Generate invoice for the first payment
-          const amount = Math.round(parseFloat(payment.amount.value) * 100);
+          // Extract net amount and VAT from payment metadata
+          const amountExclVAT = metadata.amountExclVAT ? parseInt(metadata.amountExclVAT) : Math.round(parseFloat(payment.amount.value) * 100);
+          const vatAmount = metadata.vatAmount ? parseInt(metadata.vatAmount) : 0;
           await mollieInvoiceService.generateSubscriptionInvoice({
             organizationId,
             subscriptionId: subscription.id,
             plan: targetPlan,
-            amount,
+            amountExclVAT,
+            vatAmount,
             molliePaymentId: paymentId,
           });
         } else {
@@ -488,12 +508,26 @@ export async function handleRecurringPayment(
         });
 
         // Generate invoice for this recurring payment
-        const amount = Math.round(parseFloat(payment.amount.value) * 100);
+        // For recurring payments, we need to get metadata from the Mollie subscription
+        if (!subscription.mollieCustomerId) {
+          mollieLogger.error({ subscriptionId: subscription.id }, "No mollieCustomerId found");
+          return { success: false, error: "No customer ID" };
+        }
+
+        const mollieSubscription = await mollieClient.customerSubscriptions.get(
+          payment.subscriptionId,
+          { customerId: subscription.mollieCustomerId }
+        );
+        const metadata = mollieSubscription.metadata as Record<string, string> || {};
+        const amountExclVAT = metadata.amountExclVAT ? parseInt(metadata.amountExclVAT) : Math.round(parseFloat(payment.amount.value) * 100);
+        const vatAmount = metadata.vatAmount ? parseInt(metadata.vatAmount) : 0;
+
         await mollieInvoiceService.generateSubscriptionInvoice({
           organizationId: subscription.organizationId,
           subscriptionId: subscription.id,
           plan: subscription.plan,
-          amount,
+          amountExclVAT,
+          vatAmount,
           molliePaymentId: paymentId,
         });
         break;
@@ -536,12 +570,16 @@ export async function createEventPayment(
 ): Promise<CreateEventPaymentResult> {
   const mollieClient = getPlatformMollieClient();
 
-  // Get event price from plan limits
-  const eventPrice = getPlanLimits("PAY_PER_EVENT").eventPrice;
+  // Get event price from plan limits (excl. VAT)
+  const eventPriceExclVAT = getPlanLimits("PAY_PER_EVENT").eventPrice;
 
-  if (!eventPrice) {
+  if (!eventPriceExclVAT) {
     return { success: false, error: "Geen evenementprijs geconfigureerd" };
   }
+
+  // Calculate total amount including VAT (prices are stored EXCLUDING VAT)
+  const VAT_RATE = 21;
+  const eventPriceInclVAT = Math.round(eventPriceExclVAT * (1 + VAT_RATE / 100));
 
   try {
     // Get organization
@@ -591,7 +629,7 @@ export async function createEventPayment(
     const payment = await mollieClient.payments.create({
       amount: {
         currency: "EUR",
-        value: (eventPrice / 100).toFixed(2), // Convert cents to euros (€49.00)
+        value: (eventPriceInclVAT / 100).toFixed(2), // Convert cents to euros (incl. VAT)
       },
       customerId,
       description: `Evenement publicatie: ${eventTitle}`,
@@ -602,6 +640,9 @@ export async function createEventPayment(
         organizationId,
         eventId,
         eventTitle, // Add eventTitle to metadata for invoice generation
+        amountExclVAT: eventPriceExclVAT.toString(),
+        vatAmount: (eventPriceInclVAT - eventPriceExclVAT).toString(),
+        vatRate: VAT_RATE.toString(),
       },
     });
 
@@ -640,13 +681,15 @@ export async function handleEventPayment(
       organizationId?: string;
       eventId?: string;
       eventTitle?: string;
+      amountExclVAT?: string;
+      vatAmount?: string;
     };
 
     if (metadata.type !== "event_publication") {
       return { success: true }; // Not an event payment
     }
 
-    const { organizationId, eventId, eventTitle } = metadata;
+    const { organizationId, eventId, eventTitle, amountExclVAT, vatAmount } = metadata;
 
     if (!organizationId || !eventId) {
       return { success: false, error: "Missing metadata" };
@@ -661,11 +704,13 @@ export async function handleEventPayment(
         });
 
         // Generate invoice via Mollie Sales Invoice API
-        const amount = Math.round(parseFloat(payment.amount.value) * 100);
+        const netAmount = amountExclVAT ? parseInt(amountExclVAT) : Math.round(parseFloat(payment.amount.value) * 100);
+        const vat = vatAmount ? parseInt(vatAmount) : 0;
         await mollieInvoiceService.generateEventInvoice({
           organizationId,
           eventTitle: eventTitle || "Event",
-          amount,
+          amountExclVAT: netAmount,
+          vatAmount: vat,
           molliePaymentId: paymentId,
         });
 

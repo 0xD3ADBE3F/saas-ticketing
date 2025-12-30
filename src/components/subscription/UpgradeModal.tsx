@@ -121,6 +121,12 @@ export function UpgradeModal({
               <p className="text-lg font-bold mt-1">
                 {toPlan.priceDescription}
               </p>
+              {(toPlan.monthlyPrice !== null && toPlan.monthlyPrice > 0) ||
+              toPlan.eventPrice !== null ? (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  (excl. BTW)
+                </p>
+              ) : null}
             </div>
           </div>
         )}
@@ -221,7 +227,7 @@ export function UpgradeModal({
 }
 
 /**
- * Calculate prorated amount for upgrade
+ * Calculate prorated amount for upgrade (INCLUDING VAT)
  */
 function calculateProration(
   fromPlan: PlanInfo,
@@ -235,8 +241,11 @@ function calculateProration(
 
   // If no period end (new subscription)
   if (!periodEnd) {
+    const baseAmount = toPlan.monthlyPrice ?? toPlan.eventPrice ?? 0;
+    const VAT_RATE = 21;
+    const amountInclVAT = Math.round(baseAmount * (1 + VAT_RATE / 100));
     return {
-      amount: toPlan.monthlyPrice ?? toPlan.eventPrice ?? 0,
+      amount: amountInclVAT,
       daysRemaining: 30,
     };
   }
@@ -248,7 +257,7 @@ function calculateProration(
     Math.ceil((periodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
   );
 
-  // Calculate price difference
+  // Calculate price difference (excl. VAT)
   const fromPrice = fromPlan.monthlyPrice ?? 0;
   const toPrice = toPlan.monthlyPrice ?? toPlan.eventPrice ?? 0;
   const priceDiff = toPrice - fromPrice;
@@ -256,8 +265,14 @@ function calculateProration(
   // Prorate for remaining days
   const proratedAmount = Math.round((priceDiff / daysInMonth) * daysRemaining);
 
+  // Add VAT to prorated amount
+  const VAT_RATE = 21;
+  const proratedAmountInclVAT = Math.round(
+    proratedAmount * (1 + VAT_RATE / 100)
+  );
+
   return {
-    amount: Math.max(0, proratedAmount),
+    amount: Math.max(0, proratedAmountInclVAT),
     daysRemaining,
   };
 }

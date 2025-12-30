@@ -89,6 +89,9 @@ export function PlanComparisonCard({
             <span className="text-gray-500 dark:text-gray-400 text-sm ml-1">
               /evenement
             </span>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              (excl. BTW)
+            </div>
           </div>
         ) : plan.monthlyPrice !== null ? (
           <div>
@@ -98,6 +101,9 @@ export function PlanComparisonCard({
             <span className="text-gray-500 dark:text-gray-400 text-sm ml-1">
               /maand
             </span>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              (excl. BTW)
+            </div>
           </div>
         ) : null}
       </div>

@@ -101,7 +101,13 @@ export function PlanSelector({
                         : ""
                     }`}
                   >
-                    {plan.priceDescription}
+                    <div>{plan.priceDescription}</div>
+                    {(plan.monthlyPrice !== null && plan.monthlyPrice > 0) ||
+                    plan.eventPrice !== null ? (
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        (excl. BTW)
+                      </div>
+                    ) : null}
                   </td>
                 ))}
               </tr>
