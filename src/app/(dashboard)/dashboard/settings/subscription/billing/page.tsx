@@ -1,9 +1,6 @@
 import { getInvoicesAction, getSubscriptionAction } from "../actions";
 import { BillingHistory } from "@/components/subscription/BillingHistory";
-import {
-  InvoiceFilters,
-  type InvoiceFilterValues,
-} from "@/components/subscription/InvoiceFilters";
+import { InvoiceFiltersWrapper } from "@/components/subscription/InvoiceFiltersWrapper";
 import type { InvoiceType, InvoiceStatus } from "@/generated/prisma";
 
 interface PageProps {
@@ -38,27 +35,27 @@ export default async function BillingPage({ searchParams }: PageProps) {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Facturatie</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-bold">Facturatie</h1>
+        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
           Bekijk en download je facturen voor abonnementen en evenementen
         </p>
       </div>
 
       {/* Subscription Summary Card */}
       {subscription && subscription.plan && (
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">
-            Actief abonnement
-          </h2>
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
+          <h2 className="text-lg font-medium mb-4">Actief abonnement</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
-              <dt className="text-sm font-medium text-gray-500">Plan</dt>
-              <dd className="mt-1 text-sm text-gray-900">
-                {subscription.planDisplayName}
-              </dd>
+              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Plan
+              </dt>
+              <dd className="mt-1 text-sm">{subscription.planDisplayName}</dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-gray-500">Status</dt>
+              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Status
+              </dt>
               <dd className="mt-1">
                 <span
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -81,12 +78,12 @@ export default async function BillingPage({ searchParams }: PageProps) {
             </div>
             {subscription.currentPeriodEnd && (
               <div>
-                <dt className="text-sm font-medium text-gray-500">
+                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                   {subscription.cancelAtPeriodEnd
                     ? "Verloopt op"
                     : "Volgende verlenging"}
                 </dt>
-                <dd className="mt-1 text-sm text-gray-900">
+                <dd className="mt-1 text-sm">
                   {new Date(subscription.currentPeriodEnd).toLocaleDateString(
                     "nl-NL",
                     {
@@ -103,32 +100,12 @@ export default async function BillingPage({ searchParams }: PageProps) {
       )}
 
       {/* Filters */}
-      <InvoiceFilters
-        onFilterChange={(filters: InvoiceFilterValues) => {
-          // Build query string
-          const params = new URLSearchParams();
-          if (filters.type) params.set("type", filters.type);
-          if (filters.status) params.set("status", filters.status);
-          if (filters.startDate) params.set("startDate", filters.startDate);
-          if (filters.endDate) params.set("endDate", filters.endDate);
-
-          // Navigate with new filters
-          window.location.href = `/dashboard/settings/subscription/billing?${params.toString()}`;
-        }}
-        defaultValues={{
-          type: params.type,
-          status: params.status,
-          startDate: params.startDate,
-          endDate: params.endDate,
-        }}
-      />
+      <InvoiceFiltersWrapper />
 
       {/* Invoice Table */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">
-            Facturen ({total})
-          </h2>
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+          <h2 className="text-lg font-medium">Facturen ({total})</h2>
         </div>
         <BillingHistory
           initialInvoices={invoices}

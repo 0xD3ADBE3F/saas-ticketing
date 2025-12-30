@@ -1,5 +1,30 @@
 # FEATURES.md — Entro (NL-first, Offline Scanning MVP)
 
+## Recent Fixes & Updates
+
+### 30 December 2024
+
+- ✅ **Fixed Billings Page** - Resolved server/client component conflict
+  - Created `InvoiceFiltersWrapper` client component to handle filter navigation
+  - Separated concerns: server component handles data fetching, client wrapper handles user interactions
+  - Fixed issue where `window.location.href` was being used in server component context
+- ✅ **Color Consistency** - Updated billing page to match dashboard theme
+  - Applied dark mode-aware color classes (`dark:bg-gray-900`, `dark:text-gray-400`, etc.)
+  - Updated `BillingHistory` component with proper dark mode support
+  - Updated `InvoiceFilters` component with dark mode colors
+  - All components now consistent with rest of dashboard styling
+- ✅ **Fixed Amount Display** - Corrected invoice amounts in billing page
+  - Changed from `formatCurrency()` to `formatPrice()` to properly convert cents to euros
+  - Database stores amounts in cents, now correctly displayed by dividing by 100
+- ✅ **Simplified Invoice Table & Added Modal** - Improved UX for viewing invoices
+  - Removed columns: Vervaldatum (due date), Bedrag (base amount), BTW (VAT amount)
+  - Table now shows: Factuurnummer, Type, Datum, Totaal bedrag, Status, PDF icon
+  - Created `InvoiceDetailModal` component to show full invoice details
+  - Table rows are now clickable to open modal with complete information
+  - Modal includes all details: dates, amounts breakdown, description, and PDF download
+
+---
+
 ## Legend
 
 - ⬜ Not started
@@ -912,13 +937,34 @@ Location: `src/app/api/invoices/route.ts`
 - Includes PDF URL from Mollie
 - Organization scoping enforced
 
-**`GET /api/invoices/[id]/download`**
+**`GET /api/invoices/[id]/pdf`** ✅
 
-- Redirect to Mollie-hosted PDF URL
-- Validate organization access before redirect
-- Optional: proxy through backend for access control
+- Authenticated proxy endpoint for invoice PDF downloads
+- Validates user authentication and organization ownership
+- Fetches invoice from Mollie API using organization's access token
+- Extracts authenticated PDF URL from `_links.pdf.href`
+- Proxies PDF to browser with proper headers (`Content-Type: application/pdf`)
+- Implements security best practice: never expose direct Mollie PDF URLs to client
+- Returns 401 if user not authenticated, 404 if invoice not found or not owned by org
 
-##### Server Actions
+**Implementation Details:**
+
+Mollie invoice PDF URLs require authentication and cannot be accessed directly from the browser. The proxy endpoint:
+
+1. Authenticates the user via Supabase
+2. Verifies the invoice belongs to the user's organization
+3. Uses Mollie API client to fetch the invoice object (which includes authenticated PDF link)
+4. Fetches the PDF from the authenticated URL
+5. Streams it to the browser with appropriate headers
+
+This approach ensures:
+
+- Multi-tenancy: Users can only download their organization's invoices
+- Security: Direct Mollie URLs are never exposed to the client
+- Proper authentication: API credentials stay server-side
+- Good UX: PDFs download directly with proper filename
+
+##### API Routes (Legacy - Replaced by Proxy)
 
 **`getInvoicesAction()`**
 
@@ -1160,17 +1206,19 @@ const REQUIRED_SCOPES = [
 
 **Technical Improvements** ✅
 
-| Task                                            | Status |
-| ----------------------------------------------- | ------ |
-| Fixed recurring payment method selection        | ✅     |
-| Payment status polling during webhooks          | ✅     |
-| Mandate validation with structured logs         | ✅     |
-| Subscription startDate (prevents double-charge) | ✅     |
-| Disabled Prisma query logs                      | ✅     |
-| Migrated console.log to mollieLogger            | ✅     |
-| Usage tracking for ticket sales                 | ✅     |
-| Plan-specific usage calculation                 | ✅     |
-| Removed legacy completeMockPayment              | ✅     |
+| Task                                              | Status |
+| ------------------------------------------------- | ------ |
+| Fixed recurring payment method selection          | ✅     |
+| Payment status polling during webhooks            | ✅     |
+| Mandate validation with structured logs           | ✅     |
+| Mandate retry logic (18s timeout)                 | ✅     |
+| Subscription startDate (prevents double-charge)   | ✅     |
+| Disabled Prisma query logs                        | ✅     |
+| Migrated console.log to mollieLogger              | ✅     |
+| Usage tracking for ticket sales                   | ✅     |
+| Plan-specific usage calculation                   | ✅     |
+| Removed legacy completeMockPayment                | ✅     |
+| Efficient API endpoint polling (fetch vs refresh) | ✅     |
 
 **Phase 4: Usage Warnings**
 
@@ -1360,7 +1408,11 @@ src/
 - ✅ Fixed: "The payment method selected does not accept recurring payments" error
   - Solution: Removed explicit method parameter, let Mollie auto-select recurring-capable methods
 - ✅ Fixed: Redirect happens before webhook completes processing
-  - Solution: Added SubscriptionPaymentPoller component with router.refresh() polling
+  - Solution: Added SubscriptionPaymentPoller component polling dedicated `/api/subscription/status` endpoint
+  - Architecture: Replaced router.refresh() (full page re-render) with lightweight fetch() to API endpoint
+  - Improved UX: Clear loading indicator with "Abonnement wordt ingesteld..." message and progress counter
+- ✅ Fixed: Mandate validation timeout (6s insufficient for Mollie's 10-15s creation time)
+  - Solution: Increased retry logic from 3×2s to 6×3s (18 seconds total)
 - ✅ Fixed: Subscription not visible in Mollie dashboard (test mode confusion)
   - Solution: Documented test/live mode toggle requirement
 - ✅ Fixed: Risk of double-charging when subscription starts immediately

@@ -1,18 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { formatCurrency } from "@/lib/currency";
+import { formatPrice } from "@/lib/currency";
+import { InvoiceDetailModal } from "./";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
-import type {
-  SubscriptionInvoice,
-  InvoiceStatus,
-  InvoiceType,
-} from "@/generated/prisma";
+import type { SerializedInvoice } from "@/app/(dashboard)/dashboard/settings/subscription/actions";
+import type { InvoiceStatus, InvoiceType } from "@/generated/prisma";
 
-interface Invoice extends SubscriptionInvoice {
-  // Include any additional fields if needed
-}
+type Invoice = SerializedInvoice;
 
 interface BillingHistoryProps {
   initialInvoices: Invoice[];
@@ -28,8 +24,20 @@ export function BillingHistory({
   pageSize,
 }: BillingHistoryProps) {
   const [invoices] = useState<Invoice[]>(initialInvoices);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const totalPages = Math.ceil(totalCount / pageSize);
+
+  const handleRowClick = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedInvoice(null);
+  };
 
   const getStatusBadgeClass = (status: InvoiceStatus): string => {
     const baseClasses =
@@ -80,7 +88,9 @@ export function BillingHistory({
   if (invoices.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Nog geen facturen beschikbaar</p>
+        <p className="text-gray-500 dark:text-gray-400">
+          Nog geen facturen beschikbaar
+        </p>
       </div>
     );
   }
@@ -88,92 +98,85 @@ export function BillingHistory({
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Factuurnummer
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Type
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Datum
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Vervaldatum
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Bedrag
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                BTW
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Totaal
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Acties
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                PDF
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
             {invoices.map((invoice) => {
               const totalAmount =
                 Number(invoice.amount) + Number(invoice.vatAmount);
 
               return (
-                <tr key={invoice.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <tr
+                  key={invoice.id}
+                  onClick={() => handleRowClick(invoice)}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                >
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     {invoice.invoiceNumber}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                     {getTypeLabel(invoice.type)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                     {invoice.invoiceDate
                       ? format(new Date(invoice.invoiceDate), "dd MMM yyyy", {
                           locale: nl,
                         })
                       : "N/A"}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {invoice.dueDate
-                      ? format(new Date(invoice.dueDate), "dd MMM yyyy", {
-                          locale: nl,
-                        })
-                      : "N/A"}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatCurrency(Number(invoice.amount))}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatCurrency(Number(invoice.vatAmount))}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {formatCurrency(totalAmount)}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    {formatPrice(totalAmount)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={getStatusBadgeClass(invoice.status)}>
                       {getStatusLabel(invoice.status)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {invoice.pdfUrl ? (
-                      <a
-                        href={invoice.pdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800"
+                  <td
+                    className="px-6 py-4 whitespace-nowrap text-sm"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <a
+                      href={`/api/invoices/${invoice.id}/pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 inline-flex items-center gap-1"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
                       >
-                        PDF
-                      </a>
-                    ) : (
-                      <span className="text-gray-400">N/A</span>
-                    )}
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                    </a>
                   </td>
                 </tr>
               );
@@ -184,11 +187,11 @@ export function BillingHistory({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+        <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3 sm:px-6">
           <div className="flex flex-1 justify-between sm:hidden">
             <a
               href={`?page=${currentPage - 1}`}
-              className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${
+              className={`relative inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 ${
                 currentPage === 1 ? "pointer-events-none opacity-50" : ""
               }`}
             >
@@ -196,7 +199,7 @@ export function BillingHistory({
             </a>
             <a
               href={`?page=${currentPage + 1}`}
-              className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${
+              className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 ${
                 currentPage === totalPages
                   ? "pointer-events-none opacity-50"
                   : ""
@@ -207,7 +210,7 @@ export function BillingHistory({
           </div>
           <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
                 Resultaten{" "}
                 <span className="font-medium">
                   {(currentPage - 1) * pageSize + 1}
@@ -226,7 +229,7 @@ export function BillingHistory({
               >
                 <a
                   href={`?page=${currentPage - 1}`}
-                  className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
+                  className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 dark:text-gray-500 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-20 focus:outline-offset-0 ${
                     currentPage === 1 ? "pointer-events-none opacity-50" : ""
                   }`}
                 >
@@ -260,7 +263,7 @@ export function BillingHistory({
                           className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
                             page === currentPage
                               ? "z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-                              : "text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0"
+                              : "text-gray-900 dark:text-gray-100 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-offset-0"
                           }`}
                         >
                           {page}
@@ -273,7 +276,7 @@ export function BillingHistory({
                       return (
                         <span
                           key={page}
-                          className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300"
+                          className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 ring-1 ring-inset ring-gray-300 dark:ring-gray-600"
                         >
                           ...
                         </span>
@@ -285,7 +288,7 @@ export function BillingHistory({
 
                 <a
                   href={`?page=${currentPage + 1}`}
-                  className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
+                  className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 dark:text-gray-500 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-20 focus:outline-offset-0 ${
                     currentPage === totalPages
                       ? "pointer-events-none opacity-50"
                       : ""
@@ -310,6 +313,13 @@ export function BillingHistory({
           </div>
         </div>
       )}
+
+      {/* Invoice Detail Modal */}
+      <InvoiceDetailModal
+        invoice={selectedInvoice}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 }

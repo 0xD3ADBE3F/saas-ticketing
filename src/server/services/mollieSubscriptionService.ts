@@ -562,17 +562,12 @@ export async function createEventPayment(
         type: "event_publication",
         organizationId,
         eventId,
+        eventTitle, // Add eventTitle to metadata for invoice generation
       },
     });
 
-    // Create invoice record (pending)
-    await subscriptionRepo.createInvoice({
-      organizationId,
-      type: "PAY_PER_EVENT",
-      amount: eventPrice,
-      description: `Evenement: ${eventTitle}`,
-      molliePaymentId: payment.id,
-    });
+    // Note: Invoice will be created via webhook after successful payment
+    // This ensures we only generate Mollie Sales Invoices for paid events
 
     return {
       success: true,
@@ -605,13 +600,14 @@ export async function handleEventPayment(
       type?: string;
       organizationId?: string;
       eventId?: string;
+      eventTitle?: string;
     };
 
     if (metadata.type !== "event_publication") {
       return { success: true }; // Not an event payment
     }
 
-    const { organizationId, eventId } = metadata;
+    const { organizationId, eventId, eventTitle } = metadata;
 
     if (!organizationId || !eventId) {
       return { success: false, error: "Missing metadata" };
@@ -625,16 +621,14 @@ export async function handleEventPayment(
           data: { status: "LIVE" },
         });
 
-        // Update invoice status
-        const invoice = await prisma.subscriptionInvoice.findFirst({
-          where: { molliePaymentId: paymentId },
+        // Generate invoice via Mollie Sales Invoice API
+        const amount = Math.round(parseFloat(payment.amount.value) * 100);
+        await mollieInvoiceService.generateEventInvoice({
+          organizationId,
+          eventTitle: eventTitle || "Event",
+          amount,
+          molliePaymentId: paymentId,
         });
-        if (invoice) {
-          await prisma.subscriptionInvoice.update({
-            where: { id: invoice.id },
-            data: { status: "PAID", paidAt: new Date() },
-          });
-        }
 
         mollieLogger.info({ eventId }, "Event published after successful payment");
         break;
@@ -642,16 +636,8 @@ export async function handleEventPayment(
       case "failed":
       case "expired":
       case "canceled":
-        // Payment failed - update invoice
-        const failedInvoice = await prisma.subscriptionInvoice.findFirst({
-          where: { molliePaymentId: paymentId },
-        });
-        if (failedInvoice) {
-          await prisma.subscriptionInvoice.update({
-            where: { id: failedInvoice.id },
-            data: { status: "FAILED" },
-          });
-        }
+        // Payment failed - no invoice to update (invoice only created on success)
+        mollieLogger.info({ eventId, status: payment.status }, "Event payment failed");
         break;
     }
 

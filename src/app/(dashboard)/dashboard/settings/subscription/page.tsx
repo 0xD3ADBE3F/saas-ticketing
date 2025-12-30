@@ -17,9 +17,13 @@ export default async function SubscriptionPage() {
     );
   }
 
+  // Check if billing info is incomplete
+  const billingIncomplete = !subscription.hasRequiredBillingInfo;
+
   // Check if there's no active plan (plan is null)
   const hasNoPlan = !subscription.plan;
   console.log({ subscription });
+
   // Show simple "no plan" state
   if (hasNoPlan) {
     return (
@@ -29,6 +33,36 @@ export default async function SubscriptionPage() {
           organizationId={subscription.organizationId}
           currentPlan={subscription.plan}
         />
+
+        {/* Billing Info Warning */}
+        {billingIncomplete && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-red-600 dark:text-red-400 text-xl">⚠️</span>
+              <div className="flex-1">
+                <p className="font-medium text-red-800 dark:text-red-200">
+                  Bedrijfsgegevens vereist
+                </p>
+                <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                  Om een abonnement af te sluiten moet je eerst de volgende
+                  gegevens invullen:
+                </p>
+                <ul className="text-sm text-red-700 dark:text-red-300 mt-2 list-disc list-inside">
+                  {subscription.missingBillingFields.map((field) => (
+                    <li key={field}>{field}</li>
+                  ))}
+                </ul>
+                <Link
+                  href="/dashboard/settings"
+                  className="inline-flex items-center gap-2 px-4 py-2 mt-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                >
+                  Gegevens invullen →
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-8 text-center">
           <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
             <span className="text-3xl">📋</span>
@@ -38,12 +72,22 @@ export default async function SubscriptionPage() {
             Je hebt momenteel geen actief abonnement. Kies een plan om events te
             kunnen publiceren en tickets te verkopen.
           </p>
-          <Link
-            href="/dashboard/settings/subscription/upgrade"
-            className="inline-flex px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-          >
-            Kies een plan
-          </Link>
+          {billingIncomplete ? (
+            <button
+              disabled
+              className="inline-flex px-6 py-3 bg-gray-400 text-white rounded-lg cursor-not-allowed font-medium opacity-60"
+              title="Vul eerst je bedrijfsgegevens in"
+            >
+              Kies een plan
+            </button>
+          ) : (
+            <Link
+              href="/dashboard/settings/subscription/upgrade"
+              className="inline-flex px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              Kies een plan
+            </Link>
+          )}
         </div>
       </div>
     );

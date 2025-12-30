@@ -5,3 +5,7 @@ export { PlanComparisonCard } from "./PlanComparisonCard";
 export { PlanSelector } from "./PlanSelector";
 export { UpgradeModal } from "./UpgradeModal";
 export { DowngradeModal } from "./DowngradeModal";
+export { BillingHistory } from "./BillingHistory";
+export { InvoiceFilters } from "./InvoiceFilters";
+export { InvoiceFiltersWrapper } from "./InvoiceFiltersWrapper";
+export { InvoiceDetailModal } from "./InvoiceDetailModal";

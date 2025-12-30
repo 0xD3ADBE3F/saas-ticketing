@@ -38,6 +38,12 @@ model Organization {
   kvkVerifiedAt     DateTime?
   kvkRejectionReason String?
 
+  // Billing Address (required for invoicing)
+  streetAddress     String?           // Street name and number
+  postalCode        String?           // Postal/ZIP code
+  city              String?           // City name
+  country           String?  @default("NL") // ISO 3166-1 alpha-2 country code
+
   // Relations
   memberships      Membership[]
   events           Event[]

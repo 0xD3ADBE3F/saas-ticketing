@@ -50,7 +50,7 @@ async function main() {
     subscription = await prisma.subscription.create({
       data: {
         organizationId: testOrg.id,
-        plan: "PROFESSIONAL",
+        plan: "PRO_ORGANIZER",
         status: "ACTIVE",
         currentPeriodStart: now,
         currentPeriodEnd: periodEnd,

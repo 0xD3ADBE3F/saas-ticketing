@@ -15,11 +15,21 @@ import {
 } from "@/server/domain/plans";
 import { invoiceRepo } from "@/server/repos/invoiceRepo";
 import type { PricingPlan, SubscriptionStatus, SubscriptionInvoice, InvoiceType, InvoiceStatus } from "@/generated/prisma";
+import { hasRequiredBillingInfo, getMissingBillingFields } from "@/server/lib/billingValidation";
+
+// Serialized invoice type for client components (converts Decimal to number)
+export type SerializedInvoice = Omit<SubscriptionInvoice, 'vatRate'> & {
+  vatRate: number;
+};
 
 export type SubscriptionData = {
   // Organization info
   organizationId: string;
   organizationName: string;
+
+  // Billing validation
+  hasRequiredBillingInfo: boolean;
+  missingBillingFields: string[];
 
   // Plan info (null = no plan active)
   plan: PricingPlan | null;
@@ -75,6 +85,10 @@ export async function getSubscriptionAction(): Promise<SubscriptionData | null> 
   const currentOrg = organizations[0];
   const plan = currentOrg.currentPlan; // Can be null = no plan active
 
+  // Check billing info completeness
+  const hasBillingInfo = hasRequiredBillingInfo(currentOrg);
+  const missingFields = getMissingBillingFields(currentOrg);
+
   // Get subscription details
   const subscription = await subscriptionRepo.findByOrganizationId(currentOrg.id);
 
@@ -83,6 +97,9 @@ export async function getSubscriptionAction(): Promise<SubscriptionData | null> 
     return {
       organizationId: currentOrg.id,
       organizationName: currentOrg.name,
+
+      hasRequiredBillingInfo: hasBillingInfo,
+      missingBillingFields: missingFields,
 
       plan: null,
       planDisplayName: null,
@@ -158,6 +175,9 @@ export async function getSubscriptionAction(): Promise<SubscriptionData | null> 
   return {
     organizationId: currentOrg.id,
     organizationName: currentOrg.name,
+
+    hasRequiredBillingInfo: hasBillingInfo,
+    missingBillingFields: missingFields,
 
     plan,
     planDisplayName: getPlanDisplayName(plan),
@@ -560,7 +580,7 @@ export async function getInvoicesAction(params?: {
   page?: number;
   limit?: number;
 }): Promise<{
-  invoices: SubscriptionInvoice[];
+  invoices: SerializedInvoice[];
   total: number;
   page: number;
   limit: number;
@@ -594,5 +614,14 @@ export async function getInvoicesAction(params?: {
     }
   );
 
-  return result;
+  // Convert Decimal to number for client components
+  const serializedInvoices = result.invoices.map(invoice => ({
+    ...invoice,
+    vatRate: invoice.vatRate.toNumber(),
+  }));
+
+  return {
+    ...result,
+    invoices: serializedInvoices,
+  };
 }

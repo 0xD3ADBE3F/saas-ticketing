@@ -39,14 +39,14 @@ export function InvoiceFilters({
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white p-4 rounded-lg border border-gray-200 space-y-4"
+      className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-800 space-y-4"
     >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Type Filter */}
         <div>
           <label
             htmlFor="type"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             Type
           </label>
@@ -54,7 +54,7 @@ export function InvoiceFilters({
             id="type"
             name="type"
             defaultValue={defaultValues.type || ""}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           >
             <option value="">Alle types</option>
             <option value="SUBSCRIPTION">Abonnement</option>
@@ -67,7 +67,7 @@ export function InvoiceFilters({
         <div>
           <label
             htmlFor="status"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             Status
           </label>
@@ -75,7 +75,7 @@ export function InvoiceFilters({
             id="status"
             name="status"
             defaultValue={defaultValues.status || ""}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           >
             <option value="">Alle statussen</option>
             <option value="DRAFT">Concept</option>
@@ -92,7 +92,7 @@ export function InvoiceFilters({
         <div>
           <label
             htmlFor="startDate"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             Van datum
           </label>
@@ -101,7 +101,7 @@ export function InvoiceFilters({
             id="startDate"
             name="startDate"
             defaultValue={defaultValues.startDate || ""}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           />
         </div>
 
@@ -109,7 +109,7 @@ export function InvoiceFilters({
         <div>
           <label
             htmlFor="endDate"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             Tot datum
           </label>
@@ -118,7 +118,7 @@ export function InvoiceFilters({
             id="endDate"
             name="endDate"
             defaultValue={defaultValues.endDate || ""}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           />
         </div>
       </div>
@@ -134,7 +134,7 @@ export function InvoiceFilters({
         <button
           type="button"
           onClick={handleReset}
-          className="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 py-2 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
           Reset
         </button>

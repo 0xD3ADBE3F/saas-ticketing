@@ -18,6 +18,8 @@ export default async function UpgradePage() {
     );
   }
 
+  // Check if billing info is incomplete
+  const billingIncomplete = !subscription.hasRequiredBillingInfo;
   const hasNoPlan = !subscription.plan;
 
   return (
@@ -38,8 +40,37 @@ export default async function UpgradePage() {
         </div>
       </div>
 
+      {/* Billing Info Warning - Blocking */}
+      {billingIncomplete && (
+        <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-lg p-6">
+          <div className="flex items-start gap-4">
+            <span className="text-red-600 dark:text-red-400 text-2xl">🚫</span>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">
+                Bedrijfsgegevens vereist
+              </h3>
+              <p className="text-red-700 dark:text-red-300 mb-3">
+                Om een abonnement af te sluiten moet je eerst de volgende
+                gegevens invullen:
+              </p>
+              <ul className="text-red-700 dark:text-red-300 mb-4 list-disc list-inside space-y-1">
+                {subscription.missingBillingFields.map((field) => (
+                  <li key={field}>{field}</li>
+                ))}
+              </ul>
+              <Link
+                href="/dashboard/settings"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Gegevens invullen →
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Current Plan Notice - only show if user has a plan */}
-      {!hasNoPlan && (
+      {!hasNoPlan && !billingIncomplete && (
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
           <div className="flex items-center gap-2">
             <span className="text-blue-600 dark:text-blue-400">ℹ️</span>
@@ -55,7 +86,7 @@ export default async function UpgradePage() {
       )}
 
       {/* No Plan Notice */}
-      {hasNoPlan && (
+      {hasNoPlan && !billingIncomplete && (
         <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
           <div className="flex items-center gap-2">
             <span className="text-gray-600 dark:text-gray-400">📋</span>
@@ -66,15 +97,17 @@ export default async function UpgradePage() {
         </div>
       )}
 
-      {/* Plan Selector */}
-      <PlanSelector
-        plans={plans}
-        currentPlan={subscription.plan}
-        currentUsage={{
-          ticketsSold: subscription.ticketsSold,
-          periodEnd: subscription.currentPeriodEnd,
-        }}
-      />
+      {/* Plan Selector - hidden if billing incomplete */}
+      {!billingIncomplete && (
+        <PlanSelector
+          plans={plans}
+          currentPlan={subscription.plan}
+          currentUsage={{
+            ticketsSold: subscription.ticketsSold,
+            periodEnd: subscription.currentPeriodEnd,
+          }}
+        />
+      )}
 
       {/* FAQ / Help Section */}
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">

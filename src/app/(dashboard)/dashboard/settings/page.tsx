@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/server/lib/supabase";
 import { getUserOrganizations } from "@/server/services/organizationService";
 import { MollieConnection } from "@/components/dashboard/MollieConnection";
+import { OrganizationForm } from "@/components/dashboard/OrganizationForm";
 
 export default async function SettingsPage() {
   const user = await getUser();
@@ -27,31 +28,12 @@ export default async function SettingsPage() {
       </section>
 
       <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-        <h2 className="font-semibold mb-4">Organisatie</h2>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Organisatienaam
-            </label>
-            <input
-              type="text"
-              defaultValue={currentOrg.name}
-              placeholder="Jouw organisatie"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Contact E-mail
-            </label>
-            <input
-              type="email"
-              defaultValue={currentOrg.email || ""}
-              placeholder="contact@voorbeeld.nl"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
-            />
-          </div>
-        </div>
+        <h2 className="font-semibold mb-4">Algemeen</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+          Deze gegevens zijn verplicht voor facturering en worden gebruikt op
+          facturen.
+        </p>
+        <OrganizationForm organization={currentOrg} />
       </section>
 
       <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">

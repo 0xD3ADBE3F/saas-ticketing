@@ -101,7 +101,15 @@ export async function createSalesInvoice(
     // Fetch organization details for recipient
     const organization = await prisma.organization.findUnique({
       where: { id: organizationId },
-      select: { name: true, email: true, kvkNumber: true },
+      select: {
+        name: true,
+        email: true,
+        kvkNumber: true,
+        streetAddress: true,
+        postalCode: true,
+        city: true,
+        country: true,
+      },
     });
 
     if (!organization) {
@@ -115,6 +123,13 @@ export async function createSalesInvoice(
     if (!organization.kvkNumber) {
       throw new Error(
         `Organization ${organizationId} has no KVK number. KVK number is required for invoice generation.`
+      );
+    }
+
+    // Validate required address fields
+    if (!organization.streetAddress || !organization.postalCode || !organization.city) {
+      throw new Error(
+        `Organization ${organizationId} is missing required address information. Please complete your organization details in Settings.`
       );
     }
 
@@ -142,10 +157,10 @@ export async function createSalesInvoice(
           organizationName: organization.name,
           organizationNumber: organization.kvkNumber, // Dutch Chamber of Commerce (KVK) number
           email: organization.email,
-          streetAndNumber: "N/A", // TODO: Collect organization address during onboarding
-          postalCode: "0000AA",
-          city: "Amsterdam",
-          country: "NL",
+          streetAndNumber: organization.streetAddress,
+          postalCode: organization.postalCode,
+          city: organization.city,
+          country: organization.country || "NL",
           locale: "nl_NL",
         },
         lines: [
