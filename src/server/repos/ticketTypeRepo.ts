@@ -23,6 +23,31 @@ export type UpdateTicketTypeInput = {
 
 export const ticketTypeRepo = {
   /**
+   * Get event info for ticket type validation
+   */
+  getEventForTicketType: async (
+    eventId: string,
+    userId: string
+  ): Promise<{ id: string; isPaid: boolean } | null> => {
+    const event = await prisma.event.findFirst({
+      where: {
+        id: eventId,
+        organization: {
+          memberships: {
+            some: { userId },
+          },
+        },
+      },
+      select: {
+        id: true,
+        isPaid: true,
+      },
+    });
+
+    return event;
+  },
+
+  /**
    * Create a new ticket type (scoped to event via membership)
    */
   create: async (
@@ -81,7 +106,7 @@ export const ticketTypeRepo = {
   findByIdWithEvent: async (
     id: string,
     userId: string
-  ): Promise<(TicketType & { event: { id: string; title: string; status: string; organizationId: string } }) | null> => {
+  ): Promise<(TicketType & { event: { id: string; title: string; status: string; organizationId: string; isPaid: boolean } }) | null> => {
     return prisma.ticketType.findFirst({
       where: {
         id,
@@ -100,6 +125,7 @@ export const ticketTypeRepo = {
             title: true,
             status: true,
             organizationId: true,
+            isPaid: true,
           },
         },
       },

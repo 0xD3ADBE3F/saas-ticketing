@@ -9,6 +9,7 @@ import { centsToEuros } from "@/lib/currency";
 interface TicketTypeFormProps {
   ticketType?: TicketType;
   eventId: string;
+  eventIsPaid: boolean;
   mode: "create" | "edit";
 }
 
@@ -24,6 +25,7 @@ interface FormData {
 export function TicketTypeForm({
   ticketType,
   eventId,
+  eventIsPaid,
   mode,
 }: TicketTypeFormProps) {
   const router = useRouter();
@@ -33,7 +35,11 @@ export function TicketTypeForm({
   const [formData, setFormData] = useState<FormData>({
     name: ticketType?.name || "",
     description: ticketType?.description || "",
-    price: ticketType ? centsToEuros(ticketType.price).toString() : "",
+    price: ticketType
+      ? centsToEuros(ticketType.price).toString()
+      : eventIsPaid
+        ? ""
+        : "0",
     capacity: ticketType?.capacity.toString() || "100",
     saleStart: ticketType?.saleStart
       ? toDateTimeLocalValue(ticketType.saleStart)
@@ -60,6 +66,13 @@ export function TicketTypeForm({
     const price = parseFloat(formData.price);
     if (isNaN(price) || price < 0) {
       setError("Voer een geldige prijs in (minimaal €0)");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // For paid events, price must be greater than 0
+    if (eventIsPaid && price === 0) {
+      setError("Voor betaalde evenementen moet de prijs groter zijn dan €0");
       setIsSubmitting(false);
       return;
     }
@@ -228,12 +241,15 @@ export function TicketTypeForm({
               step="0.01"
               value={formData.price}
               onChange={handleChange}
+              disabled={!eventIsPaid}
               placeholder="0.00"
-              className="w-full pl-8 pr-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-8 pr-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
           <p className="mt-1 text-sm text-gray-500">
-            Voer 0 in voor gratis tickets
+            {eventIsPaid
+              ? "Betaald evenement: prijs moet groter zijn dan €0"
+              : "Gratis evenement: tickets zijn altijd gratis (€0)"}
           </p>
         </div>
 

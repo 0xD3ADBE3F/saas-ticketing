@@ -20,8 +20,12 @@ export async function generateMetadata({ params }: CompletePageProps) {
     };
   }
 
+  const isFree = result.data.order.totalAmount === 0;
+
   return {
-    title: `Betaling voltooid - ${result.data.order.orderNumber}`,
+    title: isFree
+      ? `Bestelling voltooid - ${result.data.order.orderNumber}`
+      : `Betaling voltooid - ${result.data.order.orderNumber}`,
     description: `Je tickets voor ${result.data.event.title}`,
   };
 }
@@ -161,7 +165,9 @@ export default async function CompletePage({ params }: CompletePageProps) {
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-green-700 dark:text-green-400">
-                  Betaling geslaagd!
+                  {order.totalAmount === 0
+                    ? "Bestelling geslaagd!"
+                    : "Betaling geslaagd!"}
                 </h1>
                 <p className="text-green-600 dark:text-green-400">
                   Je tickets zijn bevestigd en verzonden naar {order.buyerEmail}

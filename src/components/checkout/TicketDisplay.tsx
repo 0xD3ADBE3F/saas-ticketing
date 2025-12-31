@@ -51,40 +51,6 @@ export function TicketDisplay({
 
   return (
     <div className="space-y-6">
-      {/* Summary */}
-      <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-10 h-10 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center">
-            <svg
-              className="w-5 h-5 text-green-600 dark:text-green-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-          <div>
-            <h3 className="font-semibold text-green-800 dark:text-green-300">
-              Betaling geslaagd!
-            </h3>
-            <p className="text-sm text-green-700 dark:text-green-400 mt-1">
-              Je {tickets.length} ticket{tickets.length > 1 ? "s" : ""}{" "}
-              {tickets.length > 1 ? "zijn" : "is"} verstuurd naar{" "}
-              <strong>{buyerEmail}</strong>
-            </p>
-            <p className="text-xs text-green-600 dark:text-green-500 mt-2">
-              Bestelnummer: {orderNumber}
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Ticket Summary */}
       <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <h4 className="font-medium text-gray-900 dark:text-white mb-3">

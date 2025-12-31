@@ -185,15 +185,15 @@ export async function updateEventStatus(
     return { success: false, error: transitionError };
   }
 
-  // Check Mollie onboarding when going LIVE
-  if (newStatus === "LIVE") {
+  // Check Mollie onboarding when going LIVE (only for paid events)
+  if (newStatus === "LIVE" && currentEvent.isPaid) {
     const canPublish = await mollieOnboardingService.canPublishEvents(
       currentEvent.organizationId
     );
     if (!canPublish) {
       return {
         success: false,
-        error: "Mollie onboarding moet eerst worden voltooid voordat je evenementen kunt publiceren",
+        error: "Mollie onboarding moet eerst worden voltooid voordat je betaalde evenementen kunt publiceren",
       };
     }
   }

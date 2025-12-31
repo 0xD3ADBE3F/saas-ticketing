@@ -54,7 +54,12 @@ export default async function EditTicketTypePage({
       <h1 className="text-2xl font-bold mb-6">Tickettype bewerken</h1>
 
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-        <TicketTypeForm ticketType={ticketType} eventId={eventId} mode="edit" />
+        <TicketTypeForm
+          ticketType={ticketType}
+          eventId={eventId}
+          eventIsPaid={ticketType.event.isPaid}
+          mode="edit"
+        />
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   createOrder,
   calculateOrderSummary,
+  completeFreeOrder,
   type CartItem
 } from "@/server/services/orderService";
 
@@ -62,12 +63,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Return order details for payment flow
+    const order = result.data;
+
+    // For free orders (totalAmount = 0), auto-complete immediately
+    if (order.totalAmount === 0) {
+      const completeResult = await completeFreeOrder(order.id);
+
+      if (!completeResult.success) {
+        return NextResponse.json(
+          { error: completeResult.error },
+          { status: 500 }
+        );
+      }
+
+      // Return with isFree flag so frontend redirects directly to confirmation
+      return NextResponse.json({
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        totalAmount: order.totalAmount,
+        isFree: true,
+      });
+    }
+
+    // Return order details for payment flow (paid events)
     return NextResponse.json({
-      orderId: result.data.id,
-      orderNumber: result.data.orderNumber,
-      totalAmount: result.data.totalAmount,
-      expiresAt: result.data.expiresAt,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      totalAmount: order.totalAmount,
+      expiresAt: order.expiresAt,
+      isFree: false,
     });
   } catch (error) {
     console.error("Checkout error:", error);

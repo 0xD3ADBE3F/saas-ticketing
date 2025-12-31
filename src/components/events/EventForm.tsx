@@ -16,6 +16,7 @@ interface FormData {
   location: string;
   startsAt: string;
   endsAt: string;
+  isPaid: boolean;
 }
 
 export function EventForm({ event, mode }: EventFormProps) {
@@ -48,13 +49,20 @@ export function EventForm({ event, mode }: EventFormProps) {
     endsAt: event?.endsAt
       ? toDateTimeLocalValue(event.endsAt)
       : getDefaultEndDate(),
+    isPaid: event?.isPaid ?? true,
   });
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type } = e.target;
+
+    if (type === "radio") {
+      setFormData((prev) => ({ ...prev, [name]: value === "true" }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+
     setError(null);
   };
 
@@ -77,6 +85,7 @@ export function EventForm({ event, mode }: EventFormProps) {
           location: formData.location || null,
           startsAt: new Date(formData.startsAt).toISOString(),
           endsAt: new Date(formData.endsAt).toISOString(),
+          isPaid: formData.isPaid,
         }),
       });
 
@@ -237,6 +246,46 @@ export function EventForm({ event, mode }: EventFormProps) {
             className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
+      </div>
+
+      {/* Event Type */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Type evenement *
+        </label>
+        <div className="flex gap-4">
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="isPaid"
+              value="true"
+              checked={formData.isPaid === true}
+              onChange={handleChange}
+              className="mr-2"
+            />
+            <span className="text-gray-900 dark:text-white">
+              Betaald evenement
+            </span>
+          </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="isPaid"
+              value="false"
+              checked={formData.isPaid === false}
+              onChange={handleChange}
+              className="mr-2"
+            />
+            <span className="text-gray-900 dark:text-white">
+              Gratis evenement
+            </span>
+          </label>
+        </div>
+        <p className="mt-2 text-sm text-gray-500">
+          {formData.isPaid
+            ? "Voor betaalde evenementen moet je een Mollie account koppelen om betalingen te ontvangen."
+            : "Bij gratis evenementen kunnen tickets zonder prijs worden aangemaakt."}
+        </p>
       </div>
 
       {/* Actions */}

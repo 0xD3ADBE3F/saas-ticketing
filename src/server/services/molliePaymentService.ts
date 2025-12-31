@@ -1,12 +1,10 @@
 import { prisma } from "@/server/lib/prisma";
 import { orderRepo } from "@/server/repos/orderRepo";
-import { ticketRepo } from "@/server/repos/ticketRepo";
-import { sendOrderTickets } from "@/server/services/emailService";
+import { generateAndSendTickets } from "@/server/services/paymentService";
 import { mollieConnectService } from "@/server/services/mollieConnectService";
 import { env } from "@/server/lib/env";
 import { paymentLogger } from "@/server/lib/logger";
 import { PaymentMethod } from "@mollie/api-client";
-import crypto from "crypto";
 
 // =============================================================================
 // Mollie Payment Service (Multi-tenant with Application Fees)
@@ -36,25 +34,7 @@ function formatAmount(amountCents: number): string {
   return (amountCents / 100).toFixed(2);
 }
 
-/**
- * Generate a unique ticket code (short, human-readable)
- */
-function generateTicketCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "";
-  for (let i = 0; i < 8; i++) {
-    if (i === 4) code += "-";
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return code;
-}
 
-/**
- * Generate a secure secret token for QR validation
- */
-function generateSecretToken(): string {
-  return crypto.randomBytes(32).toString("hex");
-}
 
 /**
  * Create a payment via Mollie using organization's access token
@@ -258,7 +238,8 @@ export async function handleMollieWebhook(
 }
 
 /**
- * Process successful payment - create tickets
+ * Process successful payment - mark as paid and generate tickets
+ * Uses shared ticket generation logic from paymentService
  * Idempotent: safe to call multiple times
  */
 async function processPaymentSuccess(
@@ -267,13 +248,6 @@ async function processPaymentSuccess(
 ): Promise<PaymentResult<{ orderId: string; ticketCount: number }>> {
   const order = await prisma.order.findUnique({
     where: { paymentId },
-    include: {
-      orderItems: {
-        include: {
-          ticketType: true,
-        },
-      },
-    },
   });
 
   if (!order) {
@@ -288,93 +262,30 @@ async function processPaymentSuccess(
     return { success: true, data: { orderId: order.id, ticketCount } };
   }
 
-  // Transaction for atomicity
-  const ticketCount = await prisma.$transaction(async (tx) => {
-    // 1. Update order status
-    await tx.order.update({
-      where: { id: order.id },
-      data: {
-        status: "PAID",
-        paidAt: new Date(),
-        paymentMethod,
-      },
-    });
-
-    // 2. Create tickets
-    const ticketsToCreate: {
-      ticketTypeId: string;
-      eventId: string;
-      orderId: string;
-      code: string;
-      secretToken: string;
-    }[] = [];
-
-    for (const item of order.orderItems) {
-      for (let i = 0; i < item.quantity; i++) {
-        let code = generateTicketCode();
-        let attempts = 0;
-        while (attempts < 5) {
-          const existing = await tx.ticket.findUnique({
-            where: { code },
-          });
-          if (!existing) break;
-          code = generateTicketCode();
-          attempts++;
-        }
-
-        ticketsToCreate.push({
-          ticketTypeId: item.ticketTypeId,
-          eventId: order.eventId,
-          orderId: order.id,
-          code,
-          secretToken: generateSecretToken(),
-        });
-      }
-    }
-
-    await tx.ticket.createMany({ data: ticketsToCreate });
-
-    // 3. Update sold counts
-    for (const item of order.orderItems) {
-      await tx.ticketType.update({
-        where: { id: item.ticketTypeId },
-        data: { soldCount: { increment: item.quantity } },
-      });
-    }
-
-    return ticketsToCreate.length;
+  // 1. Update order status to PAID
+  await prisma.order.update({
+    where: { id: order.id },
+    data: {
+      status: "PAID",
+      paidAt: new Date(),
+      paymentMethod,
+    },
   });
 
-  // Record ticket sale in usage tracking (for monthly plans)
-  const totalTicketsSold = order.orderItems.reduce((sum, item) => sum + item.quantity, 0);
-  // Send ticket email (non-blocking)
-  try {
-    const tickets = await ticketRepo.findByOrder(order.id);
-    if (tickets.length > 0) {
-      const firstTicket = tickets[0];
-      const baseUrl = env.NEXT_PUBLIC_APP_URL;
+  // 2. Generate tickets and send email using shared logic
+  const ticketResult = await generateAndSendTickets(order.id);
 
-      await sendOrderTickets(
-        {
-          orderNumber: firstTicket.order.orderNumber,
-          buyerEmail: firstTicket.order.buyerEmail,
-          buyerName: firstTicket.order.buyerName,
-        },
-        {
-          title: firstTicket.event.title,
-          startsAt: firstTicket.event.startsAt,
-          endsAt: firstTicket.event.endsAt,
-          location: firstTicket.event.location,
-        },
-        tickets,
-        baseUrl
-      );
-    }
-  } catch (emailError) {
-    console.error("Failed to send ticket email:", emailError);
+  if (!ticketResult.success) {
+    return ticketResult;
   }
 
-  return { success: true, data: { orderId: order.id, ticketCount } };
+  return {
+    success: true,
+    data: {
+      orderId: order.id,
+      ticketCount: ticketResult.data.ticketCount,
+    },
+  };
 }
 
 /**

@@ -559,3 +559,82 @@ export async function refundOrder(
     };
   }
 }
+
+// =============================================================================
+// Complete Order (for free orders)
+// =============================================================================
+
+/**
+ * Complete a free order by marking it as PAID and calling the payment service
+ * to generate tickets and send email.
+ *
+ * This function is specifically for FREE orders (totalAmount = 0).
+ * For PAID orders, use the webhook flow which calls processPaymentSuccess.
+ *
+ * This function is idempotent (safe to call multiple times).
+ */
+export async function completeFreeOrder(
+  orderId: string
+): Promise<OrderServiceResult<{ ticketCount: number }>> {
+  // Find order
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+  });
+
+  if (!order) {
+    return { success: false, error: "Bestelling niet gevonden" };
+  }
+
+  // Validate: must be a free order
+  if (order.totalAmount !== 0) {
+    return {
+      success: false,
+      error: "Deze functie is alleen voor gratis bestellingen",
+    };
+  }
+
+  // Idempotent check: if already paid, return existing ticket count
+  if (order.status === "PAID") {
+    const ticketCount = await prisma.ticket.count({
+      where: { orderId: order.id },
+    });
+    return {
+      success: true,
+      data: { ticketCount },
+    };
+  }
+
+  // Validate: order must be PENDING
+  if (order.status !== "PENDING") {
+    return {
+      success: false,
+      error: `Bestelling heeft status ${order.status} en kan niet worden voltooid`,
+    };
+  }
+
+  // Mark order as PAID with "free" payment method
+  await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      status: "PAID",
+      paidAt: new Date(),
+      paymentMethod: "free",
+      paymentId: null,
+    },
+  });
+
+  // Import and call the ticket generation from payment service
+  // This ensures we use the same logic for both free and paid orders
+  const { generateAndSendTickets } = await import("./paymentService");
+
+  const result = await generateAndSendTickets(orderId);
+
+  if (!result.success) {
+    return result;
+  }
+
+  return {
+    success: true,
+    data: { ticketCount: result.data.ticketCount },
+  };
+}

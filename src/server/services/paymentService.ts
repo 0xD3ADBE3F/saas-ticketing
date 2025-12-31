@@ -51,6 +51,157 @@ function generateSecretToken(): string {
 }
 
 /**
+ * Generate tickets and send email for a paid order
+ * This is the shared logic used by both free and paid order flows
+ *
+ * This function is idempotent (safe to call multiple times)
+ */
+export async function generateAndSendTickets(
+  orderId: string
+): Promise<PaymentResult<{ ticketCount: number }>> {
+  // Find order with items
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      orderItems: {
+        include: {
+          ticketType: true,
+        },
+      },
+      event: true,
+    },
+  });
+
+  if (!order) {
+    return { success: false, error: "Bestelling niet gevonden voor ticket generatie" };
+  }
+
+  // Check if tickets already exist (idempotency)
+  const existingTicketCount = await prisma.ticket.count({
+    where: { orderId: order.id },
+  });
+
+  if (existingTicketCount > 0) {
+    // Tickets already generated, just resend email
+    try {
+      const tickets = await ticketRepo.findByOrder(order.id);
+      if (tickets.length > 0) {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        await sendOrderTickets(
+          {
+            orderNumber: order.orderNumber,
+            buyerEmail: order.buyerEmail,
+            buyerName: order.buyerName,
+          },
+          {
+            title: order.event.title,
+            startsAt: order.event.startsAt,
+            endsAt: order.event.endsAt,
+            location: order.event.location,
+          },
+          tickets,
+          baseUrl
+        );
+      }
+    } catch (emailError) {
+      console.error("Failed to resend ticket email:", emailError);
+    }
+
+    return {
+      success: true,
+      data: { ticketCount: existingTicketCount },
+    };
+  }
+
+  // Use a transaction to ensure atomicity
+  const ticketCount = await prisma.$transaction(async (tx) => {
+    // 1. Issue tickets for each order item
+    const ticketsToCreate: {
+      ticketTypeId: string;
+      eventId: string;
+      orderId: string;
+      code: string;
+      secretToken: string;
+    }[] = [];
+
+    for (const item of order.orderItems) {
+      for (let i = 0; i < item.quantity; i++) {
+        // Generate unique code (retry on collision)
+        let code = generateTicketCode();
+        let attempts = 0;
+        while (attempts < 5) {
+          const existing = await tx.ticket.findUnique({
+            where: { code },
+          });
+          if (!existing) break;
+          code = generateTicketCode();
+          attempts++;
+        }
+
+        ticketsToCreate.push({
+          ticketTypeId: item.ticketTypeId,
+          eventId: order.eventId,
+          orderId: order.id,
+          code,
+          secretToken: generateSecretToken(),
+        });
+      }
+    }
+
+    // 2. Create all tickets
+    await tx.ticket.createMany({
+      data: ticketsToCreate,
+    });
+
+    // 3. Update sold counts for each ticket type
+    for (const item of order.orderItems) {
+      await tx.ticketType.update({
+        where: { id: item.ticketTypeId },
+        data: {
+          soldCount: {
+            increment: item.quantity,
+          },
+        },
+      });
+    }
+
+    return ticketsToCreate.length;
+  });
+
+  // 4. Send ticket email (after successful transaction)
+  try {
+    const tickets = await ticketRepo.findByOrder(order.id);
+    if (tickets.length > 0) {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+      await sendOrderTickets(
+        {
+          orderNumber: order.orderNumber,
+          buyerEmail: order.buyerEmail,
+          buyerName: order.buyerName,
+        },
+        {
+          title: order.event.title,
+          startsAt: order.event.startsAt,
+          endsAt: order.event.endsAt,
+          location: order.event.location,
+        },
+        tickets,
+        baseUrl
+      );
+    }
+  } catch (emailError) {
+    // Log but don't fail - tickets are already created
+    console.error("Failed to send ticket email:", emailError);
+  }
+
+  return {
+    success: true,
+    data: { ticketCount },
+  };
+}
+
+/**
  * Create a mock payment for an order
  * In production, this would call Mollie's Create Payment API
  */
@@ -134,7 +285,7 @@ export async function createPayment(
 /**
  * Process a successful payment
  * - Updates order status to PAID
- * - Issues tickets for each order item
+ * - Calls generateAndSendTickets to issue tickets
  * This function is idempotent (safe to call multiple times)
  */
 async function processPaymentSuccess(
@@ -143,20 +294,13 @@ async function processPaymentSuccess(
   // Find order by payment ID
   const order = await prisma.order.findUnique({
     where: { paymentId },
-    include: {
-      orderItems: {
-        include: {
-          ticketType: true,
-        },
-      },
-    },
   });
 
   if (!order) {
     return { success: false, error: "Bestelling niet gevonden voor betaling" };
   }
 
-  // Idempotent check: if already paid, don't process again
+  // Idempotent check: if already paid, just return existing count
   if (order.status === "PAID") {
     const ticketCount = await prisma.ticket.count({
       where: { orderId: order.id },
@@ -167,106 +311,28 @@ async function processPaymentSuccess(
     };
   }
 
-  // Use a transaction to ensure atomicity
-  const result = await prisma.$transaction(async (tx) => {
-    // 1. Update order status to PAID
-    await tx.order.update({
-      where: { id: order.id },
-      data: {
-        status: "PAID",
-        paidAt: new Date(),
-        paymentMethod: "ideal_mock", // In production: from Mollie response
-      },
-    });
-
-    // 2. Issue tickets for each order item
-    const ticketsToCreate: {
-      ticketTypeId: string;
-      eventId: string;
-      orderId: string;
-      code: string;
-      secretToken: string;
-    }[] = [];
-
-    for (const item of order.orderItems) {
-      for (let i = 0; i < item.quantity; i++) {
-        // Generate unique code (retry on collision)
-        let code = generateTicketCode();
-        let attempts = 0;
-        while (attempts < 5) {
-          const existing = await tx.ticket.findUnique({
-            where: { code },
-          });
-          if (!existing) break;
-          code = generateTicketCode();
-          attempts++;
-        }
-
-        ticketsToCreate.push({
-          ticketTypeId: item.ticketTypeId,
-          eventId: order.eventId,
-          orderId: order.id,
-          code,
-          secretToken: generateSecretToken(),
-        });
-      }
-    }
-
-    // 3. Create all tickets
-    await tx.ticket.createMany({
-      data: ticketsToCreate,
-    });
-
-    // 4. Update sold counts for each ticket type
-    for (const item of order.orderItems) {
-      await tx.ticketType.update({
-        where: { id: item.ticketTypeId },
-        data: {
-          soldCount: {
-            increment: item.quantity,
-          },
-        },
-      });
-    }
-
-    return ticketsToCreate.length;
+  // 1. Update order status to PAID
+  await prisma.order.update({
+    where: { id: order.id },
+    data: {
+      status: "PAID",
+      paidAt: new Date(),
+      paymentMethod: "ideal_mock", // In production: from Mollie response
+    },
   });
 
-  // 5. Record ticket sale in usage tracking (for monthly plans)
-  const totalTicketsSold = order.orderItems.reduce((sum, item) => sum + item.quantity, 0);
-  // Send ticket email (after successful transaction)
-  try {
-    const tickets = await ticketRepo.findByOrder(order.id);
-    if (tickets.length > 0) {
-      const firstTicket = tickets[0];
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  // 2. Generate tickets and send email
+  const ticketResult = await generateAndSendTickets(order.id);
 
-      await sendOrderTickets(
-        {
-          orderNumber: firstTicket.order.orderNumber,
-          buyerEmail: firstTicket.order.buyerEmail,
-          buyerName: firstTicket.order.buyerName,
-        },
-        {
-          title: firstTicket.event.title,
-          startsAt: firstTicket.event.startsAt,
-          endsAt: firstTicket.event.endsAt,
-          location: firstTicket.event.location,
-        },
-        tickets,
-        baseUrl
-      );
-    }
-  } catch (emailError) {
-    // Log but don't fail the payment - tickets are already created
-    console.error("Failed to send ticket email:", emailError);
+  if (!ticketResult.success) {
+    return ticketResult;
   }
 
   return {
     success: true,
     data: {
       orderId: order.id,
-      ticketCount: result,
+      ticketCount: ticketResult.data.ticketCount,
     },
   };
 }

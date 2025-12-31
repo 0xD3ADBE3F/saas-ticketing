@@ -86,6 +86,18 @@ export async function createTicketType(
   userId: string,
   data: CreateTicketTypeData
 ): Promise<TicketTypeServiceResult<TicketType>> {
+  // First, get the event to check if it's a paid event
+  const event = await ticketTypeRepo.getEventForTicketType(eventId, userId);
+  if (!event) {
+    return { success: false, error: "Geen toegang tot dit evenement" };
+  }
+
+  // For paid events, price must be > 0
+  // For free events, price can be 0
+  if (event.isPaid && data.price === 0) {
+    return { success: false, error: "Betaalde evenementen moeten een prijs hebben" };
+  }
+
   // Validate input
   const validationError = validateTicketTypeData(data);
   if (validationError) {
@@ -200,7 +212,7 @@ export async function getTicketType(
 export async function getTicketTypeWithEvent(
   ticketTypeId: string,
   userId: string
-): Promise<TicketTypeServiceResult<TicketType & { event: { id: string; title: string; status: string; organizationId: string } }>> {
+): Promise<TicketTypeServiceResult<TicketType & { event: { id: string; title: string; status: string; organizationId: string; isPaid: boolean } }>> {
   const ticketType = await ticketTypeRepo.findByIdWithEvent(ticketTypeId, userId);
   if (!ticketType) {
     return { success: false, error: "Tickettype niet gevonden" };
