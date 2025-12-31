@@ -8,7 +8,6 @@ interface OrganizationFormProps {
     id: string;
     name: string;
     email: string | null;
-    kvkNumber: string | null;
     streetAddress: string | null;
     postalCode: string | null;
     city: string | null;
@@ -31,7 +30,6 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
     const data = {
       name: formData.get("name") as string,
       email: formData.get("email") as string,
-      kvkNumber: formData.get("kvkNumber") as string,
       streetAddress: formData.get("streetAddress") as string,
       postalCode: formData.get("postalCode") as string,
       city: formData.get("city") as string,
@@ -92,28 +90,6 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
           />
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             Dit e-mailadres wordt gebruikt voor facturen
-          </p>
-        </div>
-        <div>
-          <label
-            htmlFor="kvkNumber"
-            className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300"
-          >
-            KVK-nummer <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="kvkNumber"
-            name="kvkNumber"
-            required
-            defaultValue={organization.kvkNumber || ""}
-            placeholder="12345678"
-            maxLength={8}
-            pattern="\d{8}"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            8 cijfers, verplicht voor facturering
           </p>
         </div>
       </div>

@@ -11,7 +11,7 @@
  */
 
 import { invoiceRepo, type CreateInvoiceData } from "@/server/repos/invoiceRepo";
-import type { SubscriptionInvoice, InvoiceType, InvoiceStatus } from "@/generated/prisma";
+import type { Invoice, InvoiceType, InvoiceStatus } from "@/generated/prisma";
 import { mollieLogger } from "@/server/lib/logger";
 import { env } from "@/server/lib/env";
 import { prisma } from "@/server/lib/prisma";
@@ -75,7 +75,7 @@ function formatAmount(cents: number): string {
  */
 export async function createSalesInvoice(
   params: CreateSalesInvoiceParams
-): Promise<SubscriptionInvoice> {
+): Promise<Invoice> {
   const { organizationId, subscriptionId, type, amountExclVAT, vatAmount, description, molliePaymentId, invoiceDate } = params;
 
   mollieLogger.info({
@@ -106,7 +106,6 @@ export async function createSalesInvoice(
       select: {
         name: true,
         email: true,
-        kvkNumber: true,
         streetAddress: true,
         postalCode: true,
         city: true,
@@ -120,12 +119,6 @@ export async function createSalesInvoice(
 
     if (!organization.email) {
       throw new Error(`Organization ${organizationId} has no email address`);
-    }
-
-    if (!organization.kvkNumber) {
-      throw new Error(
-        `Organization ${organizationId} has no KVK number. KVK number is required for invoice generation.`
-      );
     }
 
     // Validate required address fields
@@ -156,7 +149,6 @@ export async function createSalesInvoice(
         recipient: {
           type: "business",
           organizationName: organization.name,
-          organizationNumber: organization.kvkNumber, // Dutch Chamber of Commerce (KVK) number
           email: organization.email,
           streetAndNumber: organization.streetAddress,
           postalCode: organization.postalCode,
@@ -194,7 +186,6 @@ export async function createSalesInvoice(
     // Store invoice in database using Mollie-generated invoice number
     const invoice = await invoiceRepo.create({
       organizationId,
-      subscriptionId,
       type,
       invoiceNumber: mollieInvoice.invoiceNumber, // Use Mollie's generated invoice number
       invoiceDate: invoiceDate || now,
@@ -233,7 +224,7 @@ export async function createSalesInvoice(
 /**
  * Store invoice record in database
  */
-export async function storeInvoiceRecord(data: CreateInvoiceData): Promise<SubscriptionInvoice> {
+export async function storeInvoiceRecord(data: CreateInvoiceData): Promise<Invoice> {
   return invoiceRepo.create(data);
 }
 
@@ -243,7 +234,7 @@ export async function storeInvoiceRecord(data: CreateInvoiceData): Promise<Subsc
 export async function getInvoice(
   invoiceId: string,
   organizationId: string
-): Promise<SubscriptionInvoice | null> {
+): Promise<Invoice | null> {
   return invoiceRepo.findById(invoiceId, organizationId);
 }
 
@@ -271,7 +262,7 @@ export async function updateInvoiceStatus(
   invoiceId: string,
   organizationId: string,
   status: InvoiceStatus
-): Promise<SubscriptionInvoice> {
+): Promise<Invoice> {
   return invoiceRepo.updateStatus(invoiceId, organizationId, status);
 }
 
@@ -283,7 +274,7 @@ export async function markInvoiceAsPaid(
   organizationId: string,
   molliePaymentId: string,
   paidAt?: Date
-): Promise<SubscriptionInvoice> {
+): Promise<Invoice> {
   mollieLogger.info({
     message: "Marking invoice as paid",
     invoiceId,
@@ -294,61 +285,38 @@ export async function markInvoiceAsPaid(
 }
 
 /**
- * Generate invoice after subscription payment
- * Called from subscription webhook after successful payment
+ * Generate invoice for platform fees after an event
+ * Called after event completion to charge the 2% platform fee
  */
-export async function generateSubscriptionInvoice(params: {
+export async function generatePlatformFeeInvoice(params: {
   organizationId: string;
-  subscriptionId: string;
-  plan: string;
-  amountExclVAT: number; // in cents, net amount EXCLUDING VAT
-  vatAmount: number; // in cents, VAT amount
-  molliePaymentId: string;
-}): Promise<SubscriptionInvoice> {
-  const { organizationId, subscriptionId, plan, amountExclVAT, vatAmount, molliePaymentId } = params;
-
-  const now = new Date();
-  const monthName = now.toLocaleDateString("nl-NL", { month: "long", year: "numeric" });
-  const description = `${plan} Subscription - ${monthName}`;
-
-  // Create invoice via Mollie API (already marked as paid)
-  const invoice = await createSalesInvoice({
-    organizationId,
-    subscriptionId,
-    type: "SUBSCRIPTION",
-    amountExclVAT,
-    vatAmount,
-    description,
-    molliePaymentId,
-  });
-
-  return invoice;
-}
-
-/**
- * Generate invoice after Pay-Per-Event payment
- * Called from payment webhook after successful event payment
- */
-export async function generateEventInvoice(params: {
-  organizationId: string;
+  eventId: string;
   eventTitle: string;
   amountExclVAT: number; // in cents, net amount EXCLUDING VAT
   vatAmount: number; // in cents, VAT amount
-  molliePaymentId: string;
-}): Promise<SubscriptionInvoice> {
-  const { organizationId, eventTitle, amountExclVAT, vatAmount, molliePaymentId } = params;
+  molliePaymentId?: string;
+}): Promise<Invoice> {
+  const { organizationId, eventId, eventTitle, amountExclVAT, vatAmount, molliePaymentId } = params;
 
-  const description = `Event Publishing Fee - ${eventTitle}`;
+  const description = `Platform Fee (2%) - ${eventTitle}`;
 
-  // Create invoice via Mollie API (already marked as paid)
+  // Create invoice via Mollie API
   const invoice = await createSalesInvoice({
     organizationId,
-    type: "PAY_PER_EVENT",
+    type: "PLATFORM_FEE",
     amountExclVAT,
     vatAmount,
     description,
     molliePaymentId,
   });
+
+  // Update invoice to link to event
+  if (invoice.id && eventId) {
+    await prisma.invoice.update({
+      where: { id: invoice.id },
+      data: { eventId },
+    });
+  }
 
   return invoice;
 }
@@ -360,6 +328,5 @@ export const mollieInvoiceService = {
   listInvoicesForOrg,
   updateInvoiceStatus,
   markInvoiceAsPaid,
-  generateSubscriptionInvoice,
-  generateEventInvoice,
+  generatePlatformFeeInvoice,
 };

@@ -98,13 +98,6 @@ export function EventStatusActions({
         return;
       }
 
-      // Check if payment is required (PAY_PER_EVENT plan)
-      if (data.requiresPayment && data.checkoutUrl) {
-        // Redirect to Mollie checkout
-        window.location.href = data.checkoutUrl;
-        return;
-      }
-
       router.refresh();
     } catch {
       setError("Er is iets misgegaan. Probeer het opnieuw.");

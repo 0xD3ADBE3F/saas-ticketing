@@ -8,7 +8,6 @@ import { getUserOrganizations } from "@/server/services/organizationService";
 export interface UpdateOrganizationData {
   name?: string;
   email?: string;
-  kvkNumber?: string;
   streetAddress?: string;
   postalCode?: string;
   city?: string;
@@ -30,14 +29,6 @@ export async function updateOrganization(data: UpdateOrganizationData) {
 
     const currentOrg = organizations[0];
 
-    // Validate KVK number format (8 digits)
-    if (data.kvkNumber && !/^\d{8}$/.test(data.kvkNumber.replace(/\s/g, ""))) {
-      return {
-        success: false,
-        error: "KVK nummer moet 8 cijfers bevatten",
-      };
-    }
-
     // Validate postal code format (Dutch: 1234AB)
     if (data.postalCode && !/^\d{4}\s?[A-Z]{2}$/i.test(data.postalCode)) {
       return {
@@ -50,7 +41,6 @@ export async function updateOrganization(data: UpdateOrganizationData) {
     await organizationRepo.update(currentOrg.id, user.id, {
       name: data.name,
       email: data.email,
-      kvkNumber: data.kvkNumber?.replace(/\s/g, ""), // Remove spaces
       streetAddress: data.streetAddress,
       postalCode: data.postalCode?.toUpperCase(), // Normalize to uppercase
       city: data.city,

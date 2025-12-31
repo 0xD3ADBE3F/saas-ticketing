@@ -2,7 +2,6 @@ import { prisma } from "@/server/lib/prisma";
 import { orderRepo } from "@/server/repos/orderRepo";
 import { ticketRepo } from "@/server/repos/ticketRepo";
 import { sendOrderTickets } from "@/server/services/emailService";
-import { planLimitsService } from "@/server/services/planLimitsService";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
 
@@ -235,19 +234,6 @@ async function processPaymentSuccess(
 
   // 5. Record ticket sale in usage tracking (for monthly plans)
   const totalTicketsSold = order.orderItems.reduce((sum, item) => sum + item.quantity, 0);
-  const event = await prisma.event.findUnique({
-    where: { id: order.eventId },
-    select: { organizationId: true },
-  });
-
-  if (event) {
-    await planLimitsService.recordTicketSale(
-      event.organizationId,
-      order.eventId,
-      totalTicketsSold
-    );
-  }
-
   // Send ticket email (after successful transaction)
   try {
     const tickets = await ticketRepo.findByOrder(order.id);

@@ -91,8 +91,7 @@ export type EventServiceResult<T> =
 
 export type EventStatusUpdateResult =
   | { success: true; data: Event }
-  | { success: false; error: string }
-  | { success: false; requiresPayment: true; eventId: string; eventTitle: string };
+  | { success: false; error: string };
 
 /**
  * Create a new event
@@ -193,30 +192,6 @@ export async function updateEventStatus(
       return {
         success: false,
         error: "Mollie onboarding moet eerst worden voltooid voordat je evenementen kunt publiceren",
-      };
-    }
-
-    // Check if organization is on PAY_PER_EVENT plan
-    const org = await prisma.organization.findUnique({
-      where: { id: currentEvent.organizationId },
-      select: { currentPlan: true },
-    });
-
-    // Block if no plan is active
-    if (!org?.currentPlan) {
-      return {
-        success: false,
-        error: "Je hebt nog geen abonnement gekozen. Kies eerst een plan voordat je evenementen kunt publiceren.",
-      };
-    }
-
-    if (org.currentPlan === "PAY_PER_EVENT") {
-      // Return that payment is required
-      return {
-        success: false,
-        requiresPayment: true,
-        eventId: currentEvent.id,
-        eventTitle: currentEvent.title,
       };
     }
   }

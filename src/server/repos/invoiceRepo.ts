@@ -1,11 +1,11 @@
 /**
- * Repository layer for SubscriptionInvoice operations
+ * Repository layer for Invoice operations
  * Handles database access with organization scoping
  */
 
 import { prisma } from "@/server/lib/prisma";
 import type {
-  SubscriptionInvoice,
+  Invoice,
   InvoiceType,
   InvoiceStatus,
   Prisma,
@@ -13,7 +13,7 @@ import type {
 
 export interface CreateInvoiceData {
   organizationId: string;
-  subscriptionId?: string;
+  eventId?: string;
   type: InvoiceType;
   mollieSalesInvoiceId?: string;
   invoiceNumber?: string;
@@ -44,11 +44,11 @@ export interface InvoiceFilters {
  */
 export async function create(
   data: CreateInvoiceData
-): Promise<SubscriptionInvoice> {
-  return prisma.subscriptionInvoice.create({
+): Promise<Invoice> {
+  return prisma.invoice.create({
     data: {
       organizationId: data.organizationId,
-      subscriptionId: data.subscriptionId,
+      eventId: data.eventId,
       type: data.type,
       mollieSalesInvoiceId: data.mollieSalesInvoiceId,
       invoiceNumber: data.invoiceNumber,
@@ -73,14 +73,11 @@ export async function create(
 export async function findById(
   id: string,
   organizationId: string
-): Promise<SubscriptionInvoice | null> {
-  return prisma.subscriptionInvoice.findFirst({
+): Promise<Invoice | null> {
+  return prisma.invoice.findFirst({
     where: {
       id,
       organizationId,
-    },
-    include: {
-      subscription: true,
     },
   });
 }
@@ -90,8 +87,8 @@ export async function findById(
  */
 export async function findByMollieSalesInvoiceId(
   mollieSalesInvoiceId: string
-): Promise<SubscriptionInvoice | null> {
-  return prisma.subscriptionInvoice.findUnique({
+): Promise<Invoice | null> {
+  return prisma.invoice.findUnique({
     where: {
       mollieSalesInvoiceId,
     },
@@ -100,11 +97,14 @@ export async function findByMollieSalesInvoiceId(
 
 /**
  * Find invoice by Mollie Payment ID (to prevent duplicates)
+
+/**
+ * Find invoice by Mollie Payment ID
  */
 export async function findByMolliePaymentId(
   molliePaymentId: string
-): Promise<SubscriptionInvoice | null> {
-  return prisma.subscriptionInvoice.findUnique({
+): Promise<Invoice | null> {
+  return prisma.invoice.findUnique({
     where: {
       molliePaymentId,
     },
@@ -118,7 +118,7 @@ export async function listInvoicesWithFilters(
   organizationId: string,
   filters?: InvoiceFilters
 ): Promise<{
-  invoices: SubscriptionInvoice[];
+  invoices: Invoice[];
   total: number;
   page: number;
   limit: number;
@@ -127,7 +127,7 @@ export async function listInvoicesWithFilters(
   const limit = filters?.limit ?? 10;
   const skip = (page - 1) * limit;
 
-  const where: Prisma.SubscriptionInvoiceWhereInput = {
+  const where: Prisma.InvoiceWhereInput = {
     organizationId,
     ...(filters?.type && { type: filters.type }),
     ...(filters?.status && { status: filters.status }),
@@ -153,22 +153,15 @@ export async function listInvoicesWithFilters(
   };
 
   const [invoices, total] = await Promise.all([
-    prisma.subscriptionInvoice.findMany({
+    prisma.invoice.findMany({
       where,
       orderBy: {
         invoiceDate: "desc",
       },
       skip,
       take: limit,
-      include: {
-        subscription: {
-          select: {
-            plan: true,
-          },
-        },
-      },
     }),
-    prisma.subscriptionInvoice.count({ where }),
+    prisma.invoice.count({ where }),
   ]);
 
   return {
@@ -186,8 +179,8 @@ export async function updateStatus(
   id: string,
   organizationId: string,
   status: InvoiceStatus
-): Promise<SubscriptionInvoice> {
-  return prisma.subscriptionInvoice.update({
+): Promise<Invoice> {
+  return prisma.invoice.update({
     where: {
       id,
       organizationId,
@@ -207,8 +200,8 @@ export async function markAsPaid(
   organizationId: string,
   molliePaymentId: string,
   paidAt: Date
-): Promise<SubscriptionInvoice> {
-  return prisma.subscriptionInvoice.update({
+): Promise<Invoice> {
+  return prisma.invoice.update({
     where: {
       id,
       organizationId,
@@ -229,8 +222,8 @@ export async function updatePdfUrl(
   id: string,
   organizationId: string,
   pdfUrl: string
-): Promise<SubscriptionInvoice> {
-  return prisma.subscriptionInvoice.update({
+): Promise<Invoice> {
+  return prisma.invoice.update({
     where: {
       id,
       organizationId,
@@ -253,7 +246,7 @@ export async function generateInvoiceNumber(
   const prefix = `${year}-`;
 
   // Get the latest invoice number for this organization in this year
-  const latestInvoice = await prisma.subscriptionInvoice.findFirst({
+  const latestInvoice = await prisma.invoice.findFirst({
     where: {
       organizationId,
       invoiceNumber: {

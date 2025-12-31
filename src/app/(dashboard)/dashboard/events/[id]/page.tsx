@@ -59,13 +59,6 @@ export default async function EventDetailPage({
     getEventTicketStats(id, user.id),
   ]);
 
-  // Fetch organization plan for showing correct button text
-  const org = await prisma.organization.findUnique({
-    where: { id: event.organizationId },
-    select: { currentPlan: true },
-  });
-  const isPayPerEvent = org?.currentPlan === "PAY_PER_EVENT";
-
   return (
     <div>
       {/* Payment Success Message */}
@@ -205,7 +198,7 @@ export default async function EventDetailPage({
           {/* Status Actions */}
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
             <h2 className="text-lg font-semibold mb-4">Status</h2>
-            <EventStatusActions event={event} isPayPerEvent={isPayPerEvent} />
+            <EventStatusActions event={event} />
           </div>
 
           {/* Stats */}
