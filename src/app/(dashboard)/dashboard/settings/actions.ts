@@ -8,10 +8,12 @@ import { getUserOrganizations } from "@/server/services/organizationService";
 export interface UpdateOrganizationData {
   name?: string;
   email?: string;
-  streetAddress?: string;
+  streetAndNumber?: string;
   postalCode?: string;
   city?: string;
   country?: string;
+  registrationNumber?: string;
+  vatNumber?: string;
 }
 
 export async function updateOrganization(data: UpdateOrganizationData) {
@@ -41,10 +43,12 @@ export async function updateOrganization(data: UpdateOrganizationData) {
     await organizationRepo.update(currentOrg.id, user.id, {
       name: data.name,
       email: data.email,
-      streetAddress: data.streetAddress,
+      streetAndNumber: data.streetAndNumber,
       postalCode: data.postalCode?.toUpperCase(), // Normalize to uppercase
       city: data.city,
       country: data.country,
+      registrationNumber: data.registrationNumber,
+      vatNumber: data.vatNumber,
     });
 
     revalidatePath("/dashboard/settings");

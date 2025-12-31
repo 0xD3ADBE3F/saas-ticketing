@@ -10,11 +10,12 @@ export type CreateOrganizationInput = {
 export type UpdateOrganizationInput = {
   name?: string;
   email?: string;
-  kvkNumber?: string;
-  streetAddress?: string;
+  streetAndNumber?: string;
   postalCode?: string;
   city?: string;
   country?: string;
+  registrationNumber?: string;
+  vatNumber?: string;
 };
 
 export const organizationRepo = {

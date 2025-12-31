@@ -106,7 +106,7 @@ export async function createSalesInvoice(
       select: {
         name: true,
         email: true,
-        streetAddress: true,
+        streetAndNumber: true,
         postalCode: true,
         city: true,
         country: true,
@@ -122,7 +122,7 @@ export async function createSalesInvoice(
     }
 
     // Validate required address fields
-    if (!organization.streetAddress || !organization.postalCode || !organization.city) {
+    if (!organization.streetAndNumber || !organization.postalCode || !organization.city) {
       throw new Error(
         `Organization ${organizationId} is missing required address information. Please complete your organization details in Settings.`
       );
@@ -150,7 +150,7 @@ export async function createSalesInvoice(
           type: "business",
           organizationName: organization.name,
           email: organization.email,
-          streetAndNumber: organization.streetAddress,
+          streetAndNumber: organization.streetAndNumber,
           postalCode: organization.postalCode,
           city: organization.city,
           country: organization.country || "NL",

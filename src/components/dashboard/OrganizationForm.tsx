@@ -8,10 +8,12 @@ interface OrganizationFormProps {
     id: string;
     name: string;
     email: string | null;
-    streetAddress: string | null;
+    streetAndNumber: string | null;
     postalCode: string | null;
     city: string | null;
     country: string | null;
+    registrationNumber: string | null;
+    vatNumber: string | null;
   };
 }
 
@@ -30,10 +32,12 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
     const data = {
       name: formData.get("name") as string,
       email: formData.get("email") as string,
-      streetAddress: formData.get("streetAddress") as string,
+      streetAndNumber: formData.get("streetAndNumber") as string,
       postalCode: formData.get("postalCode") as string,
       city: formData.get("city") as string,
       country: formData.get("country") as string,
+      registrationNumber: formData.get("registrationNumber") as string,
+      vatNumber: formData.get("vatNumber") as string,
     };
 
     const result = await updateOrganization(data);
@@ -101,17 +105,17 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
         </h3>
         <div>
           <label
-            htmlFor="streetAddress"
+            htmlFor="streetAndNumber"
             className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300"
           >
             Straat en huisnummer <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
-            id="streetAddress"
-            name="streetAddress"
+            id="streetAndNumber"
+            name="streetAndNumber"
             required
-            defaultValue={organization.streetAddress || ""}
+            defaultValue={organization.streetAndNumber || ""}
             placeholder="Hoofdstraat 123"
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
@@ -172,6 +176,49 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             <option value="BE">België</option>
             <option value="DE">Duitsland</option>
           </select>
+        </div>
+      </div>
+
+      {/* Business Details */}
+      <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-800">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          Bedrijfsgegevens (optioneel)
+        </h3>
+        <div>
+          <label
+            htmlFor="registrationNumber"
+            className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300"
+          >
+            KVK-nummer
+          </label>
+          <input
+            type="text"
+            id="registrationNumber"
+            name="registrationNumber"
+            defaultValue={organization.registrationNumber || ""}
+            placeholder="12345678"
+            maxLength={8}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="vatNumber"
+            className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300"
+          >
+            BTW-nummer
+          </label>
+          <input
+            type="text"
+            id="vatNumber"
+            name="vatNumber"
+            defaultValue={organization.vatNumber || ""}
+            placeholder="NL123456789B01"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Bijvoorbeeld: NL123456789B01
+          </p>
         </div>
       </div>
 

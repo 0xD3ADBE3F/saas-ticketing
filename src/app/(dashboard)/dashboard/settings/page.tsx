@@ -33,7 +33,19 @@ export default async function SettingsPage() {
           Deze gegevens zijn verplicht voor facturering en worden gebruikt op
           facturen.
         </p>
-        <OrganizationForm organization={currentOrg} />
+        <OrganizationForm
+          organization={{
+            id: currentOrg.id,
+            name: currentOrg.name,
+            email: currentOrg.email,
+            streetAndNumber: currentOrg.streetAndNumber,
+            postalCode: currentOrg.postalCode,
+            city: currentOrg.city,
+            country: currentOrg.country,
+            registrationNumber: currentOrg.registrationNumber,
+            vatNumber: currentOrg.vatNumber,
+          }}
+        />
       </section>
 
       <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
