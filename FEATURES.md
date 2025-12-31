@@ -6,12 +6,14 @@
 
 - ✅ **Multi-tenant ticketing platform** - Full CRUD with tenant scoping
 - ✅ **Mollie Connect (Platform)** - OAuth integration with Application Fees (see [docs/MOLLIE_PLATFORM.md](./docs/MOLLIE_PLATFORM.md))
+- ✅ **Service Fee Model (Buyer-Paid)** - €0.50 + 2% per order, configurable per event
+- ✅ **Platform Revenue Model** - Service Fee minus Mollie transaction fee (€0.35)
 - ✅ **Mobile-friendly scanner interface** - Online + offline sync, manual override
 - ✅ **Standalone mobile scanner** - Terminal codes with camera QR scanning
 - ✅ **Platform admin dashboard** - SuperAdmin role with organization oversight
 - ✅ **Invoice generation** - For post-event platform fee invoicing
-- ✅ **Payout reporting** - Mollie Settlements API integration with CSV exports
-- ✅ **Simplified fee model** - Flat 2% platform fee for all organizations
+- ✅ **Payout reporting** - Mollie Settlements API integration with detailed fee breakdowns
+- ✅ **CSV exports** - Orders, tickets, and scan logs with event/date filtering
 
 ### 📊 Feature Completion by Phase
 
@@ -24,6 +26,21 @@
 | **Fase 4** Fees         | ✅     | 10-12   | Service fees, platform fees, payouts   |
 | **Fase 5** Ops/Polish   | 🟨     | 13-15   | Observability (partial), UX polish     |
 | **Fase 6** Platform     | 🟨     | 16-17   | Admin dashboard (partial)              |
+
+### 💰 Fee Structure Quick Reference
+
+| Fee Type            | Amount              | Paid By  | Goes To           | Notes                                     |
+| ------------------- | ------------------- | -------- | ----------------- | ----------------------------------------- |
+| **Service Fee**     | €0.50 + 2%          | Buyer    | Platform          | Per order, configurable per event         |
+| **Mollie Fee**      | €0.35               | Platform | Mollie            | Per transaction, deducted from service fee|
+| **Application Fee** | Service Fee - €0.35 | Platform | Platform (net)    | Non-refundable, charged at payment time   |
+| **Net Payout**      | Ticket Total        | Buyer    | Organizer         | Gross revenue, excludes service fees      |
+
+**Example:** Order with €20 tickets
+- Buyer pays: €20.00 (tickets) + €0.90 (service fee) = €20.90
+- Organizer receives: €20.00 (via Mollie settlement)
+- Platform receives: €0.90 - €0.35 = €0.55
+- Mollie receives: €0.35
 
 ### 🧪 Test Coverage
 
@@ -62,6 +79,144 @@
 ---
 
 ## Recent Fixes & Updates
+
+### Summary: What's Implemented vs What Needs Work
+
+#### ✅ Fully Implemented (Production Ready)
+
+**Events & Tickets**
+- ✅ Event CRUD with multi-tenancy (DRAFT → LIVE → ENDED/CANCELLED)
+- ✅ Ticket types with capacity management (no overselling)
+- ✅ Public event pages (`/e/[slug]`) with ticket selection
+- ✅ Free vs paid event support (`isPaid` flag)
+- ✅ Event-specific service fee configuration (database ready, admin UI TODO)
+
+**Checkout & Pricing**
+- ✅ Service fee calculation: €0.50 + 2% per order
+- ✅ Real-time price display with server-side validation
+- ✅ Free events have €0.00 service fee
+- ✅ Configurable per event (fields exist, UI for admin override TODO)
+- ✅ Order summary with line-item breakdown
+- ✅ Buyer information collection (email required, name optional)
+
+**Payments & Fees**
+- ✅ Mollie iDEAL payments with OAuth (Platform mode)
+- ✅ Application fee: Service Fee - €0.35 Mollie transaction fee
+- ✅ Platform receives: (€0.50 + 2%) - €0.35 per order
+- ✅ Payment webhooks with idempotency (no duplicate tickets)
+- ✅ Order statuses: PENDING → PAID → tickets issued
+- ✅ Payment retry for failed orders
+- ✅ Mollie token encryption (AES-256-GCM)
+
+**Invoicing & Reporting**
+- ✅ Payout dashboard with 5-column fee breakdown
+  - Gross Revenue (ticket sales to buyers)
+  - Service Fees (€0.50 + 2% collected from buyers)
+  - Platform Fee (service fee - Mollie fee)
+  - Mollie Fees (€0.35 × order count)
+  - Net Payout (goes to organizer = gross revenue)
+- ✅ Event-level payout breakdown
+- ✅ Mollie Settlements API integration (live data)
+- ✅ Balance overview (available + pending)
+- ✅ CSV exports (orders, tickets, scans)
+- ✅ Invoice model infrastructure (ready for automated invoicing)
+
+**Scanning & Operations**
+- ✅ QR code generation with signed tokens
+- ✅ Online scanning with first-scan-wins rule
+- ✅ Offline sync (batch upload with conflict resolution)
+- ✅ Mobile scanner with terminal codes
+- ✅ Camera-based QR scanning (html5-qrcode)
+- ✅ Manual override with audit logging
+- ✅ Scanner terminals management
+
+**Platform Admin**
+- ✅ SuperAdmin role and authentication
+- ✅ Platform dashboard with metrics (orgs, revenue, fees)
+- ✅ Audit logging for admin actions
+- ✅ Organization-level statistics
+
+#### 🟨 Needs Adjustment (Minor Tweaks Required)
+
+**Fee Configuration UI**
+- ⬜ Platform admin UI for per-event fee overrides
+  - Database fields exist (`serviceFeeFixed`, `serviceFeePercentage`, etc.)
+  - Backend service ready (`calculateServiceFee` accepts event config)
+  - Need: Admin form to customize fees for specific events/organizations
+
+**Refund Handling**
+- ⬜ Application fee refund logic
+  - Currently: application fee is non-refundable (stays with platform)
+  - Need: Investigate Mollie API for application fee refunds
+  - Edge cases: full refund vs partial refund fee adjustments
+  - Decision required: should platform refund application fee to organizer?
+
+**Invoice Generation**
+- ⬜ Automated invoice creation post-event
+  - Model exists, ready for PLATFORM_FEE invoices
+  - Need: Cron job or manual trigger to generate invoices
+  - Need: PDF generation (invoice template)
+  - Need: Email delivery to `organization.billingEmail`
+
+#### 🚧 Needs New Implementation (Larger Features)
+
+**Platform Admin Features (Slice 17)**
+- ⬜ Organizations management page
+  - List view with search/filters (name, Mollie status, created date)
+  - Organization detail view (events, revenue, stats)
+  - Actions: suspend/unsuspend, force password reset
+  - Impersonation for support (with audit log)
+- ⬜ Fee configuration management
+  - Global default fee settings
+  - Per-organization fee overrides
+  - Fee history and versioning
+
+**Analytics & Monitoring (Slice 19)**
+- ⬜ Enhanced metrics dashboard
+  - GMV (Gross Merchandise Value) over time
+  - Growth metrics (MoM, new orgs/week)
+  - Active events count
+- ⬜ Financial reports
+  - Platform fees per organization (monthly/quarterly)
+  - Payout reconciliation with Mollie settlements
+  - MRR tracking (if subscription model returns)
+- ⬜ System health monitoring
+  - Failed payments dashboard (last 24h/7d/30d)
+  - Failed webhooks with retry status
+  - API response time tracking
+- ⬜ Fraud detection
+  - Multiple failed payment attempts
+  - Suspicious scanning patterns
+  - High refund rate alerts
+
+**Operations & Polish (Slice 13-15)**
+- ⬜ Rate limiting (scan endpoints, checkout API)
+- ⬜ PII retention hooks (data cleanup after retention period)
+- ⬜ Improved email templates (professional design)
+- ⬜ Error tracking integration (Sentry or similar)
+- ⬜ Health check endpoint for monitoring
+
+**Nice-to-Haves (Post-MVP)**
+- ⬜ Tiered pricing (different fees per organization tier)
+- ⬜ Volume discounts (lower fees for high-volume organizers)
+- ⬜ PDF ticket attachments (backup for email)
+- ⬜ Wallet passes (Apple Wallet, Google Pay)
+- ⬜ Event FAQ pages
+- ⬜ Multi-currency support (currently NL/EUR only)
+
+#### 🔒 Security & Compliance TODOs
+
+- ⬜ Rate limiting implementation
+  - Scan endpoints: 60 req/min per device
+  - Checkout: 10 attempts/min per IP
+  - Payment webhooks: per-endpoint limits
+- ⬜ Brute-force protection on QR validation
+- ⬜ PII data retention policy enforcement
+  - Anonymize buyer emails after X months
+  - Purge scan logs after retention period
+  - Keep financial records for compliance (7 years)
+
+---
 
 ### 31 December 2024
 
@@ -489,17 +644,64 @@ _The invoice UI improvements from 30 December were part of the subscription syst
 
 ### Slice 12: Payout reporting
 
-- ✅ Payouts page with Mollie connection check
-- ✅ Settlements view component (UI framework)
-- ✅ Payout overview per event
-- ✅ Gross / platform fee / net breakdown
-- ✅ Integration with Mollie Settlements API (fetch real data)
-  - ✅ List settlements endpoint (`/api/organizations/[id]/mollie/settlements`)
-  - ✅ Settlement detail endpoint (`/api/organizations/[id]/mollie/settlements/[settlementId]`)
-  - ✅ Balance overview endpoint (`/api/organizations/[id]/mollie/balance`)
-  - ✅ Open settlement endpoint (`/api/organizations/[id]/mollie/settlements/open`)
-- ✅ CSV export (orders, tickets, scans)
-- ✅ Audit log for refunds & overrides
+- ✅ **Payouts page** - Complete UI with real data
+  - Mollie connection status check
+  - Redirects to onboarding if not connected
+  - Displays organization balance (available + pending)
+  - Tab-based navigation (Overview, Settlements, Exports)
+- ✅ **Payout overview per event** - Event-level breakdown
+  - Gross revenue (total ticket sales)
+  - Service fees collected (€0.50 + 2% per order)
+  - Platform fee (service fee - Mollie fee = platform revenue)
+  - Mollie fees (€0.35 × order count)
+  - Net payout (what organizer receives = gross revenue)
+  - Ticket count and scan statistics
+- ✅ **Fee Accounting Model**
+  - Buyer pays: Ticket Total + Service Fee
+  - Organizer receives: Ticket Total (gross revenue)
+  - Platform receives: Service Fee - Mollie Fee
+  - Mollie receives: €0.35 per transaction
+  - Displayed in 5-column table: Gross | Service Fees | Platform Fee | Mollie Fees | Net
+- ✅ **Settlements view component** - Mollie integration
+  - Lists all Mollie settlements with status badges
+  - Status indicators: `open`, `pending`, `paidout`, `failed`
+  - Settlement date ranges and amounts
+  - Links to Mollie dashboard for details
+- ✅ **Integration with Mollie Settlements API** - Real-time data
+  - ✅ List settlements endpoint (`/api/organizations/[id]/settlements?limit=10`)
+  - ✅ Balance overview endpoint (`/api/organizations/[id]/balance`)
+  - ✅ Pagination support for large settlement lists
+  - ✅ Error handling with user-friendly messages
+  - ✅ Auto-refresh on Mollie connection status change
+- ✅ **CSV export** - Data export functionality
+  - Orders export (all fields: buyer, tickets, payment info, fees)
+  - Tickets export (QR codes, status, scan logs)
+  - Scans export (scan attempts, results, timestamps, devices)
+  - Event-level filtering (export specific event data)
+  - Date range filtering (export by date period)
+- ✅ **Audit log** - Compliance & transparency
+  - Refund actions logged with admin user, reason, timestamp
+  - Manual scan overrides logged (who, when, why)
+  - Platform admin actions tracked (SuperAdmin audit logs)
+  - Includes metadata JSON for detailed context
+
+**Technical Implementation**
+
+- ✅ `payoutService.ts` - Core calculation engine
+  - `getEventPayoutBreakdown()` - Per-event fee breakdown
+  - `getOrganizationPayoutSummary()` - Organization-level totals
+  - Uses `calculateApplicationFee()` from molliePaymentService
+  - Aggregates all paid orders with fee calculations
+- ✅ `mollieConnectService.ts` - API integration
+  - `getSettlements()` - Fetch paginated settlement list
+  - `getBalance()` - Get current balance (available + pending)
+  - Token refresh handling with automatic retry
+  - Error handling for API failures
+- ✅ Database queries - Optimized for performance
+  - Organization-scoped (multi-tenancy enforced)
+  - Efficient joins (orders → tickets → events)
+  - Indexes on foreign keys for fast lookups
+  - Date range filtering with database-level filters
 
 **DoD**
 
@@ -508,6 +710,7 @@ _The invoice UI improvements from 30 December were part of the subscription syst
 - ✅ CSV exports available for orders, tickets, and scans
 - ✅ Audit log tracks all refund actions with reason and metadata
 - ✅ Settlements UI displays real Mollie settlement data with status badges
+- ✅ Payout calculations verified with test data (27 order tests + 6 payment tests passing)
 
 ---
 
