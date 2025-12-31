@@ -29,7 +29,11 @@ interface EventPayoutBreakdown {
   eventTitle: string;
   ticketsSold: number;
   grossRevenue: number;
+  grossRevenueExclVat: number;
+  ticketVat: number;
   serviceFees: number;
+  serviceFeeExclVat: number;
+  serviceFeeVat: number;
   platformFee: number;
   mollieFees: number;
   netPayout: number;
@@ -37,7 +41,11 @@ interface EventPayoutBreakdown {
 
 interface PayoutSummary {
   totalGrossRevenue: number;
+  totalGrossRevenueExclVat: number;
+  totalTicketVat: number;
   totalServiceFees: number;
+  totalServiceFeeExclVat: number;
+  totalServiceFeeVat: number;
   totalPlatformFees: number;
   totalMollieFees: number;
   totalNetPayout: number;
@@ -375,7 +383,7 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Totaal overzicht
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Bruto omzet
@@ -417,6 +425,47 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
                 </p>
               </div>
             </div>
+
+            {/* VAT Breakdown */}
+            <div className="border-t border-gray-200 dark:border-gray-800 pt-4">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                BTW uitsplitsing
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500 dark:text-gray-400">
+                    Ticket omzet (excl. BTW)
+                  </p>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {formatPrice(payoutSummary.totalGrossRevenueExclVat)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 dark:text-gray-400">
+                    BTW op tickets
+                  </p>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {formatPrice(payoutSummary.totalTicketVat)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 dark:text-gray-400">
+                    Service fees (excl. BTW)
+                  </p>
+                  <p className="font-semibold text-gray-500 dark:text-gray-400">
+                    {formatPrice(payoutSummary.totalServiceFeeExclVat)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 dark:text-gray-400">
+                    BTW op service fees (21%)
+                  </p>
+                  <p className="font-semibold text-gray-500 dark:text-gray-400">
+                    {formatPrice(payoutSummary.totalServiceFeeVat)}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Per event breakdown */}
@@ -443,7 +492,16 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
                         Tickets
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Bruto
+                        Omzet excl. BTW
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        BTW tickets
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Service fees excl. BTW
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        BTW service fees
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Platform fee
@@ -470,10 +528,17 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
                           {event.ticketsSold}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {formatPrice(event.grossRevenue)}
-                          </span>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
+                          {formatPrice(event.grossRevenueExclVat)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
+                          {formatPrice(event.ticketVat)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
+                          {formatPrice(event.serviceFeeExclVat)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
+                          {formatPrice(event.serviceFeeVat)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
                           -{formatPrice(event.platformFee)}
@@ -514,10 +579,11 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
           </svg>
           <p className="text-sm text-blue-700 dark:text-blue-300">
             Uitbetalingen worden verwerkt via Mollie. De platform fee (service
-            fee minus €0,35 Mollie kosten) wordt automatisch ingehouden. De
-            Mollie transactiekosten (€0,35 per order) worden van je uitbetaling
-            afgetrokken. Je kunt je bankrekening en uitbetalingsfrequentie
-            beheren in het{" "}
+            fee minus €0,35 Mollie kosten incl. BTW) wordt automatisch
+            ingehouden. De Mollie transactiekosten (€0,35 per order, incl. BTW)
+            worden van je uitbetaling afgetrokken. BTW uitsplitsing toont de
+            belastbare omzet voor je BTW-aangifte. Je kunt je bankrekening en
+            uitbetalingsfrequentie beheren in het{" "}
             <a
               href="https://my.mollie.com/dashboard"
               target="_blank"

@@ -1,6 +1,7 @@
 import { prisma } from "@/server/lib/prisma";
 import { orderRepo, OrderItemInput } from "@/server/repos/orderRepo";
 import type { Order, TicketType } from "@/generated/prisma";
+import { calculateServiceFeeWithVat } from "@/server/lib/vat";
 
 // =============================================================================
 // Service Fee Configuration
@@ -11,25 +12,41 @@ import type { Order, TicketType } from "@/generated/prisma";
  * This is charged once per order (buyer pays)
  * Applies to paid events only (free events have no service fee)
  *
- * Current strategy: Fixed fee + percentage of ticket total
+ * STRUCTURE (as of 31 Dec 2024):
+ * - Mollie fee: €0.29 excl. VAT + €0.06 VAT = €0.35 incl. VAT
+ * - Platform fee: (€0.15 + 2% of ticket total) × 1.21 (incl. 21% VAT)
+ *
+ * Example (€50 ticket):
+ * - Mollie: €0.35 incl. VAT
+ * - Platform: (€0.15 + €1.00) × 1.21 = €1.39 incl. VAT
+ * - Total: €1.74
+ *
  * Label: "Servicekosten (incl. betalingskosten)"
- * TODO: Make this configurable per organization
+ *
+ * See src/server/lib/vat.ts for detailed calculation documentation
  */
 const SERVICE_FEE_CONFIG = {
-  // Fixed fee in cents (€0.50)
+  // DEPRECATED: These values are no longer used directly
+  // Service fee is now calculated via calculateServiceFeeWithVat()
+  // which properly handles Mollie fee (VAT-exempt) vs Platform fee (21% VAT)
   fixedFee: 50,
-  // Percentage of ticket total (2%)
   percentageFee: 0.02,
-  // Minimum service fee in cents (€0.50)
   minimumFee: 50,
-  // Maximum service fee in cents (€5.00)
   maximumFee: 500,
 };
 
 /**
- * Calculate service fee for an order
+ * Calculate service fee for an order with proper VAT handling
+ *
+ * IMPORTANT: This function now calculates the service fee with VAT correctly:
+ * - Mollie fee (€0.29 excl. VAT): Subject to 21% VAT = €0.35 incl. VAT
+ * - Platform fee (€0.15 + 2%): Subject to 21% VAT
+ *
  * Fee is per order, not per ticket
- * Uses event-specific config if provided, otherwise falls back to defaults
+ *
+ * @param ticketTotal - Total ticket price in cents
+ * @param eventConfig - Optional event-specific fee configuration (NOT YET IMPLEMENTED)
+ * @returns Service fee including VAT (total charged to buyer)
  */
 export function calculateServiceFee(
   ticketTotal: number,
@@ -42,23 +59,11 @@ export function calculateServiceFee(
 ): number {
   if (ticketTotal === 0) return 0;
 
-  // Use event-specific config or fall back to defaults
-  const config = {
-    fixedFee: eventConfig?.serviceFeeFixed ?? SERVICE_FEE_CONFIG.fixedFee,
-    percentageFee: eventConfig?.serviceFeePercentage ?? SERVICE_FEE_CONFIG.percentageFee,
-    minimumFee: eventConfig?.serviceFeeMinimum ?? SERVICE_FEE_CONFIG.minimumFee,
-    maximumFee: eventConfig?.serviceFeeMaximum ?? SERVICE_FEE_CONFIG.maximumFee,
-  };
+  // TODO: Implement event-specific config support
+  // For now, always use the standard calculation with proper VAT
+  const breakdown = calculateServiceFeeWithVat(ticketTotal);
 
-  const calculatedFee =
-    config.fixedFee +
-    Math.round(ticketTotal * config.percentageFee);
-
-  // Apply min/max bounds
-  return Math.min(
-    Math.max(calculatedFee, config.minimumFee),
-    config.maximumFee
-  );
+  return breakdown.serviceFeeInclVat;
 }
 
 // =============================================================================
@@ -310,12 +315,13 @@ export async function createOrder(
         });
       }
 
-      const serviceFee = calculateServiceFee(ticketTotal, {
-        serviceFeeFixed: event.serviceFeeFixed,
-        serviceFeePercentage: event.serviceFeePercentage,
-        serviceFeeMinimum: event.serviceFeeMinimum,
-        serviceFeeMaximum: event.serviceFeeMaximum,
-      });
+      // Calculate service fee with proper VAT breakdown
+      // Both Mollie fee (€0.29) and Platform fee have 21% VAT
+      const serviceFeeBreakdown = calculateServiceFeeWithVat(ticketTotal);
+
+      const serviceFee = serviceFeeBreakdown.serviceFeeInclVat;
+      const serviceFeeExclVat = serviceFeeBreakdown.serviceFeeExclVat;
+      const serviceFeeVat = serviceFeeBreakdown.serviceFeeVat;
       const totalAmount = ticketTotal + serviceFee;
 
       // Order expires in 30 minutes if not paid
@@ -330,6 +336,8 @@ export async function createOrder(
           buyerName: data.buyerName,
           ticketTotal,
           serviceFee,
+          serviceFeeExclVat,
+          serviceFeeVat,
           totalAmount,
           expiresAt,
         },

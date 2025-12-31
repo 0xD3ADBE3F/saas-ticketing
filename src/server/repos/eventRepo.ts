@@ -10,6 +10,7 @@ export type CreateEventInput = {
   endsAt: Date;
   status?: EventStatus;
   isPaid?: boolean;
+  vatRate?: "STANDARD_21" | "REDUCED_9" | "EXEMPT";
 };
 
 export type UpdateEventInput = {
@@ -21,6 +22,7 @@ export type UpdateEventInput = {
   endsAt?: Date;
   status?: EventStatus;
   isPaid?: boolean;
+  vatRate?: "STANDARD_21" | "REDUCED_9" | "EXEMPT";
 };
 
 export type EventFilters = {

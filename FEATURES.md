@@ -14,6 +14,7 @@
 - ✅ **Invoice generation** - For post-event platform fee invoicing
 - ✅ **Payout reporting** - Mollie Settlements API integration with detailed fee breakdowns
 - ✅ **CSV exports** - Orders, tickets, and scan logs with event/date filtering
+- 🟨 **VAT/BTW handling** - Implementation planned (per-event VAT rates, VAT-inclusive pricing, compliant reporting)
 
 ### 📊 Feature Completion by Phase
 
@@ -29,14 +30,15 @@
 
 ### 💰 Fee Structure Quick Reference
 
-| Fee Type            | Amount              | Paid By  | Goes To           | Notes                                     |
-| ------------------- | ------------------- | -------- | ----------------- | ----------------------------------------- |
-| **Service Fee**     | €0.50 + 2%          | Buyer    | Platform          | Per order, configurable per event         |
-| **Mollie Fee**      | €0.35               | Platform | Mollie            | Per transaction, deducted from service fee|
-| **Application Fee** | Service Fee - €0.35 | Platform | Platform (net)    | Non-refundable, charged at payment time   |
-| **Net Payout**      | Ticket Total        | Buyer    | Organizer         | Gross revenue, excludes service fees      |
+| Fee Type            | Amount              | Paid By  | Goes To        | Notes                                      |
+| ------------------- | ------------------- | -------- | -------------- | ------------------------------------------ |
+| **Service Fee**     | €0.50 + 2%          | Buyer    | Platform       | Per order, configurable per event          |
+| **Mollie Fee**      | €0.35               | Platform | Mollie         | Per transaction, deducted from service fee |
+| **Application Fee** | Service Fee - €0.35 | Platform | Platform (net) | Non-refundable, charged at payment time    |
+| **Net Payout**      | Ticket Total        | Buyer    | Organizer      | Gross revenue, excludes service fees       |
 
 **Example:** Order with €20 tickets
+
 - Buyer pays: €20.00 (tickets) + €0.90 (service fee) = €20.90
 - Organizer receives: €20.00 (via Mollie settlement)
 - Platform receives: €0.90 - €0.35 = €0.55
@@ -85,6 +87,7 @@
 #### ✅ Fully Implemented (Production Ready)
 
 **Events & Tickets**
+
 - ✅ Event CRUD with multi-tenancy (DRAFT → LIVE → ENDED/CANCELLED)
 - ✅ Ticket types with capacity management (no overselling)
 - ✅ Public event pages (`/e/[slug]`) with ticket selection
@@ -92,6 +95,7 @@
 - ✅ Event-specific service fee configuration (database ready, admin UI TODO)
 
 **Checkout & Pricing**
+
 - ✅ Service fee calculation: €0.50 + 2% per order
 - ✅ Real-time price display with server-side validation
 - ✅ Free events have €0.00 service fee
@@ -100,6 +104,7 @@
 - ✅ Buyer information collection (email required, name optional)
 
 **Payments & Fees**
+
 - ✅ Mollie iDEAL payments with OAuth (Platform mode)
 - ✅ Application fee: Service Fee - €0.35 Mollie transaction fee
 - ✅ Platform receives: (€0.50 + 2%) - €0.35 per order
@@ -109,6 +114,7 @@
 - ✅ Mollie token encryption (AES-256-GCM)
 
 **Invoicing & Reporting**
+
 - ✅ Payout dashboard with 5-column fee breakdown
   - Gross Revenue (ticket sales to buyers)
   - Service Fees (€0.50 + 2% collected from buyers)
@@ -122,6 +128,7 @@
 - ✅ Invoice model infrastructure (ready for automated invoicing)
 
 **Scanning & Operations**
+
 - ✅ QR code generation with signed tokens
 - ✅ Online scanning with first-scan-wins rule
 - ✅ Offline sync (batch upload with conflict resolution)
@@ -131,6 +138,7 @@
 - ✅ Scanner terminals management
 
 **Platform Admin**
+
 - ✅ SuperAdmin role and authentication
 - ✅ Platform dashboard with metrics (orgs, revenue, fees)
 - ✅ Audit logging for admin actions
@@ -139,12 +147,14 @@
 #### 🟨 Needs Adjustment (Minor Tweaks Required)
 
 **Fee Configuration UI**
+
 - ⬜ Platform admin UI for per-event fee overrides
   - Database fields exist (`serviceFeeFixed`, `serviceFeePercentage`, etc.)
   - Backend service ready (`calculateServiceFee` accepts event config)
   - Need: Admin form to customize fees for specific events/organizations
 
 **Refund Handling**
+
 - ⬜ Application fee refund logic
   - Currently: application fee is non-refundable (stays with platform)
   - Need: Investigate Mollie API for application fee refunds
@@ -152,6 +162,7 @@
   - Decision required: should platform refund application fee to organizer?
 
 **Invoice Generation**
+
 - ⬜ Automated invoice creation post-event
   - Model exists, ready for PLATFORM_FEE invoices
   - Need: Cron job or manual trigger to generate invoices
@@ -161,6 +172,7 @@
 #### 🚧 Needs New Implementation (Larger Features)
 
 **Platform Admin Features (Slice 17)**
+
 - ⬜ Organizations management page
   - List view with search/filters (name, Mollie status, created date)
   - Organization detail view (events, revenue, stats)
@@ -172,6 +184,7 @@
   - Fee history and versioning
 
 **Analytics & Monitoring (Slice 19)**
+
 - ⬜ Enhanced metrics dashboard
   - GMV (Gross Merchandise Value) over time
   - Growth metrics (MoM, new orgs/week)
@@ -190,6 +203,7 @@
   - High refund rate alerts
 
 **Operations & Polish (Slice 13-15)**
+
 - ⬜ Rate limiting (scan endpoints, checkout API)
 - ⬜ PII retention hooks (data cleanup after retention period)
 - ⬜ Improved email templates (professional design)
@@ -197,12 +211,193 @@
 - ⬜ Health check endpoint for monitoring
 
 **Nice-to-Haves (Post-MVP)**
+
 - ⬜ Tiered pricing (different fees per organization tier)
 - ⬜ Volume discounts (lower fees for high-volume organizers)
 - ⬜ PDF ticket attachments (backup for email)
 - ⬜ Wallet passes (Apple Wallet, Google Pay)
 - ⬜ Event FAQ pages
 - ⬜ Multi-currency support (currently NL/EUR only)
+
+#### 🧾 VAT/BTW Handling - Implementation Planned
+
+**Current State:**
+
+- ❌ No VAT rate configuration per event
+- ❌ Ticket prices don't distinguish incl/excl VAT
+- ❌ No VAT breakdown in reporting/exports
+- ❌ Service fee VAT not calculated (Entro fee needs 21% BTW)
+- ❌ No VAT-compliant invoicing
+
+**Implementation Plan:**
+
+**A) Event Setup - VAT Rate (Required Field)**
+
+- ⬜ Add `vatRate` enum field to Event model
+  - Options: `VAT_9` (9%), `VAT_21` (21%), `VAT_EXEMPT` (vrijgesteld)
+  - Required field (no default, organizer must choose)
+  - Database migration with safe defaults for existing events
+- ⬜ Event create/edit UI
+  - Add VAT rate selector (dropdown/radio buttons)
+  - Show disclaimer: "Organizer is responsible for correct VAT selection and remittance"
+  - Display current VAT rate prominently when editing
+- ⬜ Business rule: Restrict VAT rate changes
+  - If event has paid orders → prevent changing `vatRate`
+  - Show error: "Cannot change VAT rate after tickets have been sold"
+  - Allow change only if `soldCount === 0` for all ticket types
+
+**B) Ticket Pricing - VAT-Inclusive Entry**
+
+- ⬜ Update TicketType schema
+  - `price` → rename to `priceInclVat` (or keep as `price` but document as inclusive)
+  - Add `priceExclVat` (Int, derived and stored)
+  - Add `vatAmount` (Int, derived and stored)
+- ⬜ Ticket creation/edit UI
+  - Label: "Ticket price (incl. VAT)"
+  - Helper text: "This event uses VAT rate: {9% / 21% / exempt}. VAT is included in the entered price."
+  - Calculate and display excl/VAT breakdown on blur (for organizer info only)
+  - Example: "€10.00 incl. → €9.09 excl. + €0.91 VAT (9%)"
+
+**C) Pricing Calculations - Shared Utilities**
+
+- ⬜ Create `src/server/lib/vat.ts` with:
+
+  ```typescript
+  enum VatRate {
+    VAT_9 = 0.09,
+    VAT_21 = 0.21,
+    VAT_EXEMPT = 0.0,
+  }
+
+  function calculateVatBreakdown(
+    priceInclVat: number,
+    vatRate: VatRate
+  ): {
+    priceExclVat: number;
+    vatAmount: number;
+    priceInclVat: number;
+  };
+
+  function calculateServiceFeeWithVat(serviceFeeExclVat: number): {
+    serviceFeeExclVat: number;
+    serviceFeeVat: number;
+    serviceFeeInclVat: number;
+  };
+  ```
+
+- ⬜ Rounding strategy: Math.round() to nearest cent for all calculations
+- ⬜ Unit tests: All VAT rates, edge cases (€0.01, large amounts)
+
+**D) Checkout Display - Simplified for Buyer**
+
+- ⬜ Buyer sees:
+  - Tickets subtotal (sum of priceInclVat × qty) - **no VAT breakdown shown**
+  - Service fee (one line, incl. VAT)
+  - Total
+- ⬜ Backend calculates:
+  - Ticket VAT totals (for reporting, not displayed)
+  - Service fee with 21% VAT
+  - Total amount to charge via Mollie
+
+**E) Service Fee VAT - Entro Platform Fee**
+
+- ⬜ Current: €0.50 + 2% is the fee amount
+- ⬜ Update: Treat as **excl. VAT**, apply 21% BTW
+  - serviceFeeExclVat = (50 + ticketTotal × 0.02)
+  - serviceFeeVat = serviceFeeExclVat × 0.21
+  - serviceFeeInclVat = serviceFeeExclVat + serviceFeeVat
+- ⬜ Buyer pays serviceFeeInclVat
+- ⬜ Store all three values in Order model
+
+**F) Database Schema Changes**
+
+- ⬜ Migration 1: Add VAT fields to Event
+  ```sql
+  ALTER TABLE events ADD COLUMN vat_rate TEXT NOT NULL DEFAULT 'VAT_21';
+  -- Backfill: Set all existing events to VAT_21 (most common)
+  ```
+- ⬜ Migration 2: Add VAT breakdown to TicketType
+  ```sql
+  ALTER TABLE ticket_types
+    ADD COLUMN price_excl_vat INT,
+    ADD COLUMN vat_amount INT;
+  -- Backfill: Calculate based on existing price and event.vat_rate
+  ```
+- ⬜ Migration 3: Add service fee VAT to Order
+  ```sql
+  ALTER TABLE orders
+    ADD COLUMN service_fee_excl_vat INT,
+    ADD COLUMN service_fee_vat INT;
+  -- Rename service_fee to service_fee_incl_vat (or backfill new columns)
+  ```
+- ⬜ Add constraints: CHECK (price_excl_vat >= 0), CHECK (vat_amount >= 0)
+
+**G) Organizer Reporting - VAT Breakdown**
+
+- ⬜ Update payout dashboard
+  - Add columns: "Tickets Excl VAT", "VAT Amount", "Tickets Incl VAT"
+  - Show service fee breakdown (currently just one number)
+- ⬜ CSV exports
+  - Include: order ID, ticket total incl, ticket total excl, VAT amount, VAT rate
+  - Service fee incl, service fee excl, service fee VAT
+  - Organizer needs this for VAT filing (BTW-aangifte)
+- ⬜ Per-event totals
+  - Group by VAT rate (if multiple events with different rates)
+  - Show: Total excl VAT, Total VAT, Total incl VAT
+
+**H) Testing Requirements**
+
+- ⬜ Unit tests: `vat.ts` calculations
+  - 9% VAT: €10.90 → €10.00 excl + €0.90 VAT
+  - 21% VAT: €12.10 → €10.00 excl + €2.10 VAT (rounding check!)
+  - Exempt: €10.00 → €10.00 excl + €0.00 VAT
+  - Service fee VAT: €1.00 excl → €0.21 VAT → €1.21 incl
+- ⬜ Integration tests: Order creation
+  - Create event with VAT_9
+  - Create ticket type: €10.90
+  - Place order: verify priceExclVat, vatAmount stored correctly
+  - Verify serviceFeeInclVat includes 21% VAT
+- ⬜ E2E test: Full checkout flow
+  - Event with 9% VAT, ticket €10.90
+  - Add to cart, checkout
+  - Verify Mollie payment amount = tickets incl + service fee incl
+  - Verify payout report shows correct VAT breakdown
+
+**I) Migration Plan for Existing Data**
+
+- ⬜ Step 1: Add columns with safe defaults (VAT_21 for all events)
+- ⬜ Step 2: Backfill calculated fields (priceExclVat, vatAmount)
+  - Use event.vatRate to calculate from existing ticket.price
+  - Run data migration script with verification
+- ⬜ Step 3: Update application code to use new fields
+- ⬜ Step 4: Deploy with feature flag (enable VAT UI gradually)
+- ⬜ Step 5: Make vatRate required (remove default) in future migration
+
+**Why This Matters:**
+
+- **Legal compliance**: NL businesses must report VAT correctly (BTW-aangifte)
+- **Organizer clarity**: Shows exactly what portion is VAT (needed for accounting)
+- **Platform compliance**: Entro must charge 21% VAT on service fees to buyers
+- **Export ready**: CSV exports provide data for tax filing
+
+**Estimated Effort:**
+
+- Database migrations: 2-3 hours
+- Shared utilities + tests: 3-4 hours
+- UI updates (event, ticket forms): 4-5 hours
+- Checkout + order persistence: 3-4 hours
+- Reporting/exports: 3-4 hours
+- Testing + edge cases: 4-5 hours
+- **Total: ~20-25 hours** (3-4 days for one developer)
+
+**Dependencies:**
+
+- ✅ Service fee model already implemented
+- ✅ Order persistence working
+- ✅ Payout reporting structure in place
+- ⬜ Need: VAT calculation utilities (new)
+- ⬜ Need: UI for VAT rate selection (new)
+- ⬜ Need: Schema migrations (new)
 
 #### 🔒 Security & Compliance TODOs
 

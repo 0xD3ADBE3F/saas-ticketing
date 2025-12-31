@@ -16,6 +16,7 @@ const updateEventSchema = z.object({
   endsAt: z.string().datetime("Ongeldige einddatum").optional(),
   status: z.enum(["DRAFT", "LIVE", "ENDED", "CANCELLED"]).optional(),
   isPaid: z.boolean().optional(),
+  vatRate: z.enum(["STANDARD_21", "REDUCED_9", "EXEMPT"]).optional(),
 });
 
 interface RouteParams {
@@ -95,6 +96,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     startsAt?: Date;
     endsAt?: Date;
     isPaid?: boolean;
+    vatRate?: "STANDARD_21" | "REDUCED_9" | "EXEMPT";
   } = {};
 
   if (updateData.title !== undefined) updatePayload.title = updateData.title;
@@ -103,6 +105,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (updateData.startsAt !== undefined) updatePayload.startsAt = new Date(updateData.startsAt);
   if (updateData.endsAt !== undefined) updatePayload.endsAt = new Date(updateData.endsAt);
   if (updateData.isPaid !== undefined) updatePayload.isPaid = updateData.isPaid;
+  if (updateData.vatRate !== undefined) updatePayload.vatRate = updateData.vatRate;
 
   if (Object.keys(updatePayload).length > 0) {
     const result = await updateEvent(id, user.id, updatePayload);

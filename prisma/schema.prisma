@@ -108,6 +108,7 @@ model Event {
   endsAt         DateTime
   status         EventStatus @default(DRAFT)
   isPaid         Boolean     @default(true) // Does event have paid tickets (requires Mollie)?
+  vatRate        VatRate     @default(STANDARD_21) // VAT rate for tickets
 
   // Service fee configuration (NULL = use platform defaults)
   // Platform admin can override these per event
@@ -140,12 +141,20 @@ enum EventStatus {
   CANCELLED
 }
 
+enum VatRate {
+  STANDARD_21
+  REDUCED_9
+  EXEMPT
+}
+
 model TicketType {
   id           String    @id @default(uuid())
   eventId      String
   name         String
   description  String?
-  price        Int       // Price in cents
+  price        Int       // Price in cents (VAT-inclusive, shown to buyer)
+  priceExclVat Int?      // Price excluding VAT (for organizer reporting)
+  vatAmount    Int?      // VAT amount in cents (for organizer reporting)
   capacity     Int
   soldCount    Int       @default(0)
   saleStart    DateTime?
@@ -204,9 +213,11 @@ model Order {
   orderNumber     String      @unique
   buyerEmail      String
   buyerName       String?
-  ticketTotal     Int         // Total ticket price in cents
-  serviceFee      Int         // Service fee in cents
-  totalAmount     Int         // Grand total in cents
+  ticketTotal     Int         // Total ticket price in cents (VAT-inclusive)
+  serviceFee      Int         // Service fee in cents (VAT-inclusive)
+  serviceFeeExclVat Int?      // Service fee excluding VAT (for reporting)
+  serviceFeeVat   Int?        // Service fee VAT amount (for reporting)
+  totalAmount     Int         // Grand total in cents (VAT-inclusive)
   status          OrderStatus @default(PENDING)
   paymentId       String?     @unique // Mollie payment ID
   paymentMethod   String?

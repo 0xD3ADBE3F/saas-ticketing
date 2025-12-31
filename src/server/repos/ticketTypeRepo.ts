@@ -4,7 +4,9 @@ import type { TicketType } from "@/generated/prisma";
 export type CreateTicketTypeInput = {
   name: string;
   description?: string;
-  price: number; // In cents
+  price: number; // In cents (VAT-inclusive)
+  priceExclVat: number; // In cents (excl VAT)
+  vatAmount: number; // VAT amount in cents
   capacity: number;
   saleStart?: Date;
   saleEnd?: Date;
@@ -14,7 +16,9 @@ export type CreateTicketTypeInput = {
 export type UpdateTicketTypeInput = {
   name?: string;
   description?: string;
-  price?: number;
+  price?: number; // In cents (VAT-inclusive)
+  priceExclVat?: number; // In cents (excl VAT)
+  vatAmount?: number; // VAT amount in cents
   capacity?: number;
   saleStart?: Date | null;
   saleEnd?: Date | null;
@@ -28,7 +32,7 @@ export const ticketTypeRepo = {
   getEventForTicketType: async (
     eventId: string,
     userId: string
-  ): Promise<{ id: string; isPaid: boolean } | null> => {
+  ): Promise<{ id: string; isPaid: boolean; vatRate: "STANDARD_21" | "REDUCED_9" | "EXEMPT" } | null> => {
     const event = await prisma.event.findFirst({
       where: {
         id: eventId,
@@ -41,6 +45,7 @@ export const ticketTypeRepo = {
       select: {
         id: true,
         isPaid: true,
+        vatRate: true,
       },
     });
 

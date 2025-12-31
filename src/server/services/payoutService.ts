@@ -5,35 +5,47 @@ import { calculateApplicationFee, MOLLIE_FEE } from "@/server/services/molliePay
  * Payout Breakdown Structure:
  *
  * Buyer pays:
- *   - Ticket Total
- *   - Service Fee (€0.50 + 2%)
+ *   - Ticket Total (incl. VAT)
+ *   - Service Fee: €0.29 Mollie (excl. VAT) + €0.06 VAT + Platform (€0.15 + 2%) × 1.21
  *
  * Money flow:
  *   - Ticket Total → Organizer's Mollie balance
- *   - Service Fee - Mollie Fee (€0.35) → Platform (via application fee)
- *   - Mollie Fee (€0.35) → Mollie (transaction cost, paid by organizer)
+ *   - Service Fee - Mollie Fee (€0.35 incl. VAT) → Platform (via application fee)
+ *   - Mollie Fee (€0.35 incl. VAT) → Mollie (transaction cost, paid by organizer)
+ *
+ * VAT Treatment:
+ *   - Tickets: VAT rate per event (21%/9%/0%)
+ *   - Service Fee: 21% VAT on both Mollie and Platform portions
  *
  * Organizer receives:
- *   - Gross Revenue (ticket sales) - Mollie Fees
+ *   - Gross Revenue (ticket sales) - Mollie Fees (incl. VAT)
  */
 
 export interface EventPayoutBreakdown {
   eventId: string;
   eventTitle: string;
   ticketsSold: number;
-  grossRevenue: number; // Total ticket sales in cents
-  serviceFees: number; // Service fees paid by buyers (goes to platform)
+  grossRevenue: number; // Total ticket sales in cents (incl. VAT)
+  grossRevenueExclVat: number; // Ticket sales excluding VAT
+  ticketVat: number; // VAT collected on tickets
+  serviceFees: number; // Service fees paid by buyers (goes to platform, incl. VAT)
+  serviceFeeExclVat: number; // Service fees excluding VAT (Mollie + Platform excl VAT)
+  serviceFeeVat: number; // VAT on service fees (21% on both Mollie and Platform)
   platformFee: number; // What platform receives (service fee - Mollie fees)
-  mollieFees: number; // Mollie transaction fees (paid by organizer)
+  mollieFees: number; // Mollie transaction fees (paid by organizer, incl. VAT)
   netPayout: number; // What the organizer receives (gross - Mollie fees)
 }
 
 export interface OrganizationPayoutSummary {
-  totalGrossRevenue: number;
-  totalServiceFees: number; // Total service fees collected from buyers
+  totalGrossRevenue: number; // Total ticket sales (incl. VAT)
+  totalGrossRevenueExclVat: number; // Total ticket sales excluding VAT
+  totalTicketVat: number; // Total VAT collected on tickets
+  totalServiceFees: number; // Total service fees collected from buyers (incl. VAT)
+  totalServiceFeeExclVat: number; // Total service fees excluding VAT (Mollie + Platform excl VAT)
+  totalServiceFeeVat: number; // Total VAT on service fees (21% on both Mollie and Platform)
   totalPlatformFees: number; // Total platform receives (service fees - Mollie fees)
-  totalMollieFees: number; // Total Mollie transaction fees
-  totalNetPayout: number; // Total organizer receives (gross - Mollie fees)
+  totalMollieFees: number; // Total Mollie transaction fees (incl. VAT)
+  totalNetPayout: number; // Total organizer receives (gross - Mollie fees, incl. VAT)
   events: EventPayoutBreakdown[];
 }
 
@@ -65,7 +77,7 @@ export const payoutService = {
       return null;
     }
 
-    // Get all paid orders for this event
+    // Get all paid orders for this event with VAT breakdown
     const orders = await prisma.order.findMany({
       where: {
         eventId,
@@ -75,9 +87,17 @@ export const payoutService = {
       select: {
         ticketTotal: true,
         serviceFee: true,
+        serviceFeeExclVat: true,
+        serviceFeeVat: true,
         tickets: {
           select: {
             id: true,
+            ticketType: {
+              select: {
+                priceExclVat: true,
+                vatAmount: true,
+              },
+            },
           },
         },
       },
@@ -88,7 +108,29 @@ export const payoutService = {
       (sum, order) => sum + order.ticketTotal,
       0
     );
+
+    // Calculate ticket VAT totals (sum of all tickets' VAT)
+    let grossRevenueExclVat = 0;
+    let ticketVat = 0;
+    for (const order of orders) {
+      for (const ticket of order.tickets) {
+        grossRevenueExclVat += ticket.ticketType.priceExclVat ?? 0;
+        ticketVat += ticket.ticketType.vatAmount ?? 0;
+      }
+    }
+
     const serviceFees = orders.reduce((sum, order) => sum + order.serviceFee, 0);
+
+    // Service fee VAT totals
+    const serviceFeeExclVat = orders.reduce(
+      (sum, order) => sum + (order.serviceFeeExclVat ?? 0),
+      0
+    );
+    const serviceFeeVat = orders.reduce(
+      (sum, order) => sum + (order.serviceFeeVat ?? 0),
+      0
+    );
+
     const ticketsSold = orders.reduce(
       (sum, order) => sum + order.tickets.length,
       0
@@ -100,10 +142,10 @@ export const payoutService = {
       0
     );
 
-    // Mollie transaction fees (€0.35 per order, paid by organizer)
+    // Mollie transaction fees (€0.35 incl. VAT per order, paid by organizer)
     const mollieFees = orders.length * MOLLIE_FEE;
 
-    // Net payout: gross revenue minus Mollie fees
+    // Net payout: gross revenue minus Mollie fees (incl. VAT)
     // (Service fees go to platform via application fee)
     const netPayout = grossRevenue - mollieFees;
 
@@ -112,7 +154,11 @@ export const payoutService = {
       eventTitle: event.title,
       ticketsSold,
       grossRevenue,
+      grossRevenueExclVat,
+      ticketVat,
       serviceFees,
+      serviceFeeExclVat,
+      serviceFeeVat,
       platformFee,
       mollieFees,
       netPayout,
@@ -164,7 +210,11 @@ export const payoutService = {
     // Calculate breakdown for each event
     const eventBreakdowns: EventPayoutBreakdown[] = [];
     let totalGrossRevenue = 0;
+    let totalGrossRevenueExclVat = 0;
+    let totalTicketVat = 0;
     let totalServiceFees = 0;
+    let totalServiceFeeExclVat = 0;
+    let totalServiceFeeVat = 0;
     let totalPlatformFees = 0;
     let totalMollieFees = 0;
     let totalNetPayout = 0;
@@ -178,7 +228,11 @@ export const payoutService = {
       if (breakdown && breakdown.grossRevenue > 0) {
         eventBreakdowns.push(breakdown);
         totalGrossRevenue += breakdown.grossRevenue;
+        totalGrossRevenueExclVat += breakdown.grossRevenueExclVat;
+        totalTicketVat += breakdown.ticketVat;
         totalServiceFees += breakdown.serviceFees;
+        totalServiceFeeExclVat += breakdown.serviceFeeExclVat;
+        totalServiceFeeVat += breakdown.serviceFeeVat;
         totalPlatformFees += breakdown.platformFee;
         totalMollieFees += breakdown.mollieFees;
         totalNetPayout += breakdown.netPayout;
@@ -187,7 +241,11 @@ export const payoutService = {
 
     return {
       totalGrossRevenue,
+      totalGrossRevenueExclVat,
+      totalTicketVat,
       totalServiceFees,
+      totalServiceFeeExclVat,
+      totalServiceFeeVat,
       totalPlatformFees,
       totalMollieFees,
       totalNetPayout,

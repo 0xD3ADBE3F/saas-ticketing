@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Event, EventStatus } from "@/generated/prisma";
+import { Event, EventStatus, VatRate } from "@/generated/prisma";
 import { toDateTimeLocalValue } from "@/lib/date";
+import { VAT_RATE_LABELS } from "@/server/lib/vat";
 
 interface EventFormProps {
   event?: Event;
@@ -17,6 +18,7 @@ interface FormData {
   startsAt: string;
   endsAt: string;
   isPaid: boolean;
+  vatRate: VatRate;
 }
 
 export function EventForm({ event, mode }: EventFormProps) {
@@ -50,6 +52,7 @@ export function EventForm({ event, mode }: EventFormProps) {
       ? toDateTimeLocalValue(event.endsAt)
       : getDefaultEndDate(),
     isPaid: event?.isPaid ?? true,
+    vatRate: event?.vatRate || "STANDARD_21",
   });
 
   const handleChange = (
@@ -86,6 +89,7 @@ export function EventForm({ event, mode }: EventFormProps) {
           startsAt: new Date(formData.startsAt).toISOString(),
           endsAt: new Date(formData.endsAt).toISOString(),
           isPaid: formData.isPaid,
+          vatRate: formData.vatRate,
         }),
       });
 
@@ -287,6 +291,38 @@ export function EventForm({ event, mode }: EventFormProps) {
             : "Bij gratis evenementen kunnen tickets zonder prijs worden aangemaakt."}
         </p>
       </div>
+
+      {/* VAT Rate (only for paid events) */}
+      {formData.isPaid && (
+        <div>
+          <label
+            htmlFor="vatRate"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            BTW-tarief *
+          </label>
+          <select
+            id="vatRate"
+            name="vatRate"
+            value={formData.vatRate}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                vatRate: e.target.value as VatRate,
+              }))
+            }
+            className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="STANDARD_21">{VAT_RATE_LABELS.STANDARD_21}</option>
+            <option value="REDUCED_9">{VAT_RATE_LABELS.REDUCED_9}</option>
+            <option value="EXEMPT">{VAT_RATE_LABELS.EXEMPT}</option>
+          </select>
+          <p className="mt-2 text-sm text-gray-500">
+            Dit tarief wordt toegepast op alle tickets voor dit evenement. De
+            ticketprijs blijft inclusief BTW zoals je deze invoert.
+          </p>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex flex-col sm:flex-row justify-between gap-4 pt-4 border-t border-gray-200 dark:border-gray-800">

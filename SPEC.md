@@ -11,17 +11,40 @@
 
 ### Revenue Model
 
-| Fee Type     | Who Pays  | When Charged | Calculation                                                 |
-| ------------ | --------- | ------------ | ----------------------------------------------------------- |
-| Service Fee  | Buyer     | Per order    | €0,50 fixed + 2% (configurable per event by platform admin) |
-| Platform Fee | Organizer | On payout    | 2% per ticket sold                                          |
+| Fee Type     | Who Pays  | When Charged | Calculation                        |
+| ------------ | --------- | ------------ | ---------------------------------- |
+| Service Fee  | Buyer     | Per order    | (€0.29 Mollie + €0.15 + 2%) × 1.21 |
+| Platform Fee | Organizer | On payout    | 2% per ticket sold                 |
 
-**Service Fee Details:**
+**Service Fee Details (as of 31 Dec 2024):**
 
-- Default: €0,50 fixed + 2% of ticket total (min €0,50, max €5,00)
-- Label: "Servicekosten (incl. betalingskosten)"
-- Platform admin can override per event (all fields optional, NULL = use defaults)
-- Stored in Event model: `serviceFeeFixed`, `serviceFeePercentage`, `serviceFeeMinimum`, `serviceFeeMaximum`
+The service fee consists of two components, both subject to 21% Dutch VAT:
+
+1. **Mollie Payment Processing Fee**: €0.29 excl. VAT
+   - With 21% VAT: €0.29 + €0.06 = €0.35 incl. VAT
+   - Fixed cost per transaction
+
+2. **Platform Service Fee**: (€0.15 fixed + 2% variable) × 1.21
+   - Subject to 21% Dutch VAT (standard rate for digital services)
+   - Covers ticketing platform service
+
+**Example (€50.00 ticket order):**
+
+- Mollie fee incl. VAT: €0.35
+- Platform excl VAT: €0.15 + (€50.00 × 2%) = €1.15
+- Platform VAT (21%): €1.15 × 0.21 = €0.24
+- **Total service fee: €1.74** (shown to buyer as "Servicekosten (incl. betalingskosten)")
+
+**Database Storage:**
+
+- `Order.serviceFee`: Total charged to buyer (incl VAT)
+- `Order.serviceFeeExclVat`: Mollie excl VAT + Platform excl VAT
+- `Order.serviceFeeVat`: VAT amount (on both Mollie and Platform)
+
+**Future:**
+
+- Event-specific service fee configuration not yet implemented (marked as TODO in code)
+- Would allow platform admin to customize platform portion per event
 
 ### Key Insight
 
@@ -33,7 +56,99 @@ Platform fee is calculated **per ticket sold** (2% of ticket price). This keeps 
 
 ---
 
-## 2. Domain Model
+## 2. VAT Handling
+
+### Dutch VAT Rates
+
+Entro implements Dutch BTW (VAT) with three rates:
+
+| Rate     | Percentage | Use Case                       | Enum Value  |
+| -------- | ---------- | ------------------------------ | ----------- |
+| Standard | 21%        | Most events                    | STANDARD_21 |
+| Reduced  | 9%         | Cultural events (theater, etc) | REDUCED_9   |
+| Exempt   | 0%         | Free events                    | EXEMPT      |
+
+**Configuration:**
+
+- VAT rate is set **per event** during event creation
+- Default: STANDARD_21 (21%)
+- Only shown for paid events (isPaid=true)
+
+### VAT-Inclusive Pricing
+
+All ticket prices are **VAT-inclusive** (matches Dutch market expectations):
+
+```
+€50.00 ticket with 21% VAT:
+├─ Price excl VAT: €41.32
+├─ VAT amount: €8.68
+└─ Price incl VAT: €50.00 (displayed to customer)
+```
+
+**Database Storage:**
+
+- `TicketType.priceInclVat`: Customer-facing price (input from organizer)
+- `TicketType.priceExclVat`: Calculated backwards using rate
+- `TicketType.vatAmount`: Tax portion
+- All stored in cents (integers)
+
+### Service Fee VAT
+
+Service fees have **uniform VAT treatment** - both components subject to 21% Dutch VAT:
+
+1. **Mollie portion (€0.29 excl. VAT)**: 21% VAT = €0.35 incl. VAT
+   - Payment processing subject to standard VAT rate
+   - Total: €0.29 + €0.06 VAT
+
+2. **Platform portion (€0.15 + 2% excl. VAT)**: 21% VAT
+   - Ticketing service subject to standard VAT
+   - Applied to fixed and variable portions
+
+**Example (€50 ticket order):**
+
+```
+Service Fee Breakdown:
+├─ Mollie fee excl VAT: €0.29
+├─ Mollie VAT (21%): €0.06
+├─ Platform excl VAT: €1.15
+├─ Platform VAT (21%): €0.24
+├─ Service fee excl VAT total: €1.44
+├─ Service fee VAT total: €0.30
+└─ Total service fee incl VAT: €1.74
+```
+
+**Database Storage:**
+
+- `Order.serviceFee`: Total charged (€1.74)
+- `Order.serviceFeeExclVat`: Mollie + Platform excl VAT (€1.44)
+- `Order.serviceFeeVat`: VAT on both portions (€0.30)
+
+### Payout Reporting
+
+Payouts include VAT breakdown for tax compliance:
+
+**Per Event Summary:**
+
+- Gross revenue excl VAT (ticket sales)
+- VAT on tickets (aggregated by rate)
+- Service fees excl VAT (organizer keeps)
+- Service fees VAT (platform keeps, reports to tax authority)
+- Net payout to organizer
+
+This allows organizers and platform to file accurate VAT returns with Dutch tax authorities.
+
+### Implementation
+
+- **Core utilities**: `src/server/lib/vat.ts`
+  - `calcVatFromInclusive()` - Extract VAT from inclusive price
+  - `getPriceBreakdown()` - Full price decomposition
+  - `calculateServiceFeeWithVat()` - Service fee with split VAT treatment
+- **Tests**: `tests/vat.test.ts` (27 tests), `tests/serviceFeeVat.test.ts` (17 tests)
+- **Database**: Migration `20251231145012_add_vat_support`
+
+---
+
+## 3. Domain Model
 
 ### Entity Relationships
 

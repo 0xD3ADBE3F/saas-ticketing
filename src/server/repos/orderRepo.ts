@@ -7,6 +7,8 @@ export type CreateOrderInput = {
   buyerName?: string;
   ticketTotal: number;
   serviceFee: number;
+  serviceFeeExclVat?: number;
+  serviceFeeVat?: number;
   totalAmount: number;
   expiresAt?: Date;
 };
@@ -89,6 +91,8 @@ export const orderRepo = {
         buyerName: data.buyerName?.trim() || null,
         ticketTotal: data.ticketTotal,
         serviceFee: data.serviceFee,
+        serviceFeeExclVat: data.serviceFeeExclVat,
+        serviceFeeVat: data.serviceFeeVat,
         totalAmount: data.totalAmount,
         expiresAt: data.expiresAt,
         orderItems: {

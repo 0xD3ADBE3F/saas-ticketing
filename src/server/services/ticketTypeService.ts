@@ -1,5 +1,6 @@
 import { ticketTypeRepo, CreateTicketTypeInput, UpdateTicketTypeInput } from "@/server/repos/ticketTypeRepo";
 import { eurosToCents, centsToEuros, formatPrice } from "@/lib/currency";
+import { calcVatFromInclusive, calcPriceExclVat, type VatRate } from "@/server/lib/vat";
 import type { TicketType } from "@/generated/prisma";
 
 // Re-export for convenience
@@ -104,11 +105,19 @@ export async function createTicketType(
     return { success: false, error: validationError };
   }
 
-  // Convert price from euros to cents
+  // Convert price from euros to cents (VAT-inclusive)
+  const priceInclVat = eurosToCents(data.price);
+
+  // Calculate VAT breakdown based on event's VAT rate
+  const vatAmount = calcVatFromInclusive(priceInclVat, event.vatRate);
+  const priceExclVat = priceInclVat - vatAmount;
+
   const input: CreateTicketTypeInput = {
     name: data.name.trim(),
     description: data.description?.trim(),
-    price: eurosToCents(data.price),
+    price: priceInclVat,
+    priceExclVat,
+    vatAmount,
     capacity: data.capacity,
     saleStart: data.saleStart,
     saleEnd: data.saleEnd,
@@ -137,6 +146,12 @@ export async function updateTicketType(
     return { success: false, error: "Tickettype niet gevonden" };
   }
 
+  // Get event to check VAT rate (needed if price is being updated)
+  const event = await ticketTypeRepo.getEventForTicketType(current.eventId, userId);
+  if (!event) {
+    return { success: false, error: "Evenement niet gevonden" };
+  }
+
   // Validate input
   const validationError = validateTicketTypeData(data, current.soldCount);
   if (validationError) {
@@ -147,11 +162,21 @@ export async function updateTicketType(
   const input: UpdateTicketTypeInput = {
     name: data.name?.trim(),
     description: data.description?.trim(),
-    price: data.price !== undefined ? eurosToCents(data.price) : undefined,
     capacity: data.capacity,
     saleStart: data.saleStart,
     saleEnd: data.saleEnd,
   };
+
+  // If price is being updated, recalculate VAT breakdown
+  if (data.price !== undefined) {
+    const priceInclVat = eurosToCents(data.price);
+    const vatAmount = calcVatFromInclusive(priceInclVat, event.vatRate);
+    const priceExclVat = priceInclVat - vatAmount;
+
+    input.price = priceInclVat;
+    input.priceExclVat = priceExclVat;
+    input.vatAmount = vatAmount;
+  }
 
   const ticketType = await ticketTypeRepo.update(ticketTypeId, userId, input);
 
