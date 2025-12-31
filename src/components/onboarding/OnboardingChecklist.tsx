@@ -40,7 +40,8 @@ export function OnboardingChecklist({
           </p>
         </div>
         <div className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-          {Object.values(steps).filter(Boolean).length} / {Object.keys(steps).length}
+          {Object.values(steps).filter(Boolean).length} /{" "}
+          {Object.keys(steps).length}
         </div>
       </div>
 

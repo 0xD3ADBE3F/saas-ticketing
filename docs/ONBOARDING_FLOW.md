@@ -50,6 +50,7 @@ Success State → Event Detail (with success message)
 ## Component Architecture
 
 ### 1. WelcomeScreen (`/src/components/onboarding/WelcomeScreen.tsx`)
+
 - **Purpose**: First screen after organization creation
 - **Features**:
   - Confetti animation (3 seconds)
@@ -62,6 +63,7 @@ Success State → Event Detail (with success message)
   - Redirects to event creation or dashboard
 
 ### 2. OnboardingEventForm (`/src/components/onboarding/OnboardingEventForm.tsx`)
+
 - **Purpose**: Simplified event creation for onboarding
 - **Fields**:
   - Event name (required)
@@ -71,6 +73,7 @@ Success State → Event Detail (with success message)
 - **Usage**: Loaded when `?onboarding=true` query parameter is present
 
 ### 3. PaymentStatusBanner (`/src/components/onboarding/PaymentStatusBanner.tsx`)
+
 - **Purpose**: Alert for paid events without Mollie activation
 - **Shown when**: `event.isPaid === true` AND `mollieOnboardingStatus !== "COMPLETED"`
 - **States**:
@@ -83,6 +86,7 @@ Success State → Event Detail (with success message)
   - Info box explaining: funds go direct, Entro never touches money, KYC required, 2% fee
 
 ### 4. OnboardingChecklist (`/src/components/onboarding/OnboardingChecklist.tsx`)
+
 - **Purpose**: Show progress through onboarding steps
 - **Steps tracked**:
   1. Account created (always ✓)
@@ -99,17 +103,20 @@ Success State → Event Detail (with success message)
 ## API Routes
 
 ### 1. `POST /api/organizations/[id]/onboarding/complete`
+
 - **Purpose**: Mark first login as completed
 - **Auth**: Requires user to be member of organization
 - **Action**: Sets `organization.firstLoginCompleted = true`
 - **Response**: `{ success: true }`
 
 ### 2. `POST /api/events` (updated)
+
 - **New field**: `isPaid` (boolean, optional, defaults to `true`)
 - **Validation**: Added to Zod schema
 - **Usage**: Called by both standard and onboarding event forms
 
 ### 3. `POST /api/organizations/[id]/mollie/onboard` (existing)
+
 - **Purpose**: Start Mollie Connect OAuth flow
 - **Parameters**: `returnUrl` (where to redirect after completion)
 - **Returns**: `{ redirectUrl: string }` (Mollie OAuth URL)
@@ -135,6 +142,7 @@ Success State → Event Detail (with success message)
 ## Routing Logic
 
 ### Dashboard Redirect (`/app/(dashboard)/dashboard/page.tsx`)
+
 ```typescript
 if (!currentOrg.firstLoginCompleted) {
   redirect("/welcome");
@@ -142,13 +150,16 @@ if (!currentOrg.firstLoginCompleted) {
 ```
 
 ### Welcome Page (`/app/welcome/page.tsx`)
+
 - Shows welcome screen if `firstLoginCompleted === false`
 - Redirects to dashboard if already completed
 
 ### Onboarding Form Handler (`/app/onboarding/OnboardingForm.tsx`)
+
 - After org creation, redirects to `/welcome` instead of `/dashboard`
 
 ### Event Creation (`/app/(dashboard)/dashboard/events/new/page.tsx`)
+
 - Checks for `?onboarding=true` query parameter
 - Uses `OnboardingEventForm` instead of standard `EventForm` when onboarding
 - Shows contextual help text
@@ -159,47 +170,52 @@ if (!currentOrg.firstLoginCompleted) {
 
 ```sql
 -- Add firstLoginCompleted to Organization
-ALTER TABLE "organizations" 
+ALTER TABLE "organizations"
   ADD COLUMN "firstLoginCompleted" BOOLEAN NOT NULL DEFAULT false;
 
 -- Add isPaid to Event
-ALTER TABLE "events" 
+ALTER TABLE "events"
   ADD COLUMN "isPaid" BOOLEAN NOT NULL DEFAULT true;
 
 -- Add indexes
-CREATE INDEX "organizations_firstLoginCompleted_idx" 
+CREATE INDEX "organizations_firstLoginCompleted_idx"
   ON "organizations"("firstLoginCompleted");
 
-CREATE INDEX "events_isPaid_idx" 
+CREATE INDEX "events_isPaid_idx"
   ON "events"("isPaid");
 ```
 
 ## Key Design Principles
 
 ### 1. Free Events Never Block
+
 - Users can create unlimited free events without Mollie
 - Payment activation only required when trying to sell paid tickets
 - Clear checkbox: "Dit is een gratis evenement"
 
 ### 2. State-Driven UX
+
 - No hard-coded flows or step numbers
 - Everything reacts to backend state
 - Components show/hide based on data
 - User can skip steps and come back later
 
 ### 3. MVP-Friendly
+
 - Minimal required fields (name + date)
 - Can always add more details later
 - No forced wizard flow
 - Progressive disclosure of complexity
 
 ### 4. Visual Feedback
+
 - Confetti animation on welcome
 - Checkmarks on completed steps
 - Status badges (pending, in review, completed)
 - Prominent banners for required actions
 
 ### 5. Mollie Onboarding Is Opt-In
+
 - Not shown during initial signup
 - Only prompted when needed (paid event without Mollie)
 - Clear explanation of why it's needed
@@ -208,26 +224,31 @@ CREATE INDEX "events_isPaid_idx"
 ## Edge Cases Handled
 
 ### 1. User Creates Free Event First
+
 - No payment banner shown
 - Mollie step not shown in checklist
 - Can still add paid events later
 
 ### 2. User Abandons Mollie Onboarding
+
 - Banner shows "Betaalaccount activering niet afgerond"
 - CTA: "Activering voltooien"
 - Can resume from where they left off
 
 ### 3. Mollie In Review
+
 - Banner shows waiting state
 - No actionable CTA (Mollie must complete review)
 - Info: "Je ontvangt een e-mail zodra je kunt beginnen"
 
 ### 4. User Skips Welcome Screen
+
 - `firstLoginCompleted` still marked as true
 - No impact on functionality
 - Dashboard works normally
 
 ### 5. User Has Multiple Organizations
+
 - Onboarding state tracked per organization
 - First organization's state checked for dashboard redirects
 
@@ -281,6 +302,7 @@ CREATE INDEX "events_isPaid_idx"
 ## Files Created/Modified
 
 ### New Files
+
 - `/src/components/onboarding/WelcomeScreen.tsx`
 - `/src/components/onboarding/OnboardingEventForm.tsx`
 - `/src/components/onboarding/PaymentStatusBanner.tsx`
@@ -291,6 +313,7 @@ CREATE INDEX "events_isPaid_idx"
 - `/prisma/migrations/20251231_add_onboarding_fields/migration.sql`
 
 ### Modified Files
+
 - `/prisma/schema.prisma` (added `firstLoginCompleted`, `isPaid`)
 - `/src/app/(dashboard)/dashboard/page.tsx` (added welcome redirect)
 - `/src/app/onboarding/OnboardingForm.tsx` (redirect to welcome)

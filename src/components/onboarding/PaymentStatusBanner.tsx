@@ -51,7 +51,9 @@ export function PaymentStatusBanner({
         // Redirect to Mollie OAuth
         window.location.href = data.redirectUrl;
       } else {
-        alert(data.error || "Er ging iets mis bij het activeren van betalingen");
+        alert(
+          data.error || "Er ging iets mis bij het activeren van betalingen"
+        );
         setIsActivating(false);
       }
     } catch (error) {

@@ -3,11 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-export function WelcomeScreen({
-  organizationId,
-}: {
-  organizationId: string;
-}) {
+export function WelcomeScreen({ organizationId }: { organizationId: string }) {
   const router = useRouter();
   const [showConfetti, setShowConfetti] = useState(true);
 

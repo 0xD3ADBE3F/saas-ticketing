@@ -34,9 +34,7 @@ export default async function NewEventPage({
             Evenementen
           </Link>
           <span>/</span>
-          <span className="text-gray-900 dark:text-white">
-            Nieuw evenement
-          </span>
+          <span className="text-gray-900 dark:text-white">Nieuw evenement</span>
         </nav>
       )}
 
@@ -47,8 +45,8 @@ export default async function NewEventPage({
       {isOnboarding && (
         <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
           <p className="text-blue-700 dark:text-blue-300">
-            <strong>Bijna klaar!</strong> Vul de basisgegevens in voor je
-            eerste evenement. Je kunt later altijd meer details toevoegen.
+            <strong>Bijna klaar!</strong> Vul de basisgegevens in voor je eerste
+            evenement. Je kunt later altijd meer details toevoegen.
           </p>
         </div>
       )}
