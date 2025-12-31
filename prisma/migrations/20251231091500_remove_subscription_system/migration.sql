@@ -1,40 +1,24 @@
--- Remove subscription system and simplify to platform fee invoicing
+/*
+  Warnings:
 
--- Step 1: Remove subscription-related columns from organizations and events FIRST
-DROP INDEX IF EXISTS "organizations_currentPlan_idx";
+  - The values [SUBSCRIPTION,PAY_PER_EVENT,OVERAGE] on the enum `InvoiceType` will be removed. If these variants are still used in the database, this will fail.
+  - You are about to drop the column `feeOverrideReason` on the `events` table. All the data in the column will be lost.
+  - You are about to drop the column `feeOverrideSetAt` on the `events` table. All the data in the column will be lost.
+  - You are about to drop the column `feeOverrideSetBy` on the `events` table. All the data in the column will be lost.
+  - You are about to drop the column `overageFeeOverride` on the `events` table. All the data in the column will be lost.
+  - You are about to drop the column `platformFeeOverride` on the `events` table. All the data in the column will be lost.
+  - You are about to drop the column `currentPlan` on the `organizations` table. All the data in the column will be lost.
+  - You are about to drop the column `kvkNumber` on the `organizations` table. All the data in the column will be lost.
+  - You are about to drop the column `kvkRejectionReason` on the `organizations` table. All the data in the column will be lost.
+  - You are about to drop the column `kvkVerifiedAt` on the `organizations` table. All the data in the column will be lost.
+  - You are about to drop the column `nonProfitStatus` on the `organizations` table. All the data in the column will be lost.
+  - You are about to drop the `subscription_invoices` table. If the table is not empty, all the data it contains will be lost.
+  - You are about to drop the `subscriptions` table. If the table is not empty, all the data it contains will be lost.
+  - You are about to drop the `usage_records` table. If the table is not empty, all the data it contains will be lost.
 
-ALTER TABLE "organizations" DROP COLUMN IF EXISTS "currentPlan";
-ALTER TABLE "organizations" DROP COLUMN IF EXISTS "kvkNumber";
-ALTER TABLE "organizations" DROP COLUMN IF EXISTS "kvkRejectionReason";
-ALTER TABLE "organizations" DROP COLUMN IF EXISTS "kvkVerifiedAt";
-ALTER TABLE "organizations" DROP COLUMN IF EXISTS "nonProfitStatus";
+*/
 
-ALTER TABLE "events" DROP COLUMN IF EXISTS "feeOverrideReason";
-ALTER TABLE "events" DROP COLUMN IF EXISTS "feeOverrideSetAt";
-ALTER TABLE "events" DROP COLUMN IF EXISTS "feeOverrideSetBy";
-ALTER TABLE "events" DROP COLUMN IF EXISTS "overageFeeOverride";
-ALTER TABLE "events" DROP COLUMN IF EXISTS "platformFeeOverride";
-
--- Step 2: Drop subscription tables and related foreign keys
-ALTER TABLE "subscription_invoices" DROP CONSTRAINT IF EXISTS "subscription_invoices_organizationId_fkey";
-ALTER TABLE "subscription_invoices" DROP CONSTRAINT IF EXISTS "subscription_invoices_subscriptionId_fkey";
-ALTER TABLE "subscriptions" DROP CONSTRAINT IF EXISTS "subscriptions_organizationId_fkey";
-ALTER TABLE "usage_records" DROP CONSTRAINT IF EXISTS "usage_records_organizationId_fkey";
-
-DROP TABLE IF EXISTS "subscription_invoices";
-DROP TABLE IF EXISTS "subscriptions";
-DROP TABLE IF EXISTS "usage_records";
-
--- Step 3: Drop subscription-related enums
-DROP TYPE IF EXISTS "NonProfitStatus";
-DROP TYPE IF EXISTS "PricingPlan";
-DROP TYPE IF EXISTS "SubscriptionStatus";
-
--- Drop InvoiceType enum and recreate with only PLATFORM_FEE
-DROP TYPE IF EXISTS "InvoiceType";
-CREATE TYPE "InvoiceType" AS ENUM ('PLATFORM_FEE');
-
--- Step 4: Create new invoices table
+-- Step 1: Create new invoices table (PLATFORM_FEE was added in previous migration)
 CREATE TABLE "invoices" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
@@ -59,7 +43,51 @@ CREATE TABLE "invoices" (
     CONSTRAINT "invoices_pkey" PRIMARY KEY ("id")
 );
 
--- Step 5: Create indexes on invoices
+-- Step 2: Migrate existing invoice data from subscription_invoices to invoices
+INSERT INTO "invoices" (
+    "id",
+    "organizationId",
+    "eventId",
+    "type",
+    "mollieSalesInvoiceId",
+    "invoiceNumber",
+    "invoiceDate",
+    "dueDate",
+    "amount",
+    "vatAmount",
+    "vatRate",
+    "currency",
+    "status",
+    "molliePaymentId",
+    "paidAt",
+    "pdfUrl",
+    "description",
+    "createdAt",
+    "updatedAt"
+)
+SELECT
+    "id",
+    "organizationId",
+    NULL as "eventId", -- No event link in old data
+    'PLATFORM_FEE'::"InvoiceType" as "type", -- Convert all old types to PLATFORM_FEE
+    "mollieSalesInvoiceId",
+    "invoiceNumber",
+    "invoiceDate",
+    "dueDate",
+    "amount",
+    "vatAmount",
+    "vatRate",
+    "currency",
+    "status",
+    "molliePaymentId",
+    "paidAt",
+    "pdfUrl",
+    "description",
+    "createdAt",
+    "updatedAt"
+FROM "subscription_invoices";
+
+-- Step 3: Create indexes
 CREATE UNIQUE INDEX "invoices_mollieSalesInvoiceId_key" ON "invoices"("mollieSalesInvoiceId");
 CREATE UNIQUE INDEX "invoices_invoiceNumber_key" ON "invoices"("invoiceNumber");
 CREATE UNIQUE INDEX "invoices_molliePaymentId_key" ON "invoices"("molliePaymentId");
@@ -69,10 +97,61 @@ CREATE INDEX "invoices_status_idx" ON "invoices"("status");
 CREATE INDEX "invoices_molliePaymentId_idx" ON "invoices"("molliePaymentId");
 CREATE INDEX "invoices_invoiceDate_idx" ON "invoices"("invoiceDate");
 
--- Step 6: Add foreign key
+-- Step 4: Add foreign key
 ALTER TABLE "invoices" ADD CONSTRAINT "invoices_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
--- Step 7: Add billing fields to organizations
-ALTER TABLE "organizations" ADD COLUMN IF NOT EXISTS "billingEmail" TEXT;
-ALTER TABLE "organizations" ADD COLUMN IF NOT EXISTS "vatNumber" TEXT;
+-- Step 5: Now drop old subscription tables
+-- DropForeignKey
+ALTER TABLE "subscription_invoices" DROP CONSTRAINT "subscription_invoices_organizationId_fkey";
+ALTER TABLE "subscription_invoices" DROP CONSTRAINT "subscription_invoices_subscriptionId_fkey";
+ALTER TABLE "subscriptions" DROP CONSTRAINT "subscriptions_organizationId_fkey";
+ALTER TABLE "usage_records" DROP CONSTRAINT "usage_records_organizationId_fkey";
+
+-- DropTable
+DROP TABLE "subscription_invoices";
+DROP TABLE "subscriptions";
+DROP TABLE "usage_records";
+
+-- Step 6: Update InvoiceType enum to only have PLATFORM_FEE
+-- Create new enum type
+CREATE TYPE "InvoiceType_new" AS ENUM ('PLATFORM_FEE');
+
+-- Drop default first
+ALTER TABLE "invoices" ALTER COLUMN "type" DROP DEFAULT;
+
+-- Convert column to new enum
+ALTER TABLE "invoices" ALTER COLUMN "type" TYPE "InvoiceType_new" USING ("type"::text::"InvoiceType_new");
+
+-- Swap enum types
+ALTER TYPE "InvoiceType" RENAME TO "InvoiceType_old";
+ALTER TYPE "InvoiceType_new" RENAME TO "InvoiceType";
+DROP TYPE "InvoiceType_old";
+
+-- Re-add default
+ALTER TABLE "invoices" ALTER COLUMN "type" SET DEFAULT 'PLATFORM_FEE'::"InvoiceType";
+
+-- Step 7: Drop subscription-related organization columns
+-- DropIndex
+DROP INDEX "organizations_currentPlan_idx";
+
+-- AlterTable
+ALTER TABLE "events" DROP COLUMN "feeOverrideReason",
+DROP COLUMN "feeOverrideSetAt",
+DROP COLUMN "feeOverrideSetBy",
+DROP COLUMN "overageFeeOverride",
+DROP COLUMN "platformFeeOverride";
+
+-- AlterTable
+ALTER TABLE "organizations" DROP COLUMN "currentPlan",
+DROP COLUMN "kvkNumber",
+DROP COLUMN "kvkRejectionReason",
+DROP COLUMN "kvkVerifiedAt",
+DROP COLUMN "nonProfitStatus",
+ADD COLUMN     "billingEmail" TEXT,
+ADD COLUMN     "vatNumber" TEXT;
+
+-- Step 8: Drop subscription-related enums
+DROP TYPE "NonProfitStatus";
+DROP TYPE "PricingPlan";
+DROP TYPE "SubscriptionStatus";
 

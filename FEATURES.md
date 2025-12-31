@@ -144,6 +144,60 @@ _The invoice UI improvements from 30 December were part of the subscription syst
 
 ---
 
+### Slice 1.5: Organizer Onboarding Flow
+
+- ✅ **First login detection** - Track `firstLoginCompleted` flag on Organization
+- ✅ **Welcome screen** - Shown after organization creation with confetti animation
+  - Headline: "Welkom bij Entro"
+  - Primary CTA: "Maak je eerste evenement"
+  - Secondary CTA: "Ik doe dit later"
+  - Feature preview cards (ticket sales, payments, scanning)
+- ✅ **Simplified event creation** - Minimal form for first event
+  - Required fields: event name, date & time
+  - Optional fields: location
+  - New field: `isPaid` (boolean) - determines if Mollie is needed
+  - Checkbox: "Dit is een gratis evenement"
+- ✅ **Payment status banner** - Shown on event detail when:
+  - Event is paid (`isPaid === true`)
+  - AND Mollie is not activated (`mollieOnboardingStatus !== "COMPLETED"`)
+  - CTA: "Betalingen activeren (≈ 2 minuten)"
+  - Shows status: pending, needs_data, in_review, or not started
+  - Info box explains: funds go direct to organizer, KYC required, 2% platform fee
+- ✅ **Onboarding checklist** - Progress tracker component
+  - Account created (always true)
+  - Event created
+  - Mollie connected (only for paid events)
+  - Tickets created
+  - Event published (status: LIVE)
+- ✅ **Routing logic** - State-driven redirects
+  - `/onboarding` → create organization
+  - `/welcome` → shown when `firstLoginCompleted === false`
+  - `/dashboard` → redirects to welcome if needed
+  - Event creation with `?onboarding=true` parameter uses simplified form
+- ✅ **Database migrations** - New fields added
+  - `organizations.firstLoginCompleted` (boolean, default false)
+  - `events.isPaid` (boolean, default true)
+  - Indexes added for query performance
+
+**Key Design Decisions**
+
+1. **Free events never block** - Users can create free events without Mollie
+2. **Mollie onboarding is opt-in** - Only required when trying to sell paid tickets
+3. **State-driven UX** - No hard-coded flows, everything reacts to backend state
+4. **MVP-friendly** - Minimal required fields, can always add more later
+5. **Visual feedback** - Confetti, progress bars, status badges for engagement
+
+**DoD**
+
+- ✅ Welcome screen shown after first organization creation
+- ✅ Simplified event form works with onboarding parameter
+- ✅ Payment banner appears for paid events without Mollie
+- ✅ Checklist tracks progress accurately
+- ✅ Free events can be created without Mollie activation
+- ✅ Routing redirects work correctly based on state
+
+---
+
 ### Slice 2: Events CRUD
 
 - ✅ Event model: title, location, start/end, status (`draft | live | ended | cancelled`)

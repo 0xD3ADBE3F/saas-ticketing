@@ -75,6 +75,7 @@ export type CreateEventData = {
   location?: string;
   startsAt: Date;
   endsAt: Date;
+  isPaid?: boolean; // Whether event has paid tickets (requires Mollie)
 };
 
 export type UpdateEventData = {
@@ -83,6 +84,7 @@ export type UpdateEventData = {
   location?: string | null;
   startsAt?: Date;
   endsAt?: Date;
+  isPaid?: boolean;
 };
 
 export type EventServiceResult<T> =

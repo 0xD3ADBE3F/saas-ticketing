@@ -18,6 +18,12 @@ export default async function DashboardPage() {
   }
 
   const currentOrg = organizations[0];
+
+  // Check if user needs to see welcome screen
+  if (!currentOrg.firstLoginCompleted) {
+    redirect("/welcome");
+  }
+
   const stats = await getDashboardStatistics(currentOrg.id);
 
   return (

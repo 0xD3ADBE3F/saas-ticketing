@@ -9,6 +9,7 @@ export type CreateEventInput = {
   startsAt: Date;
   endsAt: Date;
   status?: EventStatus;
+  isPaid?: boolean;
 };
 
 export type UpdateEventInput = {
@@ -19,6 +20,7 @@ export type UpdateEventInput = {
   startsAt?: Date;
   endsAt?: Date;
   status?: EventStatus;
+  isPaid?: boolean;
 };
 
 export type EventFilters = {

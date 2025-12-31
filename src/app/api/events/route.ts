@@ -13,6 +13,7 @@ const createEventSchema = z.object({
   location: z.string().max(200, "Locatie mag maximaal 200 karakters zijn").optional(),
   startsAt: z.string().datetime("Ongeldige startdatum"),
   endsAt: z.string().datetime("Ongeldige einddatum"),
+  isPaid: z.boolean().optional(), // Whether event has paid tickets (requires Mollie)
 });
 
 /**
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
     location: parsed.data.location,
     startsAt: new Date(parsed.data.startsAt),
     endsAt: new Date(parsed.data.endsAt),
+    isPaid: parsed.data.isPaid ?? true, // Default to paid event
   });
 
   if (!result.success) {

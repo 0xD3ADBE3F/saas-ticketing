@@ -41,7 +41,8 @@ export function OnboardingForm() {
         return;
       }
 
-      router.push("/dashboard");
+      // Redirect to welcome screen after organization creation
+      router.push("/welcome");
       router.refresh();
     } catch {
       setError("Er is iets misgegaan");

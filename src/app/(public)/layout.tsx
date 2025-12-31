@@ -36,10 +36,10 @@ export default function PublicLayout({
               Evenementen
             </Link>
             <Link
-              href="/dashboard"
+              href="/auth/login"
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Organisator Login
+              Inloggen
             </Link>
           </nav>
         </div>

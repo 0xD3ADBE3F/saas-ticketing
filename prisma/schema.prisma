@@ -39,6 +39,9 @@ model Organization {
   city              String?           // City name
   country           String?  @default("NL") // ISO 3166-1 alpha-2 country code
 
+  // Onboarding tracking
+  firstLoginCompleted Boolean @default(false) // Has user completed welcome screen
+
   // Relations
   memberships      Membership[]
   events           Event[]
@@ -49,6 +52,7 @@ model Organization {
   invoices         Invoice[]
 
   @@index([mollieOrganizationId])
+  @@index([firstLoginCompleted])
   @@map("organizations")
 }
 
@@ -96,6 +100,7 @@ model Event {
   startsAt       DateTime
   endsAt         DateTime
   status         EventStatus @default(DRAFT)
+  isPaid         Boolean     @default(true) // Does event have paid tickets (requires Mollie)?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
@@ -109,6 +114,7 @@ model Event {
   @@unique([organizationId, slug])
   @@index([organizationId])
   @@index([status])
+  @@index([isPaid])
   @@map("events")
 }
 
