@@ -4,6 +4,7 @@ import { generateAndSendTickets } from "@/server/services/paymentService";
 import { mollieConnectService } from "@/server/services/mollieConnectService";
 import { env } from "@/server/lib/env";
 import { paymentLogger } from "@/server/lib/logger";
+import { MOLLIE_FEE_INCL_VAT } from "@/server/lib/vat";
 
 // =============================================================================
 // Mollie Payment Service (Multi-tenant with Application Fees)
@@ -16,12 +17,6 @@ export type PaymentResult<T> =
 // =============================================================================
 // Fee Configuration
 // =============================================================================
-
-/**
- * Mollie transaction fee (per payment)
- * This is deducted by Mollie from the organizer's account
- */
-export const MOLLIE_FEE = 32; // €0.32 in cents
 
 /**
  * Service Fee Structure (charged to buyer per order):
@@ -49,7 +44,7 @@ export const MOLLIE_FEE = 32; // €0.32 in cents
 export function calculateApplicationFee(serviceFeeInCents: number): number {
   // Platform receives service fee minus Mollie's transaction fee
   // Ensure we never send a negative application fee
-  return Math.max(0, serviceFeeInCents - MOLLIE_FEE);
+  return Math.max(0, serviceFeeInCents - MOLLIE_FEE_INCL_VAT);
 }
 
 /**
@@ -141,7 +136,7 @@ export async function createMolliePayment(
       totalAmount: formatAmount(order.totalAmount),
       serviceFee: formatAmount(order.serviceFee),
       applicationFee: formatAmount(applicationFeeCents),
-      mollieFee: formatAmount(MOLLIE_FEE),
+      mollieFee: formatAmount(MOLLIE_FEE_INCL_VAT),
       profileId: org.mollieProfileId,
     }, "Creating Mollie payment");
 
@@ -159,7 +154,7 @@ export async function createMolliePayment(
         organizationId: order.organizationId,
         serviceFee: order.serviceFee,
         applicationFee: applicationFeeCents,
-        mollieFee: MOLLIE_FEE,
+        mollieFee: MOLLIE_FEE_INCL_VAT,
       },
       // Application fee goes directly to platform's Mollie account
       // This is the service fee minus Mollie's transaction fee

@@ -82,10 +82,11 @@ export const SERVICE_FEE_VAT_RATE = 0.21;
  */
 
 /**
- * Mollie transaction fee in cents (excl. VAT)
- * With 21% VAT: €0.29 + €0.06 = €0.35 total
+ * Mollie transaction fee constants (cents)
+ * These are the single source of truth for Mollie fees across the application
  */
-export const MOLLIE_FEE_EXCL_VAT = 29; // €0.29
+export const MOLLIE_FEE_EXCL_VAT = 29; // €0.29 excl. VAT
+export const MOLLIE_FEE_INCL_VAT = 35; // €0.35 incl. VAT (29 + 6 VAT)
 
 /**
  * Platform fixed fee component (excl. VAT) in cents

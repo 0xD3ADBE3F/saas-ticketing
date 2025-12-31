@@ -1,5 +1,6 @@
 import { prisma } from "@/server/lib/prisma";
-import { calculateApplicationFee, MOLLIE_FEE } from "@/server/services/molliePaymentService";
+import { calculateApplicationFee } from "@/server/services/molliePaymentService";
+import { MOLLIE_FEE_INCL_VAT } from "@/server/lib/vat";
 
 /**
  * Payout Breakdown Structure:
@@ -143,7 +144,7 @@ export const payoutService = {
     );
 
     // Mollie transaction fees (€0.35 incl. VAT per order, paid by organizer)
-    const mollieFees = orders.length * MOLLIE_FEE;
+    const mollieFees = orders.length * MOLLIE_FEE_INCL_VAT;
 
     // Net payout: gross revenue minus Mollie fees (incl. VAT)
     // (Service fees go to platform via application fee)
