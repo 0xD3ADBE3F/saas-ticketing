@@ -78,9 +78,6 @@ export function PaymentButton({ orderId, totalAmount }: PaymentButtonProps) {
           <>Betalen met iDEAL ({formatPrice(totalAmount)})</>
         )}
       </button>
-      <p className="mt-2 text-xs text-center text-gray-400">
-        🧪 Mock betaling (voor ontwikkeling)
-      </p>
     </div>
   );
 }

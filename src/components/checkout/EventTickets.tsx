@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   TicketSelector,
   OrderSummary,
@@ -17,6 +17,12 @@ interface EventTicketsProps {
 
 type CheckoutStep = "select" | "checkout";
 
+type OrderSummaryData = {
+  serviceFee: number;
+  ticketTotal: number;
+  totalAmount: number;
+};
+
 export function EventTickets({
   eventSlug,
   eventTitle,
@@ -24,8 +30,52 @@ export function EventTickets({
 }: EventTicketsProps) {
   const [step, setStep] = useState<CheckoutStep>("select");
   const [selections, setSelections] = useState<TicketSelection[]>([]);
+  const [summary, setSummary] = useState<OrderSummaryData | null>(null);
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
 
   const totalTickets = selections.reduce((sum, s) => sum + s.quantity, 0);
+
+  // Fetch service fee from server when selections change
+  useEffect(() => {
+    if (totalTickets === 0) {
+      setSummary(null);
+      return;
+    }
+
+    const fetchSummary = async () => {
+      setIsLoadingSummary(true);
+      try {
+        const items = selections
+          .filter((s) => s.quantity > 0)
+          .map((s) => ({
+            ticketTypeId: s.ticketTypeId,
+            quantity: s.quantity,
+          }));
+
+        const params = new URLSearchParams({
+          eventSlug,
+          items: JSON.stringify(items),
+        });
+
+        const res = await fetch(`/api/checkout?${params}`);
+        const data = await res.json();
+
+        if (res.ok && data) {
+          setSummary({
+            serviceFee: data.serviceFee,
+            ticketTotal: data.ticketTotal,
+            totalAmount: data.totalAmount,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch order summary:", error);
+      } finally {
+        setIsLoadingSummary(false);
+      }
+    };
+
+    fetchSummary();
+  }, [selections, totalTickets, eventSlug]);
 
   const handleProceedToCheckout = () => {
     if (totalTickets > 0) {
@@ -69,15 +119,21 @@ export function EventTickets({
 
       {totalTickets > 0 && (
         <>
-          <OrderSummary selections={selections} ticketTypes={ticketTypes} />
+          <OrderSummary
+            selections={selections}
+            ticketTypes={ticketTypes}
+            serviceFee={summary?.serviceFee}
+          />
 
           <button
             type="button"
             onClick={handleProceedToCheckout}
-            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+            disabled={isLoadingSummary}
+            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
           >
-            Doorgaan naar afrekenen ({totalTickets}{" "}
-            {totalTickets === 1 ? "ticket" : "tickets"})
+            {isLoadingSummary
+              ? "Berekenen..."
+              : `Doorgaan naar afrekenen (${totalTickets} ${totalTickets === 1 ? "ticket" : "tickets"})`}
           </button>
         </>
       )}

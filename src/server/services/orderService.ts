@@ -9,15 +9,17 @@ import type { Order, TicketType } from "@/generated/prisma";
 /**
  * Service fee configuration
  * This is charged once per order (buyer pays)
+ * Applies to paid events only (free events have no service fee)
  *
  * Current strategy: Fixed fee + percentage of ticket total
+ * Label: "Servicekosten (incl. betalingskosten)"
  * TODO: Make this configurable per organization
  */
 const SERVICE_FEE_CONFIG = {
   // Fixed fee in cents (€0.50)
   fixedFee: 50,
-  // Percentage of ticket total (2.5%)
-  percentageFee: 0.025,
+  // Percentage of ticket total (2%)
+  percentageFee: 0.02,
   // Minimum service fee in cents (€0.50)
   minimumFee: 50,
   // Maximum service fee in cents (€5.00)
@@ -27,18 +29,35 @@ const SERVICE_FEE_CONFIG = {
 /**
  * Calculate service fee for an order
  * Fee is per order, not per ticket
+ * Uses event-specific config if provided, otherwise falls back to defaults
  */
-export function calculateServiceFee(ticketTotal: number): number {
+export function calculateServiceFee(
+  ticketTotal: number,
+  eventConfig?: {
+    serviceFeeFixed?: number | null;
+    serviceFeePercentage?: number | null;
+    serviceFeeMinimum?: number | null;
+    serviceFeeMaximum?: number | null;
+  }
+): number {
   if (ticketTotal === 0) return 0;
 
+  // Use event-specific config or fall back to defaults
+  const config = {
+    fixedFee: eventConfig?.serviceFeeFixed ?? SERVICE_FEE_CONFIG.fixedFee,
+    percentageFee: eventConfig?.serviceFeePercentage ?? SERVICE_FEE_CONFIG.percentageFee,
+    minimumFee: eventConfig?.serviceFeeMinimum ?? SERVICE_FEE_CONFIG.minimumFee,
+    maximumFee: eventConfig?.serviceFeeMaximum ?? SERVICE_FEE_CONFIG.maximumFee,
+  };
+
   const calculatedFee =
-    SERVICE_FEE_CONFIG.fixedFee +
-    Math.round(ticketTotal * SERVICE_FEE_CONFIG.percentageFee);
+    config.fixedFee +
+    Math.round(ticketTotal * config.percentageFee);
 
   // Apply min/max bounds
   return Math.min(
-    Math.max(calculatedFee, SERVICE_FEE_CONFIG.minimumFee),
-    SERVICE_FEE_CONFIG.maximumFee
+    Math.max(calculatedFee, config.minimumFee),
+    config.maximumFee
   );
 }
 
@@ -180,7 +199,12 @@ export async function calculateOrderSummary(
     return { success: false, error: "Selecteer minimaal 1 ticket" };
   }
 
-  const serviceFee = calculateServiceFee(ticketTotal);
+  const serviceFee = calculateServiceFee(ticketTotal, {
+    serviceFeeFixed: event.serviceFeeFixed,
+    serviceFeePercentage: event.serviceFeePercentage,
+    serviceFeeMinimum: event.serviceFeeMinimum,
+    serviceFeeMaximum: event.serviceFeeMaximum,
+  });
   const totalAmount = ticketTotal + serviceFee;
 
   return {
@@ -286,7 +310,12 @@ export async function createOrder(
         });
       }
 
-      const serviceFee = calculateServiceFee(ticketTotal);
+      const serviceFee = calculateServiceFee(ticketTotal, {
+        serviceFeeFixed: event.serviceFeeFixed,
+        serviceFeePercentage: event.serviceFeePercentage,
+        serviceFeeMinimum: event.serviceFeeMinimum,
+        serviceFeeMaximum: event.serviceFeeMaximum,
+      });
       const totalAmount = ticketTotal + serviceFee;
 
       // Order expires in 30 minutes if not paid

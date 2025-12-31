@@ -11,10 +11,17 @@
 
 ### Revenue Model
 
-| Fee Type     | Who Pays  | When Charged | Calculation           |
-| ------------ | --------- | ------------ | --------------------- |
-| Service Fee  | Buyer     | Per order    | €0,99 fixed per order |
-| Platform Fee | Organizer | On payout    | 2% per ticket sold    |
+| Fee Type     | Who Pays  | When Charged | Calculation                                                 |
+| ------------ | --------- | ------------ | ----------------------------------------------------------- |
+| Service Fee  | Buyer     | Per order    | €0,50 fixed + 2% (configurable per event by platform admin) |
+| Platform Fee | Organizer | On payout    | 2% per ticket sold                                          |
+
+**Service Fee Details:**
+
+- Default: €0,50 fixed + 2% of ticket total (min €0,50, max €5,00)
+- Label: "Servicekosten (incl. betalingskosten)"
+- Platform admin can override per event (all fields optional, NULL = use defaults)
+- Stored in Event model: `serviceFeeFixed`, `serviceFeePercentage`, `serviceFeeMinimum`, `serviceFeeMaximum`
 
 ### Key Insight
 
@@ -272,9 +279,10 @@ export const eventRepo = {
 
 ### Pricing
 
-- [ ] **TODO:** Define service fee structure (fixed vs. percentage vs. tiered)
-- [ ] **TODO:** Define platform fee percentage
+- [x] **DONE:** Define service fee structure - €0.50 fixed + 2% of ticket total (max €5.00)
+- [x] **DONE:** Define platform fee percentage - 2% per ticket sold
 - [ ] **TODO:** Minimum order amount?
+- [ ] **TODO:** Make service fee configurable per organization (tiered pricing)
 
 ### Features
 

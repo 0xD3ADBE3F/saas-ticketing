@@ -143,11 +143,8 @@ export function CheckoutForm({
 
   const displaySummary = summary ?? {
     ...localSummary,
-    serviceFee:
-      localSummary.ticketTotal > 0
-        ? 50 + Math.round(localSummary.ticketTotal * 0.025)
-        : 0,
-    totalAmount: 0,
+    serviceFee: 0, // Will be calculated by server
+    totalAmount: localSummary.ticketTotal, // Show ticket total while loading
   };
 
   if (!summary) {

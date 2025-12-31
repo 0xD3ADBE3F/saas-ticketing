@@ -31,6 +31,7 @@ interface EventPayoutBreakdown {
   grossRevenue: number;
   serviceFees: number;
   platformFee: number;
+  mollieFees: number;
   netPayout: number;
 }
 
@@ -38,6 +39,7 @@ interface PayoutSummary {
   totalGrossRevenue: number;
   totalServiceFees: number;
   totalPlatformFees: number;
+  totalMollieFees: number;
   totalNetPayout: number;
   events: EventPayoutBreakdown[];
 }
@@ -373,7 +375,7 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Totaal overzicht
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Bruto omzet
@@ -392,10 +394,18 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
               </div>
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Platform fee (2%)
+                  Platform fee
                 </p>
-                <p className="text-xl font-bold text-red-600 dark:text-red-400">
+                <p className="text-xl font-bold text-gray-500 dark:text-gray-400">
                   -{formatPrice(payoutSummary.totalPlatformFees)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Mollie fees
+                </p>
+                <p className="text-xl font-bold text-gray-500 dark:text-gray-400">
+                  -{formatPrice(payoutSummary.totalMollieFees)}
                 </p>
               </div>
               <div>
@@ -439,6 +449,9 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
                         Platform fee
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Mollie fees
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Netto
                       </th>
                     </tr>
@@ -462,8 +475,11 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
                             {formatPrice(event.grossRevenue)}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-red-600 dark:text-red-400">
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
                           -{formatPrice(event.platformFee)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
+                          -{formatPrice(event.mollieFees)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right">
                           <span className="text-sm font-bold text-green-600 dark:text-green-400">
@@ -497,9 +513,11 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
             />
           </svg>
           <p className="text-sm text-blue-700 dark:text-blue-300">
-            Uitbetalingen worden verwerkt via Mollie. De platform fee van 2%
-            wordt automatisch ingehouden. Service fees gaan naar het platform.
-            Je kunt je bankrekening en uitbetalingsfrequentie beheren in het{" "}
+            Uitbetalingen worden verwerkt via Mollie. De platform fee (service
+            fee minus €0,35 Mollie kosten) wordt automatisch ingehouden. De
+            Mollie transactiekosten (€0,35 per order) worden van je uitbetaling
+            afgetrokken. Je kunt je bankrekening en uitbetalingsfrequentie
+            beheren in het{" "}
             <a
               href="https://my.mollie.com/dashboard"
               target="_blank"

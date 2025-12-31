@@ -240,11 +240,9 @@ export function OrderSummary({
       });
     }
 
-    // Use pre-calculated service fee or estimate it
-    // The actual service fee is calculated server-side
-    const serviceFee =
-      preCalculatedServiceFee ??
-      (ticketTotal > 0 ? 50 + Math.round(ticketTotal * 0.025) : 0);
+    // Use pre-calculated service fee from server
+    // Never calculate client-side - always fetch from API
+    const serviceFee = preCalculatedServiceFee ?? 0;
     const totalAmount = ticketTotal + serviceFee;
 
     return { items, ticketTotal, serviceFee, totalAmount };

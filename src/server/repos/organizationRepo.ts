@@ -20,6 +20,8 @@ export type CreateOrganizationInput = {
 export type UpdateOrganizationInput = {
   name?: string;
   email?: string;
+  firstName?: string;
+  lastName?: string;
   streetAndNumber?: string;
   postalCode?: string;
   city?: string;

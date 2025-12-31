@@ -62,22 +62,22 @@ describe("Service fee calculation", () => {
 
     it("should calculate service fee for small orders (minimum fee applies)", () => {
       // For €5 order (500 cents):
-      // Fixed: 50 + Percentage: 12.5 = 62.5, rounded to 63
+      // Fixed: 50 + Percentage: 10 = 60
       // Min is 50, max is 500
       const fee = calculateServiceFee(500);
-      expect(fee).toBe(63);
+      expect(fee).toBe(60);
     });
 
     it("should calculate service fee for medium orders", () => {
       // For €50 order (5000 cents):
-      // Fixed: 50 + Percentage: 125 = 175
+      // Fixed: 50 + Percentage: 100 = 150
       const fee = calculateServiceFee(5000);
-      expect(fee).toBe(175);
+      expect(fee).toBe(150);
     });
 
     it("should cap service fee at maximum for large orders", () => {
       // For €500 order (50000 cents):
-      // Fixed: 50 + Percentage: 1250 = 1300
+      // Fixed: 50 + Percentage: 1000 = 1050
       // But max is 500
       const fee = calculateServiceFee(50000);
       expect(fee).toBe(500);
@@ -95,6 +95,34 @@ describe("Service fee calculation", () => {
       const fee1 = calculateServiceFee(2500);
       const fee2 = calculateServiceFee(2500);
       expect(fee1).toBe(fee2);
+    });
+
+    it("should use event-specific config when provided", () => {
+      // Custom event config: €1.00 fixed + 5%
+      const eventConfig = {
+        serviceFeeFixed: 100,
+        serviceFeePercentage: 0.05,
+        serviceFeeMinimum: 100,
+        serviceFeeMaximum: 1000,
+      };
+
+      // For €50 order (5000 cents):
+      // Fixed: 100 + Percentage: 250 = 350
+      const fee = calculateServiceFee(5000, eventConfig);
+      expect(fee).toBe(350);
+    });
+
+    it("should fall back to defaults when event config is null", () => {
+      const eventConfig = {
+        serviceFeeFixed: null,
+        serviceFeePercentage: null,
+        serviceFeeMinimum: null,
+        serviceFeeMaximum: null,
+      };
+
+      // Should use defaults: €0.50 + 2%
+      const fee = calculateServiceFee(5000, eventConfig);
+      expect(fee).toBe(150); // Same as default
     });
   });
 });

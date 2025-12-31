@@ -6,7 +6,7 @@ Entro is a multi-tenant ticketing platform for small organizations in the Nether
 
 ### Key Business Rules
 
-- Buyer pays service fees **per order** (€0,99 fixed, not per ticket)
+- Buyer pays service fees **per order** (€0,50 fixed + 2%, labeled "Servicekosten (incl. betalingskosten)")
 - Platform fee is **2% per ticket sold** (charged on payout)
 - NL-only market (iDEAL payments)
 - Offline scanning required in MVP (Capacitor app later, backend must support sync + scan logs)
@@ -235,8 +235,10 @@ function TicketCard({ ticketId }: { ticketId: string }) {
 ### Service Fee (per order, buyer pays)
 
 ```typescript
+// €0.50 fixed + 2% of ticket total (max €5.00)
+// Label: "Servicekosten (incl. betalingskosten)"
 const serviceFee = calculateServiceFee(orderTotal);
-// Fixed amount or % based on business rules
+// Returns: 50 + Math.round(orderTotal * 0.02), capped at 500
 ```
 
 ### Platform Fee (per ticket sold)

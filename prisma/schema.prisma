@@ -108,6 +108,14 @@ model Event {
   endsAt         DateTime
   status         EventStatus @default(DRAFT)
   isPaid         Boolean     @default(true) // Does event have paid tickets (requires Mollie)?
+
+  // Service fee configuration (NULL = use platform defaults)
+  // Platform admin can override these per event
+  serviceFeeFixed      Int?    // Fixed fee in cents (e.g., 50 = €0.50)
+  serviceFeePercentage Float?  // Percentage as decimal (e.g., 0.02 = 2%)
+  serviceFeeMinimum    Int?    // Minimum fee in cents
+  serviceFeeMaximum    Int?    // Maximum fee in cents
+
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 

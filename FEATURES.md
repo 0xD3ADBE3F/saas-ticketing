@@ -65,12 +65,49 @@
 
 ### 31 December 2024
 
+#### Fee Structure Implementation (Service Fees & Platform Revenue)
+
+- ✅ **Service Fee Model (Buyer-Paid)** - €0.50 + 2% per order
+  - Fixed component: €0.50 per order
+  - Variable component: 2% of ticket total
+  - Minimum fee: €0.50 (capped at €5.00 maximum)
+  - Labeled as "Servicekosten (incl. betalingskosten)" in checkout
+  - Only charged on paid events (free events = €0.00 service fee)
+  - Configurable per event via database fields (platform admin override capability)
+- ✅ **Platform Application Fee** - Service Fee minus Mollie Transaction Fee
+  - Mollie transaction fee: €0.35 per payment
+  - Platform receives: Service Fee (€0.50 + 2%) - €0.35 Mollie fee
+  - Example: €1.00 service fee → €0.65 to platform, €0.35 to Mollie
+  - Implemented via Mollie's `applicationFee` API parameter
+  - Non-refundable (remains with platform even if order refunded)
+- ✅ **Service Fee Configuration** - Per-event overrides
+  - Database fields: `serviceFeeFixed`, `serviceFeePercentage`, `serviceFeeMinimum`, `serviceFeeMaximum`
+  - All optional (NULL = use platform defaults from `SERVICE_FEE_CONFIG`)
+  - Migration: `20251231134219_add_event_service_fee_config`
+  - Platform admin can customize fees for specific events/organizations
+- ✅ **Fee Calculation (DRY Implementation)**
+  - Centralized in `orderService.calculateServiceFee()`
+  - Accepts optional event-specific config parameter
+  - Client-side removed hardcoded calculations (fetches from server API)
+  - Used by: checkout flow, order summary, payment creation, payout reporting
+- ✅ **Payout Dashboard Updates**
+  - Shows 5 columns: Gross Revenue, Service Fees, Platform Fee, Mollie Fees, Net Payout
+  - Platform Fee = Service Fee - Mollie Fees (what platform actually receives)
+  - Mollie Fees = €0.35 × number of orders
+  - Net Payout = Gross Revenue (tickets sold to buyers, goes to organizer)
+  - Event-level breakdown with per-event fee calculations
+- ✅ **Type Safety & Testing**
+  - All fee interfaces updated with `mollieFees` field
+  - 27 order tests passing (includes fee calculation tests)
+  - 6 payment tests passing
+  - TypeScript compilation successful
+  - Production build successful
+
 #### Subscription System Removed
 
-- ✅ **Simplified to flat 2% platform fee** - Removed all subscription/plan-based logic
+- ✅ **Simplified to service fee model** - Removed all subscription/plan-based logic
   - Deleted subscription models, services, and UI components
   - Removed `PricingPlan`, `Subscription`, `UsageRecord` database tables
-  - Simplified `feeService` to use flat 2% platform fee for all organizations
   - Removed plan limit checks from event publishing flow
 - ✅ **Invoice model refactored** - Now focused on platform fee invoicing
   - Renamed `SubscriptionInvoice` to `Invoice`
@@ -81,12 +118,10 @@
   - Created migration `20251231091500_remove_subscription_system`
   - Dropped subscription tables and enums
   - Removed organization subscription fields (`currentPlan`, `nonProfitStatus`, etc.)
-  - Removed event fee override fields
   - Added billing fields (`billingEmail`, `vatNumber`) for future invoicing
 - ✅ **Updated documentation** - Removed all subscription references
   - Deleted `PRICING.md`, `CRON_SUBSCRIPTIONS.md`, `PHASE_3_5_COMPLETE.md`
-  - Updated `FEATURES.md` to reflect simplified model
-  - Removed plan configuration and billing info domain files
+  - Updated `FEATURES.md` to reflect service fee model
 
 ### 30 December 2024
 
@@ -228,13 +263,18 @@ _The invoice UI improvements from 30 December were part of the subscription syst
 ### Slice 4: Public storefront (pre-checkout)
 
 - ✅ Public event page with ticket selection
-- ✅ Order summary incl. **service fee per order**
+- ✅ Order summary incl. **service fee per order** (€0.50 + 2%)
+  - Service fee displayed as "Servicekosten (incl. betalingskosten)"
+  - Fetched from server API (no hardcoded client-side calculation)
+  - Real-time calculation based on ticket total
+  - Shows breakdown: Tickets + Service Fee = Total
 - ✅ Buyer info: email (+ optional name)
 - ✅ Pending Order creation (no payment yet)
+- ✅ Free event support (€0.00 service fee for `isPaid: false` events)
 
 **DoD**
 
-- ✅ Unit test: service fee calculation, capacity validation (108 tests total)
+- ✅ Unit test: service fee calculation, capacity validation (27 order tests passing)
 
 ---
 
@@ -379,29 +419,71 @@ _The invoice UI improvements from 30 December were part of the subscription syst
 
 ### Slice 10: Service fee per order (buyer-paid)
 
-- ✅ Configurable service fee rules (min/max/percentage)
-- ✅ Correct calculation in checkout
-- ✅ Stored as immutable snapshot on Order
+- ✅ **Service Fee Structure** - €0.50 + 2% per order
+  - Fixed fee: €0.50 (50 cents in database)
+  - Percentage fee: 2% of ticket total
+  - Minimum: €0.50, Maximum: €5.00
+  - Applies to paid events only (free events = €0.00)
+- ✅ **Configurable service fee rules** - Per-event overrides
+  - Database fields: `serviceFeeFixed`, `serviceFeePercentage`, `serviceFeeMinimum`, `serviceFeeMaximum`
+  - Platform defaults in `SERVICE_FEE_CONFIG` constant
+  - Platform admin can customize fees for specific events
+- ✅ **DRY Implementation** - Centralized calculation
+  - Single source of truth: `orderService.calculateServiceFee()`
+  - Accepts optional event-specific config
+  - Client-side fetches from server API (no hardcoded math)
+  - Used by: checkout, order creation, payment flow, payout reporting
+- ✅ **Correct calculation in checkout**
+  - Real-time updates as user selects tickets
+  - Displayed as "Servicekosten (incl. betalingskosten)"
+  - Server-side validation prevents tampering
+- ✅ **Stored as immutable snapshot on Order**
+  - `Order.serviceFee` field (in cents)
+  - Preserved for audit/refund calculations
+  - Historical accuracy (fee changes don't affect old orders)
 
 **DoD**
 
-- ✅ Unit test: service fee applies once per order
+- ✅ Unit test: service fee applies once per order (27 order tests passing)
+- ✅ Unit test: free events have €0.00 service fee
+- ✅ Unit test: fee calculation with custom event config
+- ✅ Client-side displays match server calculations
 
 ---
 
 ### Slice 11: Platform fee per order (Application Fees)
 
-- ✅ Fee engine: % × ticket total (via Mollie Application Fees)
-- ✅ Application fee charged at payment time (moved to platform balance)
-- ⬜ Fee configuration per organization (tiered pricing optional)
-- ⬜ Edge cases:
-  - Full refund → application fee refunded
-  - Partial refund → fee proportionally adjusted
+- ✅ **Platform Application Fee** - Service Fee minus Mollie Transaction Fee
+  - Mollie transaction fee: €0.35 per payment (constant)
+  - Platform receives: (€0.50 + 2%) - €0.35
+  - Example: €1.00 service fee → €0.65 platform, €0.35 Mollie
+  - Non-refundable (stays with platform even if order refunded)
+- ✅ **Mollie Application Fee Integration**
+  - Implemented via Mollie's `applicationFee` parameter in payment creation
+  - Charged at payment time (moved to platform Mollie balance immediately)
+  - Calculated by `calculateApplicationFee()` in `molliePaymentService`
+  - Metadata includes: `serviceFee`, `applicationFee`, `mollieFee` for tracking
+- ✅ **Fee calculation engine** - Centralized logic
+  - `MOLLIE_FEE` constant: 35 cents
+  - `calculateApplicationFee(serviceFee)`: returns `max(0, serviceFee - 35)`
+  - Prevents negative application fees (edge case: very small orders)
+  - Used by: payment creation, payout reporting, invoice generation
+- ⬜ **Fee configuration per organization** - Future: tiered pricing
+  - Currently: single flat rate for all organizations
+  - Database ready for per-org overrides via Event table
+  - Platform admin UI for custom fee schedules (TODO)
+- ⬜ **Refund handling** - Edge cases
+  - Full refund → application fee should be refunded to organizer (TODO)
+  - Partial refund → fee proportionally adjusted (TODO)
+  - Current: application fee remains with platform (non-refundable)
+  - Requires Mollie API investigation for application fee refunds
 
 **DoD**
 
-- Unit tests for fee calculation
-- Application fee appears on Mollie payment response
+- ✅ Unit tests for fee calculation (payment tests passing)
+- ✅ Application fee appears on Mollie payment metadata
+- ✅ Application fee stored in order metadata for tracking
+- ⬜ Refund scenarios tested (TODO: requires Mollie sandbox testing)
 
 ---
 

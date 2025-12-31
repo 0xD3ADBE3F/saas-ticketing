@@ -1,22 +1,39 @@
 import { prisma } from "@/server/lib/prisma";
+import { calculateApplicationFee, MOLLIE_FEE } from "@/server/services/molliePaymentService";
 
-const PLATFORM_FEE_PERCENT = 0.02; // 2% platform fee per ticket
+/**
+ * Payout Breakdown Structure:
+ *
+ * Buyer pays:
+ *   - Ticket Total
+ *   - Service Fee (€0.50 + 2%)
+ *
+ * Money flow:
+ *   - Ticket Total → Organizer's Mollie balance
+ *   - Service Fee - Mollie Fee (€0.35) → Platform (via application fee)
+ *   - Mollie Fee (€0.35) → Mollie (transaction cost, paid by organizer)
+ *
+ * Organizer receives:
+ *   - Gross Revenue (ticket sales) - Mollie Fees
+ */
 
 export interface EventPayoutBreakdown {
   eventId: string;
   eventTitle: string;
   ticketsSold: number;
   grossRevenue: number; // Total ticket sales in cents
-  serviceFees: number; // Service fees paid by buyers (not to organizer)
-  platformFee: number; // 2% platform fee
-  netPayout: number; // What the organizer receives
+  serviceFees: number; // Service fees paid by buyers (goes to platform)
+  platformFee: number; // What platform receives (service fee - Mollie fees)
+  mollieFees: number; // Mollie transaction fees (paid by organizer)
+  netPayout: number; // What the organizer receives (gross - Mollie fees)
 }
 
 export interface OrganizationPayoutSummary {
   totalGrossRevenue: number;
-  totalServiceFees: number;
-  totalPlatformFees: number;
-  totalNetPayout: number;
+  totalServiceFees: number; // Total service fees collected from buyers
+  totalPlatformFees: number; // Total platform receives (service fees - Mollie fees)
+  totalMollieFees: number; // Total Mollie transaction fees
+  totalNetPayout: number; // Total organizer receives (gross - Mollie fees)
   events: EventPayoutBreakdown[];
 }
 
@@ -77,12 +94,18 @@ export const payoutService = {
       0
     );
 
-    // Platform fee is 2% of gross revenue (ticket sales only, not service fees)
-    const platformFee = Math.round(grossRevenue * PLATFORM_FEE_PERCENT);
+    // Platform receives: service fees minus Mollie transaction fees
+    const platformFee = orders.reduce(
+      (sum, order) => sum + calculateApplicationFee(order.serviceFee),
+      0
+    );
 
-    // Net payout: gross revenue - platform fee
-    // (Service fees go to platform, not included in gross)
-    const netPayout = grossRevenue - platformFee;
+    // Mollie transaction fees (€0.35 per order, paid by organizer)
+    const mollieFees = orders.length * MOLLIE_FEE;
+
+    // Net payout: gross revenue minus Mollie fees
+    // (Service fees go to platform via application fee)
+    const netPayout = grossRevenue - mollieFees;
 
     return {
       eventId: event.id,
@@ -91,6 +114,7 @@ export const payoutService = {
       grossRevenue,
       serviceFees,
       platformFee,
+      mollieFees,
       netPayout,
     };
   },
@@ -142,6 +166,7 @@ export const payoutService = {
     let totalGrossRevenue = 0;
     let totalServiceFees = 0;
     let totalPlatformFees = 0;
+    let totalMollieFees = 0;
     let totalNetPayout = 0;
 
     for (const event of events) {
@@ -155,6 +180,7 @@ export const payoutService = {
         totalGrossRevenue += breakdown.grossRevenue;
         totalServiceFees += breakdown.serviceFees;
         totalPlatformFees += breakdown.platformFee;
+        totalMollieFees += breakdown.mollieFees;
         totalNetPayout += breakdown.netPayout;
       }
     }
@@ -163,6 +189,7 @@ export const payoutService = {
       totalGrossRevenue,
       totalServiceFees,
       totalPlatformFees,
+      totalMollieFees,
       totalNetPayout,
       events: eventBreakdowns,
     };
