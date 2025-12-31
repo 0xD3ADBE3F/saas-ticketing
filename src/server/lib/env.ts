@@ -21,6 +21,7 @@ const serverEnvSchema = z.object({
   MOLLIE_REDIRECT_URI: z.string().url().optional(),
   // Platform access token (from OAuth flow - has clients.write scope)
   MOLLIE_PLATFORM_ACCESS_TOKEN: z.string().min(1).optional(),
+  MOLLIE_PLATFORM_REFRESH_TOKEN: z.string().min(1).optional(),
   // Test mode - set to "true" to use Mollie test mode
   MOLLIE_TEST_MODE: z.enum(["true", "false"]).default("false"),
 

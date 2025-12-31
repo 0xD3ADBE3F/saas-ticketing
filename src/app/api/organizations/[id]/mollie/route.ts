@@ -21,6 +21,12 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     select: {
       id: true,
       name: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      streetAndNumber: true,
+      postalCode: true,
+      city: true,
       mollieOnboardingStatus: true,
       mollieProfileId: true,
       mollieClientLinkUrl: true,
@@ -51,6 +57,16 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     onboardingUrl = await mollieOnboardingService.getOnboardingUrl(organizationId);
   }
 
+  // Check if organization has all required data for Mollie onboarding
+  const hasRequiredData = Boolean(
+    org.email &&
+    org.firstName &&
+    org.lastName &&
+    org.streetAndNumber &&
+    org.postalCode &&
+    org.city
+  );
+
   return NextResponse.json({
     organizationId: org.id,
     status: org.mollieOnboardingStatus ?? "NOT_STARTED",
@@ -59,5 +75,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     profileId: org.mollieProfileId,
     onboardingUrl,
     tokenExpiresAt: org.mollieTokenExpiresAt,
+    hasRequiredData,
   });
 }

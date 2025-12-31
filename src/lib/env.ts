@@ -11,11 +11,8 @@ export const clientEnv = {
 
 /**
  * Get the application URL (for redirects, webhooks, etc.)
- * Falls back to localhost in development
+ * Always uses NEXT_PUBLIC_APP_URL to ensure consistency
  */
 export function getAppUrl(): string {
-  if (typeof window !== "undefined") {
-    return window.location.origin;
-  }
   return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 }

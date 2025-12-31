@@ -1,10 +1,12 @@
 import { createSupabaseServerClient } from "@/server/lib/supabase";
+import { getAppUrl } from "@/lib/env";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/dashboard";
+  const appUrl = getAppUrl();
 
   if (code) {
     const supabase = await createSupabaseServerClient();
@@ -18,13 +20,13 @@ export async function GET(request: Request) {
 
       // For new users, redirect to onboarding unless explicitly specified
       if (isNewUser && next === "/dashboard") {
-        return NextResponse.redirect(`${origin}/onboarding`);
+        return NextResponse.redirect(`${appUrl}/onboarding`);
       }
 
-      return NextResponse.redirect(`${origin}${next}`);
+      return NextResponse.redirect(`${appUrl}${next}`);
     }
   }
 
   // Return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/auth/error`);
+  return NextResponse.redirect(`${appUrl}/auth/error`);
 }

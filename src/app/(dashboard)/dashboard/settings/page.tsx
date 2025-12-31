@@ -38,6 +38,8 @@ export default async function SettingsPage() {
             id: currentOrg.id,
             name: currentOrg.name,
             email: currentOrg.email,
+            firstName: currentOrg.firstName,
+            lastName: currentOrg.lastName,
             streetAndNumber: currentOrg.streetAndNumber,
             postalCode: currentOrg.postalCode,
             city: currentOrg.city,

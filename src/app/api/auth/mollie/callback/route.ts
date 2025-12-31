@@ -3,6 +3,7 @@ import { mollieConnectService } from "@/server/services/mollieConnectService";
 import { mollieOnboardingService } from "@/server/services/mollieOnboardingService";
 import { prisma } from "@/server/lib/prisma";
 import { mollieLogger } from "@/server/lib/logger";
+import { env } from "@/server/lib/env";
 
 /**
  * Mollie OAuth callback handler
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(
       new URL(
         `/dashboard/settings?error=${encodeURIComponent(errorDescription || error)}`,
-        req.url
+        env.NEXT_PUBLIC_APP_URL
       )
     );
   }
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
   if (!code || !state) {
     mollieLogger.error("Missing code or state in Mollie callback");
     return NextResponse.redirect(
-      new URL("/dashboard/settings?error=invalid_callback", req.url)
+      new URL("/dashboard/settings?error=invalid_callback", env.NEXT_PUBLIC_APP_URL)
     );
   }
 
@@ -123,7 +124,7 @@ async function handleOrganizationCallback(req: NextRequest, code: string, state:
   } catch (err) {
     mollieLogger.error({ err }, "Invalid state parameter");
     return NextResponse.redirect(
-      new URL("/dashboard/settings?error=invalid_state", req.url)
+      new URL("/dashboard/settings?error=invalid_state", env.NEXT_PUBLIC_APP_URL)
     );
   }
 
@@ -135,7 +136,7 @@ async function handleOrganizationCallback(req: NextRequest, code: string, state:
   if (!org) {
     mollieLogger.error({ organizationId }, "Organization not found");
     return NextResponse.redirect(
-      new URL("/dashboard/settings?error=org_not_found", req.url)
+      new URL("/dashboard/settings?error=org_not_found", env.NEXT_PUBLIC_APP_URL)
     );
   }
 
@@ -171,12 +172,12 @@ async function handleOrganizationCallback(req: NextRequest, code: string, state:
 
     // Redirect to settings page with success
     return NextResponse.redirect(
-      new URL("/dashboard/settings?success=connected", req.url)
+      new URL("/dashboard/settings?success=connected", env.NEXT_PUBLIC_APP_URL)
     );
   } catch (err) {
     mollieLogger.error({ err, organizationId }, "Token exchange failed");
     return NextResponse.redirect(
-      new URL("/dashboard/settings?error=token_exchange_failed", req.url)
+      new URL("/dashboard/settings?error=token_exchange_failed", env.NEXT_PUBLIC_APP_URL)
     );
   }
 }

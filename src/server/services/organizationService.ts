@@ -12,7 +12,17 @@ export async function createOrganization(
   userId: string,
   name: string,
   slug: string,
-  email?: string
+  email?: string,
+  additionalData?: {
+    firstName?: string;
+    lastName?: string;
+    streetAndNumber?: string;
+    postalCode?: string;
+    city?: string;
+    country?: string;
+    registrationNumber?: string;
+    vatNumber?: string;
+  }
 ): Promise<CreateOrganizationResult> {
   // Validate slug format
   const slugRegex = /^[a-z0-9-]+$/;
@@ -34,7 +44,7 @@ export async function createOrganization(
 
   try {
     const organization = await organizationRepo.create(
-      { name, slug, email },
+      { name, slug, email, ...additionalData },
       userId
     );
     return { success: true, organization };

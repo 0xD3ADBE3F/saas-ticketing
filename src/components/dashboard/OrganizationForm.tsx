@@ -8,6 +8,8 @@ interface OrganizationFormProps {
     id: string;
     name: string;
     email: string | null;
+    firstName: string | null;
+    lastName: string | null;
     streetAndNumber: string | null;
     postalCode: string | null;
     city: string | null;
@@ -32,6 +34,8 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
     const data = {
       name: formData.get("name") as string,
       email: formData.get("email") as string,
+      firstName: formData.get("firstName") as string,
+      lastName: formData.get("lastName") as string,
       streetAndNumber: formData.get("streetAndNumber") as string,
       postalCode: formData.get("postalCode") as string,
       city: formData.get("city") as string,
@@ -95,6 +99,52 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             Dit e-mailadres wordt gebruikt voor facturen
           </p>
+        </div>
+      </div>
+
+      {/* Contact Person */}
+      <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-800">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          Contactpersoon
+        </h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Vereist voor Mollie onboarding
+        </p>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label
+              htmlFor="firstName"
+              className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300"
+            >
+              Voornaam <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="firstName"
+              name="firstName"
+              required
+              defaultValue={organization.firstName || ""}
+              placeholder="Jan"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="lastName"
+              className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300"
+            >
+              Achternaam <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="lastName"
+              name="lastName"
+              required
+              defaultValue={organization.lastName || ""}
+              placeholder="de Vries"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
         </div>
       </div>
 

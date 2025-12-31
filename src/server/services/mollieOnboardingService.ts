@@ -125,7 +125,7 @@ export const mollieOnboardingService = {
       client_id: env.MOLLIE_CONNECT_CLIENT_ID,
       redirect_uri: redirectUri,
       response_type: "code",
-      scope: "organizations.read clients.write",
+      scope: "organizations.write profiles.write clients.write",
       state: "platform", // Special state to identify platform auth
     });
     return `https://my.mollie.com/oauth2/authorize?${params.toString()}`;
@@ -168,42 +168,86 @@ export const mollieOnboardingService = {
   /**
    * Create a client link for organization onboarding
    * Requires MOLLIE_PLATFORM_ACCESS_TOKEN with clients.write scope
+   * Uses organization's stored data to prefill Mollie onboarding
    * https://docs.mollie.com/reference/create-client-link
    */
-  async createClientLink(
-    organizationId: string,
-    ownerData: {
-      email: string;
-      givenName: string;
-      familyName: string;
-    }
-  ): Promise<string> {
-    // Get organization data
+  async createClientLink(organizationId: string): Promise<string> {
+    mollieLogger.info({ organizationId }, "Starting Mollie client link creation");
+
+    // Get organization data with all required fields
     const org = await prisma.organization.findUnique({
       where: { id: organizationId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        streetAndNumber: true,
+        postalCode: true,
+        city: true,
+        country: true,
+        registrationNumber: true,
+        vatNumber: true,
+      },
     });
 
     if (!org) {
+      mollieLogger.error({ organizationId }, "Organization not found");
       throw new Error("Organization not found");
     }
+
+    mollieLogger.info({
+      organizationId: org.id,
+      name: org.name,
+      email: org.email,
+      hasFirstName: !!org.firstName,
+      hasLastName: !!org.lastName,
+      hasAddress: !!org.streetAndNumber,
+      hasPostalCode: !!org.postalCode,
+      hasCity: !!org.city,
+      country: org.country,
+      hasKvK: !!org.registrationNumber,
+      hasVAT: !!org.vatNumber,
+    }, "Organization data retrieved");
+
+    // Validate required fields for Mollie
+    if (!org.email) {
+      mollieLogger.error({ organizationId }, "Missing required email");
+      throw new Error("Organization email is required for Mollie onboarding");
+    }
+    if (!org.firstName || !org.lastName) {
+      mollieLogger.error({ organizationId, hasFirstName: !!org.firstName, hasLastName: !!org.lastName }, "Missing contact person name");
+      throw new Error("Contact person name is required for Mollie onboarding");
+    }
+
+    mollieLogger.info("Required fields validated successfully");
 
     // Build client link request
     const request: ClientLinkRequest = {
       owner: {
-        email: ownerData.email,
-        givenName: ownerData.givenName,
-        familyName: ownerData.familyName,
+        email: org.email,
+        givenName: org.firstName,
+        familyName: org.lastName,
         locale: "nl_NL", // Dutch locale for NL market
       },
       name: org.name,
       address: {
-        country: "NL", // Netherlands only
+        streetAndNumber: org.streetAndNumber || undefined,
+        postalCode: org.postalCode || undefined,
+        city: org.city || undefined,
+        country: org.country || "NL", // Default to Netherlands
       },
+      registrationNumber: org.registrationNumber || undefined,
+      vatNumber: org.vatNumber || undefined,
     };
 
+    mollieLogger.info({ request }, "Client link request built");
+
     // Get platform access token (must have clients.write scope)
-    const platformToken = env.MOLLIE_PLATFORM_ACCESS_TOKEN;
+    let platformToken = env.MOLLIE_PLATFORM_ACCESS_TOKEN;
     if (!platformToken) {
+      mollieLogger.error("MOLLIE_PLATFORM_ACCESS_TOKEN not configured");
       throw new Error(
         "MOLLIE_PLATFORM_ACCESS_TOKEN not configured. " +
         "Platform admin must authorize the OAuth app first. " +
@@ -211,8 +255,11 @@ export const mollieOnboardingService = {
       );
     }
 
+    mollieLogger.info({ tokenPrefix: platformToken.substring(0, 10) + "..." }, "Using platform access token");
+
     // Create client link using platform OAuth token
-    const response = await fetch("https://api.mollie.com/v2/client-links", {
+    mollieLogger.info("Sending client link creation request to Mollie API");
+    let response = await fetch("https://api.mollie.com/v2/client-links", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${platformToken}`,
@@ -221,16 +268,87 @@ export const mollieOnboardingService = {
       body: JSON.stringify(request),
     });
 
+    mollieLogger.info({ status: response.status, statusText: response.statusText }, "Received response from Mollie API");
+
+    // If token expired (401), try to refresh it
+    if (response.status === 401 && env.MOLLIE_PLATFORM_REFRESH_TOKEN) {
+      mollieLogger.warn({ status: 401 }, "Platform token expired (401 Unauthorized), attempting refresh");
+
+      try {
+        mollieLogger.info("Sending token refresh request to Mollie");
+        const refreshResponse = await fetch("https://api.mollie.com/oauth2/tokens", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            grant_type: "refresh_token",
+            client_id: env.MOLLIE_CONNECT_CLIENT_ID,
+            client_secret: env.MOLLIE_CONNECT_CLIENT_SECRET,
+            refresh_token: env.MOLLIE_PLATFORM_REFRESH_TOKEN,
+          }),
+        });
+
+        mollieLogger.info({ status: refreshResponse.status }, "Received token refresh response");
+
+        if (refreshResponse.ok) {
+          const tokenData = await refreshResponse.json();
+          platformToken = tokenData.access_token;
+
+          mollieLogger.info({ hasNewRefreshToken: !!tokenData.refresh_token }, "Platform token refreshed successfully. Update .env with new token:");
+          mollieLogger.info(`MOLLIE_PLATFORM_ACCESS_TOKEN=${tokenData.access_token}`);
+          if (tokenData.refresh_token) {
+            mollieLogger.info(`MOLLIE_PLATFORM_REFRESH_TOKEN=${tokenData.refresh_token}`);
+          }
+
+          // Retry with new token
+          mollieLogger.info("Retrying client link creation with refreshed token");
+          response = await fetch("https://api.mollie.com/v2/client-links", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${platformToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(request),
+          });
+          mollieLogger.info({ status: response.status }, "Retry response received");
+        } else {
+          const refreshError = await refreshResponse.text();
+          mollieLogger.error({ status: refreshResponse.status, error: refreshError }, "Token refresh failed");
+        }
+      } catch (refreshError) {
+        mollieLogger.error({ error: refreshError }, "Exception during token refresh");
+      }
+    } else if (response.status === 401) {
+      mollieLogger.error("401 Unauthorized but no refresh token available");
+    }
+
     if (!response.ok) {
       const error = await response.text();
-      mollieLogger.error({ error, status: response.status }, "Failed to create client link");
-      throw new Error(`Failed to create client link: ${response.status}`);
+      mollieLogger.error({ error, status: response.status, request }, "Failed to create client link");
+
+      if (response.status === 401) {
+        mollieLogger.error("Authentication failed after all attempts. Platform needs re-authorization");
+        throw new Error(
+          "Platform token is invalid or expired. " +
+          "Please re-authorize the platform by visiting: " +
+          this.getPlatformAuthUrl()
+        );
+      }
+
+      throw new Error(`Failed to create client link: ${response.status} - ${error}`);
     }
 
     const data: ClientLinkResponse = await response.json();
     const clientLinkUrl = data._links.clientLink.href;
 
+    mollieLogger.info({
+      clientLinkId: data.id,
+      clientLinkUrl,
+    }, "Client link created successfully");
+
     // Store client link URL and set status to pending
+    mollieLogger.info({ organizationId }, "Updating organization with client link URL");
     await prisma.organization.update({
       where: { id: organizationId },
       data: {
@@ -239,6 +357,7 @@ export const mollieOnboardingService = {
       },
     });
 
+    mollieLogger.info({ organizationId, clientLinkUrl }, "Client link creation completed successfully");
     return clientLinkUrl;
   },
 
@@ -247,14 +366,19 @@ export const mollieOnboardingService = {
    * The user clicks this to complete onboarding in Mollie's web app
    */
   async getOnboardingUrl(organizationId: string): Promise<string | null> {
+    mollieLogger.info({ organizationId }, "Getting onboarding URL");
+
     const org = await prisma.organization.findUnique({
       where: { id: organizationId },
       select: { mollieClientLinkUrl: true },
     });
 
     if (!org?.mollieClientLinkUrl) {
+      mollieLogger.warn({ organizationId }, "No client link URL found for organization");
       return null;
     }
+
+    mollieLogger.info({ clientLinkUrl: org.mollieClientLinkUrl }, "Client link URL found, building OAuth URL");
 
     // Client link URL includes OAuth consent
     // After completing onboarding, Mollie redirects to our callback
@@ -273,7 +397,10 @@ export const mollieOnboardingService = {
     // Required: scope parameter with permissions needed
     url.searchParams.set("scope", "payments.read payments.write profiles.read organizations.read onboarding.read onboarding.write settlements.read balances.read");
 
-    return url.toString();
+    const finalUrl = url.toString();
+    mollieLogger.info({ organizationId, finalUrl }, "Onboarding URL constructed successfully");
+
+    return finalUrl;
   },
 
   /**
@@ -283,8 +410,11 @@ export const mollieOnboardingService = {
   async getOnboardingStatus(
     organizationId: string
   ): Promise<OnboardingStatusResponse | null> {
+    mollieLogger.info({ organizationId }, "Fetching onboarding status from Mollie");
+
     try {
       const accessToken = await mollieConnectService.getValidToken(organizationId);
+      mollieLogger.info({ organizationId }, "Got valid access token");
 
       const response = await fetch("https://api.mollie.com/v2/onboarding/me", {
         headers: {
@@ -292,14 +422,20 @@ export const mollieOnboardingService = {
         },
       });
 
+      mollieLogger.info({ organizationId, status: response.status }, "Onboarding status response received");
+
       if (!response.ok) {
-        mollieLogger.error({ status: response.status }, "Failed to get onboarding status");
+        const errorText = await response.text();
+        mollieLogger.error({ organizationId, status: response.status, error: errorText }, "Failed to get onboarding status");
         return null;
       }
 
-      return response.json();
-    } catch {
+      const data = await response.json();
+      mollieLogger.info({ organizationId, status: data.status, canReceivePayments: data.canReceivePayments }, "Onboarding status retrieved successfully");
+      return data;
+    } catch (error) {
       // Organization not connected yet
+      mollieLogger.warn({ organizationId, error }, "Organization not connected or error fetching status");
       return null;
     }
   },
@@ -313,15 +449,20 @@ export const mollieOnboardingService = {
     canReceivePayments: boolean;
     changed: boolean;
   }> {
+    mollieLogger.info({ organizationId }, "Polling Mollie onboarding status");
+
     const org = await prisma.organization.findUnique({
       where: { id: organizationId },
       select: { mollieOnboardingStatus: true },
     });
 
     const previousStatus = org?.mollieOnboardingStatus;
+    mollieLogger.info({ organizationId, previousStatus }, "Current stored status");
+
     const onboarding = await this.getOnboardingStatus(organizationId);
 
     if (!onboarding) {
+      mollieLogger.warn({ organizationId }, "Could not retrieve onboarding status from Mollie");
       return {
         status: previousStatus ?? "PENDING",
         canReceivePayments: false,
@@ -332,7 +473,16 @@ export const mollieOnboardingService = {
     const newStatus = mapMollieStatus(onboarding.status);
     const changed = previousStatus !== newStatus;
 
+    mollieLogger.info({
+      organizationId,
+      previousStatus,
+      newStatus,
+      changed,
+      canReceivePayments: onboarding.canReceivePayments,
+    }, "Status comparison complete");
+
     if (changed) {
+      mollieLogger.info({ organizationId, from: previousStatus, to: newStatus }, "Status changed, updating database");
       await prisma.organization.update({
         where: { id: organizationId },
         data: { mollieOnboardingStatus: newStatus },

@@ -16,6 +16,17 @@ const createOrgSchema = z.object({
       "Slug mag alleen kleine letters, cijfers en streepjes bevatten"
     ),
   email: z.string().email("Ongeldig e-mailadres").optional(),
+  // Contact person (for Mollie)
+  firstName: z.string().min(1, "Voornaam is verplicht").optional(),
+  lastName: z.string().min(1, "Achternaam is verplicht").optional(),
+  // Address (for Mollie)
+  streetAndNumber: z.string().min(1, "Adres is verplicht").optional(),
+  postalCode: z.string().min(1, "Postcode is verplicht").optional(),
+  city: z.string().min(1, "Plaats is verplicht").optional(),
+  country: z.string().length(2, "Landcode moet 2 letters zijn").optional(),
+  // Optional business details
+  registrationNumber: z.string().optional(),
+  vatNumber: z.string().optional(),
 });
 
 export async function GET() {
@@ -41,11 +52,14 @@ export async function POST(request: Request) {
       );
     }
 
+    const { name, slug, email, ...additionalData } = parsed.data;
+
     const result = await createOrganization(
       user.id,
-      parsed.data.name,
-      parsed.data.slug,
-      parsed.data.email
+      name,
+      slug,
+      email,
+      additionalData
     );
 
     if (!result.success) {

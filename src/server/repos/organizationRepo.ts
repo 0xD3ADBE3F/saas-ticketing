@@ -5,6 +5,16 @@ export type CreateOrganizationInput = {
   name: string;
   slug: string;
   email?: string;
+  // Owner details (for Mollie)
+  firstName?: string;
+  lastName?: string;
+  // Address details (for Mollie)
+  streetAndNumber?: string;
+  postalCode?: string;
+  city?: string;
+  country?: string;
+  registrationNumber?: string;
+  vatNumber?: string;
 };
 
 export type UpdateOrganizationInput = {

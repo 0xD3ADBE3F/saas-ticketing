@@ -8,6 +8,8 @@ import { getUserOrganizations } from "@/server/services/organizationService";
 export interface UpdateOrganizationData {
   name?: string;
   email?: string;
+  firstName?: string;
+  lastName?: string;
   streetAndNumber?: string;
   postalCode?: string;
   city?: string;
@@ -43,6 +45,8 @@ export async function updateOrganization(data: UpdateOrganizationData) {
     await organizationRepo.update(currentOrg.id, user.id, {
       name: data.name,
       email: data.email,
+      firstName: data.firstName,
+      lastName: data.lastName,
       streetAndNumber: data.streetAndNumber,
       postalCode: data.postalCode?.toUpperCase(), // Normalize to uppercase
       city: data.city,
