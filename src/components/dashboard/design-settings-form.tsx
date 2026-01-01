@@ -1,26 +1,29 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Upload, X, ImageIcon, Loader2 } from 'lucide-react';
-import { updateThemeAction, deleteLogoAction } from '@/app/(dashboard)/dashboard/settings/design/actions';
-import { toast } from 'sonner';
-import type { PortalTheme } from '@/generated/prisma';
+} from "@/components/ui/select";
+import { Upload, X, ImageIcon, Loader2 } from "lucide-react";
+import {
+  updateThemeAction,
+  deleteLogoAction,
+} from "@/app/(dashboard)/dashboard/settings/design/actions";
+import { toast } from "sonner";
+import type { PortalTheme } from "@/generated/prisma";
 
 type Props = {
   organizationId: string;
@@ -43,33 +46,33 @@ export function DesignSettingsForm({
     if (!file) return;
 
     // Reset input so same file can be selected again if needed
-    e.target.value = '';
+    e.target.value = "";
 
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append("file", file);
 
-      const res = await fetch('/api/design/logo', {
-        method: 'POST',
+      const res = await fetch("/api/design/logo", {
+        method: "POST",
         body: formData,
       });
 
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.error || 'Upload mislukt');
+        throw new Error(error.error || "Upload mislukt");
       }
 
       const { url } = await res.json();
       setLogoUrl(url);
 
-      toast.success('Logo geüpload', {
-        description: 'Je logo wordt nu getoond op je ticketportaal',
+      toast.success("Logo geüpload", {
+        description: "Je logo wordt nu getoond op je ticketportaal",
       });
     } catch (error) {
-      toast.error('Upload mislukt', {
+      toast.error("Upload mislukt", {
         description:
-          error instanceof Error ? error.message : 'Probeer het opnieuw',
+          error instanceof Error ? error.message : "Probeer het opnieuw",
       });
     } finally {
       setUploading(false);
@@ -84,12 +87,12 @@ export function DesignSettingsForm({
       await deleteLogoAction(logoUrl);
       setLogoUrl(null);
 
-      toast.success('Logo verwijderd', {
-        description: 'Het standaard Entro logo wordt nu getoond',
+      toast.success("Logo verwijderd", {
+        description: "Het standaard Entro logo wordt nu getoond",
       });
     } catch (error) {
-      toast.error('Verwijderen mislukt', {
-        description: 'Probeer het opnieuw',
+      toast.error("Verwijderen mislukt", {
+        description: "Probeer het opnieuw",
       });
     } finally {
       setDeleting(false);
@@ -103,14 +106,14 @@ export function DesignSettingsForm({
     try {
       await updateThemeAction(newTheme);
 
-      toast.success('Thema bijgewerkt', {
+      toast.success("Thema bijgewerkt", {
         description: `Je ticketportaal gebruikt nu het ${
-          newTheme === 'LIGHT' ? 'lichte' : 'donkere'
+          newTheme === "LIGHT" ? "lichte" : "donkere"
         } thema`,
       });
     } catch (error) {
-      toast.error('Update mislukt', {
-        description: 'Probeer het opnieuw',
+      toast.error("Update mislukt", {
+        description: "Probeer het opnieuw",
       });
       setTheme(oldTheme); // Revert on error
     }
@@ -176,9 +179,7 @@ export function DesignSettingsForm({
                 {uploading ? (
                   <>
                     <Loader2 className="w-10 h-10 mb-3 text-muted-foreground animate-spin" />
-                    <p className="text-sm text-muted-foreground">
-                      Uploaden...
-                    </p>
+                    <p className="text-sm text-muted-foreground">Uploaden...</p>
                   </>
                 ) : (
                   <>
@@ -217,7 +218,10 @@ export function DesignSettingsForm({
         <CardContent>
           <div className="space-y-2">
             <Label htmlFor="theme">Thema voorkeur</Label>
-            <Select value={theme} onValueChange={(v) => handleThemeChange(v as PortalTheme)}>
+            <Select
+              value={theme}
+              onValueChange={(v) => handleThemeChange(v as PortalTheme)}
+            >
               <SelectTrigger id="theme" className="w-full md:w-64">
                 <SelectValue />
               </SelectTrigger>
