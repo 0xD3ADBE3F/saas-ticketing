@@ -7,19 +7,25 @@ import { calculatePaymentFee } from "@/server/services/feeService";
  *
  * Buyer pays:
  *   - Ticket Total (incl. VAT)
- *   - Service Fee: €0.29 Mollie (excl. VAT) + €0.06 VAT + Platform (€0.15 + 2%) × 1.21
+ *   - Service Fee: €0.35 excl VAT + 2% variable (platform revenue)
+ *   - Payment Fee (optional): €0.32 excl VAT = €0.3872 incl VAT (if event.passPaymentFeesToBuyer enabled)
  *
  * Money flow:
  *   - Ticket Total → Organizer's Mollie balance
- *   - Service Fee - Mollie Fee (€0.35 incl. VAT) → Platform (via application fee)
- *   - Mollie Fee (€0.35 incl. VAT) → Mollie (transaction cost, paid by organizer)
+ *   - Service Fee → Platform (via Mollie application fee)
+ *   - Payment Fee → Covers Mollie transaction cost
+ *
+ * Payment Fee Logic:
+ *   - If event.passPaymentFeesToBuyer = true: Buyer pays €0.3872, organizer pays nothing
+ *   - If event.passPaymentFeesToBuyer = false: Organizer pays €0.3872 (deducted from payout)
  *
  * VAT Treatment:
  *   - Tickets: VAT rate per event (21%/9%/0%)
- *   - Service Fee: 21% VAT on both Mollie and Platform portions
+ *   - Service Fee: 21% VAT on platform fee
+ *   - Payment Fee: 21% VAT (€0.32 excl = €0.3872 incl)
  *
  * Organizer receives:
- *   - Gross Revenue (ticket sales) - Mollie Fees (incl. VAT)
+ *   - Gross Revenue (ticket sales) - Payment Fees (only if they pay them)
  */
 
 export interface EventPayoutBreakdown {
@@ -92,6 +98,7 @@ export const payoutService = {
         serviceFee: true,
         serviceFeeExclVat: true,
         serviceFeeVat: true,
+        paymentFeeBuyerInclVat: true, // Check if buyer paid the payment fee
         tickets: {
           select: {
             id: true,
@@ -139,18 +146,28 @@ export const payoutService = {
       0
     );
 
-    // Platform receives: service fees minus Mollie transaction fees
+    // Platform receives: service fees (full amount)
     const platformFee = orders.reduce(
       (sum, order) => sum + calculateApplicationFee(order.serviceFee),
       0
     );
 
-    // Mollie transaction fees (€0.35 incl. VAT per order, paid by organizer)
+    // Mollie transaction fees: ALWAYS incurred for every order (€0.3872 per order)
+    // Someone always pays this - either buyer (if passPaymentFeesToBuyer) or organizer (default)
     const mollieFees = orders.length * calculatePaymentFee().paymentFeeInclVat;
 
-    // Net payout: gross revenue minus Mollie fees (incl. VAT)
+    // Calculate how much of the Mollie fees the organizer pays (for net payout calculation)
+    const mollieFeesOrganizerPays = orders.reduce((sum, order) => {
+      if (!order.paymentFeeBuyerInclVat) {
+        // Buyer didn't pay, so organizer pays the Mollie fee
+        return sum + calculatePaymentFee().paymentFeeInclVat;
+      }
+      return sum; // Buyer paid, no deduction from organizer
+    }, 0);
+
+    // Net payout: gross revenue minus Mollie fees that organizer pays
     // (Service fees go to platform via application fee)
-    const netPayout = grossRevenue - mollieFees;
+    const netPayout = grossRevenue - mollieFeesOrganizerPays;
 
     return {
       eventId: event.id,

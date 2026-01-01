@@ -380,26 +380,83 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
       {/* Events tab */}
       {activeTab === "events" && payoutSummary && (
         <div className="space-y-4">
+          {/* Explanation block */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div className="flex items-start">
+              <svg
+                className="w-5 h-5 text-blue-500 mr-3 flex-shrink-0 mt-0.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">
+                  Hoe werkt dit overzicht?
+                </h3>
+                <div className="text-sm text-blue-700 dark:text-blue-300 space-y-2">
+                  <p>
+                    Dit overzicht toont het complete plaatje van je Mollie
+                    uitbetalingen:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li>
+                      <strong>Bruto omzet:</strong> Totale ticketverkoop (wat
+                      kopers betalen voor tickets)
+                    </li>
+                    <li>
+                      <strong>Platform fee (servicekosten):</strong> €0,35 + 2%
+                      per order. Dit is wat kopers betalen als "servicekosten"
+                      en gaat naar Entro. Wordt automatisch ingehouden door
+                      Mollie.
+                    </li>
+                    <li>
+                      <strong>Mollie fees:</strong> Transactiekosten (€
+                      {(calculatePaymentFee().paymentFeeInclVat / 100).toFixed(
+                        4
+                      )}{" "}
+                      per order). Als je &quot;Betaalkosten doorberekenen&quot;
+                      activeert, betaalt de koper deze.
+                    </li>
+                    <li>
+                      <strong>Netto uitbetaling:</strong> Wat je ontvangt =
+                      Bruto omzet - Mollie fees die jij betaalt
+                    </li>
+                  </ul>
+                  <p className="pt-2 border-t border-blue-200 dark:border-blue-700">
+                    De BTW uitsplitsing helpt je bij het invullen van je
+                    BTW-aangifte. Service fees zijn altijd 21% BTW, ticket BTW
+                    hangt af van je evenement.
+                  </p>
+                  <p className="pt-2 border-t border-blue-200 dark:border-blue-700">
+                    <strong>Facturatie:</strong> Aan het einde van elk evenement
+                    ontvang je een factuur voor de platform fees. Deze factuur
+                    is al betaald (automatisch ingehouden via Mollie) en dient
+                    alleen voor je administratie.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Summary totals */}
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Totaal overzicht
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Bruto omzet
                 </p>
                 <p className="text-xl font-bold text-gray-900 dark:text-white">
                   {formatPrice(payoutSummary.totalGrossRevenue)}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Service fees
-                </p>
-                <p className="text-xl font-bold text-gray-500 dark:text-gray-400">
-                  {formatPrice(payoutSummary.totalServiceFees)}
                 </p>
               </div>
               <div>
@@ -412,7 +469,7 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
               </div>
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Mollie fees
+                  Mollie fees (totaal)
                 </p>
                 <p className="text-xl font-bold text-gray-500 dark:text-gray-400">
                   -{formatPrice(payoutSummary.totalMollieFees)}
@@ -500,12 +557,6 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
                         BTW tickets
                       </th>
                       <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                        Service fees excl.
-                      </th>
-                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                        BTW service
-                      </th>
-                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                         Platform fee
                       </th>
                       <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
@@ -578,7 +629,7 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
                             key={`vat-${group.vatRate}`}
                             className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-t-2 border-blue-200 dark:border-blue-700"
                           >
-                            <td className="px-6 py-3" colSpan={9}>
+                            <td className="px-6 py-3" colSpan={7}>
                               <div className="flex items-center gap-3">
                                 <div className="h-8 w-1 bg-blue-500 dark:bg-blue-400 rounded-full"></div>
                                 <span className="text-sm font-bold text-blue-900 dark:text-blue-100 uppercase tracking-wide">
@@ -611,12 +662,6 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
                               </td>
                               <td className="px-6 py-3 whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-400">
                                 {formatPrice(event.ticketVat)}
-                              </td>
-                              <td className="px-6 py-3 whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-400">
-                                {formatPrice(event.serviceFeeExclVat)}
-                              </td>
-                              <td className="px-6 py-3 whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-400">
-                                {formatPrice(event.serviceFeeVat)}
                               </td>
                               <td className="px-6 py-3 whitespace-nowrap text-right text-sm text-red-600 dark:text-red-400 font-medium">
                                 -{formatPrice(event.platformFee)}
@@ -653,12 +698,6 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
                               </td>
                               <td className="px-6 py-3.5 whitespace-nowrap text-right text-sm font-bold text-blue-900 dark:text-blue-100">
                                 {formatPrice(group.ticketVat)}
-                              </td>
-                              <td className="px-6 py-3.5 whitespace-nowrap text-right text-sm font-bold text-blue-900 dark:text-blue-100">
-                                {formatPrice(group.serviceFeeExclVat)}
-                              </td>
-                              <td className="px-6 py-3.5 whitespace-nowrap text-right text-sm font-bold text-blue-900 dark:text-blue-100">
-                                {formatPrice(group.serviceFeeVat)}
                               </td>
                               <td className="px-6 py-3.5 whitespace-nowrap text-right text-sm font-bold text-red-700 dark:text-red-400">
                                 -{formatPrice(group.platformFee)}
@@ -701,14 +740,18 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
             />
           </svg>
           <p className="text-sm text-blue-700 dark:text-blue-300">
-            Uitbetalingen worden verwerkt via Mollie. De platform fee (service
-            fee minus {formatPrice(calculatePaymentFee().paymentFeeInclVat)}{" "}
-            Mollie kosten incl. BTW) wordt automatisch ingehouden. De Mollie
+            Uitbetalingen worden verwerkt via Mollie. De platform fee (kopers
+            zien dit als &quot;servicekosten&quot;: €0,35 + 2% per order) wordt
+            automatisch ingehouden en gaat naar het platform. De Mollie
             transactiekosten (
             {formatPrice(calculatePaymentFee().paymentFeeInclVat)} per order,
-            incl. BTW) worden van je uitbetaling afgetrokken. BTW uitsplitsing
-            toont de belastbare omzet voor je BTW-aangifte. Je kunt je
-            bankrekening en uitbetalingsfrequentie beheren in het{" "}
+            incl. BTW) worden altijd gemaakt per transactie. Indien je de optie
+            &quot;Betaalkosten doorberekenen&quot; activeert bij een evenement,
+            betaalt de koper deze kosten. Anders worden ze van je uitbetaling
+            afgetrokken. Het totaal overzicht toont alle Mollie fees, maar je
+            netto uitbetaling houdt alleen rekening met de fees die jij betaalt.
+            BTW uitsplitsing toont de belastbare omzet voor je BTW-aangifte. Je
+            kunt je bankrekening en uitbetalingsfrequentie beheren in het{" "}
             <a
               href="https://my.mollie.com/dashboard"
               target="_blank"
