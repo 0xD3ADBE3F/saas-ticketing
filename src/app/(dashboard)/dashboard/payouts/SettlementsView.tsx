@@ -509,7 +509,7 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
                 </div>
                 <div>
                   <p className="text-gray-500 dark:text-gray-400">
-                    Service fees (excl. BTW)
+                    Platform fee (excl. BTW)
                   </p>
                   <p className="font-semibold text-gray-500 dark:text-gray-400">
                     {formatPrice(payoutSummary.totalServiceFeeExclVat)}
@@ -517,7 +517,7 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
                 </div>
                 <div>
                   <p className="text-gray-500 dark:text-gray-400">
-                    BTW op service fees (21%)
+                    BTW op platform fee (21%)
                   </p>
                   <p className="font-semibold text-gray-500 dark:text-gray-400">
                     {formatPrice(payoutSummary.totalServiceFeeVat)}
