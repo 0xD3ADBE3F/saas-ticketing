@@ -77,6 +77,7 @@ export type CreateEventData = {
   endsAt: Date;
   isPaid?: boolean; // Whether event has paid tickets (requires Mollie)
   vatRate?: "STANDARD_21" | "REDUCED_9" | "EXEMPT"; // VAT rate for tickets
+  passPaymentFeesToBuyer?: boolean; // Whether to pass payment processing fees to buyer
 };
 
 export type UpdateEventData = {
@@ -87,6 +88,7 @@ export type UpdateEventData = {
   endsAt?: Date;
   isPaid?: boolean;
   vatRate?: "STANDARD_21" | "REDUCED_9" | "EXEMPT"; // VAT rate for tickets
+  passPaymentFeesToBuyer?: boolean; // Whether to pass payment processing fees to buyer
 };
 
 export type EventServiceResult<T> =

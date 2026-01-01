@@ -4,7 +4,7 @@ import { generateAndSendTickets } from "@/server/services/paymentService";
 import { mollieConnectService } from "@/server/services/mollieConnectService";
 import { env } from "@/server/lib/env";
 import { paymentLogger } from "@/server/lib/logger";
-import { MOLLIE_FEE_INCL_VAT } from "@/server/lib/vat";
+import { calculatePaymentFee } from "@/server/services/feeService";
 
 // =============================================================================
 // Mollie Payment Service (Multi-tenant with Application Fees)
@@ -20,15 +20,15 @@ export type PaymentResult<T> =
 
 /**
  * Service Fee Structure (charged to buyer per order):
- * - Fixed: €0.50
+ * - Fixed: €0.35 excl VAT
  * - Variable: 2% of ticket total
- * - Label: "Servicekosten (incl. betalingskosten)"
- * - This fee goes to the platform (via Mollie application fee)
+ * - Label: "Servicekosten"
+ * - This fee is the platform's revenue (transferred via Mollie application fee)
  *
- * Platform receives: Service Fee - Mollie Fee
- * - The service fee is charged to the buyer
- * - Mollie's transaction fee (€0.35) is paid by the organizer
- * - Platform gets the difference via application fee
+ * Platform receives: Service Fee (full amount)
+ * - The service fee is charged to the buyer and goes to the platform
+ * - Mollie's transaction fee (€0.32 excl VAT, €0.3872 incl VAT) is separate
+ * - Optional: If event.passPaymentFeesToBuyer is enabled, payment fee is also charged to buyer
  *
  * Note: Service fee calculation is centralized in orderService.calculateServiceFee()
  */
@@ -36,15 +36,16 @@ export type PaymentResult<T> =
 /**
  * Calculate platform application fee
  * This is what the platform receives via Mollie's application fee feature
- * Formula: Service Fee - Mollie Fee
+ *
+ * The service fee is the platform's revenue - the full amount goes to the platform.
+ * Mollie's transaction costs are separate and paid by the organizer.
  *
  * @param serviceFeeInCents - The service fee charged to the buyer (from Order.serviceFee)
- * @returns Platform application fee in cents (never negative)
+ * @returns Platform application fee in cents (equals serviceFee)
  */
 export function calculateApplicationFee(serviceFeeInCents: number): number {
-  // Platform receives service fee minus Mollie's transaction fee
-  // Ensure we never send a negative application fee
-  return Math.max(0, serviceFeeInCents - MOLLIE_FEE_INCL_VAT);
+  // The service fee is the platform's revenue
+  return serviceFeeInCents;
 }
 
 /**
@@ -122,9 +123,8 @@ export async function createMolliePayment(
     const client = await mollieConnectService.getOrgClient(organizationId);
 
     // Calculate application fee
-    // The buyer pays serviceFee (€0.50 + 2%), which is included in order.totalAmount
-    // Platform receives: serviceFee - Mollie's transaction fee (€0.35)
-    // This is transferred immediately to platform's Mollie account
+    // The service fee is the platform's revenue and goes to the platform account
+    // Mollie's transaction fee is paid separately by the organizer
     const applicationFeeCents = calculateApplicationFee(order.serviceFee);
 
     // Create payment with application fee
@@ -134,9 +134,8 @@ export async function createMolliePayment(
       orderId,
       organizationId,
       totalAmount: formatAmount(order.totalAmount),
-      serviceFee: formatAmount(order.serviceFee),
       applicationFee: formatAmount(applicationFeeCents),
-      mollieFee: formatAmount(MOLLIE_FEE_INCL_VAT),
+      mollieFee: formatAmount(calculatePaymentFee().paymentFeeInclVat),
       profileId: org.mollieProfileId,
     }, "Creating Mollie payment");
 
@@ -152,18 +151,17 @@ export async function createMolliePayment(
       metadata: {
         orderId,
         organizationId: order.organizationId,
-        serviceFee: order.serviceFee,
-        applicationFee: applicationFeeCents,
-        mollieFee: MOLLIE_FEE_INCL_VAT,
+        applicationFee: order.serviceFee,
+        mollieFee: calculatePaymentFee().paymentFeeInclVat,
       },
       // Application fee goes directly to platform's Mollie account
-      // This is the service fee minus Mollie's transaction fee
+      // This is the full service fee amount (platform revenue)
       applicationFee: {
         amount: {
-          value: formatAmount(applicationFeeCents),
+          value: formatAmount(order.serviceFee),
           currency: "EUR",
         },
-        description: "Servicekosten",
+        description: "Servicekosten Entro ticketing",
       },
       // Enable test mode for development/testing
       ...(isTestMode && { testmode: true }),

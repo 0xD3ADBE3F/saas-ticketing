@@ -1,6 +1,6 @@
 import { prisma } from "@/server/lib/prisma";
 import { calculateApplicationFee } from "@/server/services/molliePaymentService";
-import { MOLLIE_FEE_INCL_VAT } from "@/server/lib/vat";
+import { calculatePaymentFee } from "@/server/services/feeService";
 
 /**
  * Payout Breakdown Structure:
@@ -25,6 +25,7 @@ import { MOLLIE_FEE_INCL_VAT } from "@/server/lib/vat";
 export interface EventPayoutBreakdown {
   eventId: string;
   eventTitle: string;
+  vatRate: string; // VAT rate for the event (STANDARD_21, REDUCED_9, or EXEMPT)
   ticketsSold: number;
   grossRevenue: number; // Total ticket sales in cents (incl. VAT)
   grossRevenueExclVat: number; // Ticket sales excluding VAT
@@ -71,6 +72,7 @@ export const payoutService = {
       select: {
         id: true,
         title: true,
+        vatRate: true,
       },
     });
 
@@ -144,7 +146,7 @@ export const payoutService = {
     );
 
     // Mollie transaction fees (€0.35 incl. VAT per order, paid by organizer)
-    const mollieFees = orders.length * MOLLIE_FEE_INCL_VAT;
+    const mollieFees = orders.length * calculatePaymentFee().paymentFeeInclVat;
 
     // Net payout: gross revenue minus Mollie fees (incl. VAT)
     // (Service fees go to platform via application fee)
@@ -153,6 +155,7 @@ export const payoutService = {
     return {
       eventId: event.id,
       eventTitle: event.title,
+      vatRate: event.vatRate,
       ticketsSold,
       grossRevenue,
       grossRevenueExclVat,

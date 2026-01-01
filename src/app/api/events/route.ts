@@ -15,6 +15,7 @@ const createEventSchema = z.object({
   endsAt: z.string().datetime("Ongeldige einddatum"),
   isPaid: z.boolean().optional(), // Whether event has paid tickets (requires Mollie)
   vatRate: z.enum(["STANDARD_21", "REDUCED_9", "EXEMPT"]).optional(), // VAT rate for paid events
+  passPaymentFeesToBuyer: z.boolean().optional(), // Pass payment fees to buyer toggle
 });
 
 /**
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
     endsAt: new Date(parsed.data.endsAt),
     isPaid: parsed.data.isPaid ?? true, // Default to paid event
     vatRate: parsed.data.vatRate || "STANDARD_21", // Default to 21% VAT
+    passPaymentFeesToBuyer: parsed.data.passPaymentFeesToBuyer ?? false, // Default to OFF
   });
 
   if (!result.success) {

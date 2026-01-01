@@ -1,70 +1,12 @@
 import { prisma } from "@/server/lib/prisma";
 import { orderRepo, OrderItemInput } from "@/server/repos/orderRepo";
 import type { Order, TicketType } from "@/generated/prisma";
-import { calculateServiceFeeWithVat } from "@/server/lib/vat";
+import { Prisma } from "@/generated/prisma";
+import { calculateOrderFees } from "@/server/services/feeService";
 
 // =============================================================================
-// Service Fee Configuration
+// Fee Calculation (delegates to feeService)
 // =============================================================================
-
-/**
- * Service fee configuration
- * This is charged once per order (buyer pays)
- * Applies to paid events only (free events have no service fee)
- *
- * STRUCTURE (as of 31 Dec 2024):
- * - Mollie fee: €0.29 excl. VAT + €0.06 VAT = €0.35 incl. VAT
- * - Platform fee: (€0.15 + 2% of ticket total) × 1.21 (incl. 21% VAT)
- *
- * Example (€50 ticket):
- * - Mollie: €0.35 incl. VAT
- * - Platform: (€0.15 + €1.00) × 1.21 = €1.39 incl. VAT
- * - Total: €1.74
- *
- * Label: "Servicekosten (incl. betalingskosten)"
- *
- * See src/server/lib/vat.ts for detailed calculation documentation
- */
-const SERVICE_FEE_CONFIG = {
-  // DEPRECATED: These values are no longer used directly
-  // Service fee is now calculated via calculateServiceFeeWithVat()
-  // which properly handles Mollie fee (VAT-exempt) vs Platform fee (21% VAT)
-  fixedFee: 50,
-  percentageFee: 0.02,
-  minimumFee: 50,
-  maximumFee: 500,
-};
-
-/**
- * Calculate service fee for an order with proper VAT handling
- *
- * IMPORTANT: This function now calculates the service fee with VAT correctly:
- * - Mollie fee (€0.29 excl. VAT): Subject to 21% VAT = €0.35 incl. VAT
- * - Platform fee (€0.15 + 2%): Subject to 21% VAT
- *
- * Fee is per order, not per ticket
- *
- * @param ticketTotal - Total ticket price in cents
- * @param eventConfig - Optional event-specific fee configuration (NOT YET IMPLEMENTED)
- * @returns Service fee including VAT (total charged to buyer)
- */
-export function calculateServiceFee(
-  ticketTotal: number,
-  eventConfig?: {
-    serviceFeeFixed?: number | null;
-    serviceFeePercentage?: number | null;
-    serviceFeeMinimum?: number | null;
-    serviceFeeMaximum?: number | null;
-  }
-): number {
-  if (ticketTotal === 0) return 0;
-
-  // TODO: Implement event-specific config support
-  // For now, always use the standard calculation with proper VAT
-  const breakdown = calculateServiceFeeWithVat(ticketTotal);
-
-  return breakdown.serviceFeeInclVat;
-}
 
 // =============================================================================
 // Order Service Types
@@ -96,6 +38,14 @@ export type OrderSummary = {
   }[];
   ticketTotal: number;
   serviceFee: number;
+  // Payment fee (optional, only if event.passPaymentFeesToBuyer = true)
+  paymentFee?: number;
+  paymentFeeBreakdown?: {
+    paymentFeeExclVat: number;
+    paymentFeeVat: number;
+    paymentFeeInclVat: number;
+    paymentMethod: string;
+  };
   totalAmount: number;
 };
 
@@ -204,20 +154,20 @@ export async function calculateOrderSummary(
     return { success: false, error: "Selecteer minimaal 1 ticket" };
   }
 
-  const serviceFee = calculateServiceFee(ticketTotal, {
-    serviceFeeFixed: event.serviceFeeFixed,
-    serviceFeePercentage: event.serviceFeePercentage,
-    serviceFeeMinimum: event.serviceFeeMinimum,
-    serviceFeeMaximum: event.serviceFeeMaximum,
-  });
-  const totalAmount = ticketTotal + serviceFee;
+  // Calculate all fees using the centralized fee service
+  const feeBreakdown = calculateOrderFees(ticketTotal, event.passPaymentFeesToBuyer);
+
+  // Total = tickets + service fee + payment fee (if enabled)
+  const totalAmount = feeBreakdown.totalAmount;
 
   return {
     success: true,
     data: {
       items: orderItems,
       ticketTotal,
-      serviceFee,
+      serviceFee: feeBreakdown.serviceFee.serviceFeeInclVat,
+      paymentFee: feeBreakdown.paymentFee?.paymentFeeInclVat,
+      paymentFeeBreakdown: feeBreakdown.paymentFee,
       totalAmount,
     },
   };
@@ -315,14 +265,21 @@ export async function createOrder(
         });
       }
 
-      // Calculate service fee with proper VAT breakdown
-      // Both Mollie fee (€0.29) and Platform fee have 21% VAT
-      const serviceFeeBreakdown = calculateServiceFeeWithVat(ticketTotal);
+      // Calculate all fees using the centralized fee service
+      const feeBreakdown = calculateOrderFees(ticketTotal, event.passPaymentFeesToBuyer);
 
-      const serviceFee = serviceFeeBreakdown.serviceFeeInclVat;
-      const serviceFeeExclVat = serviceFeeBreakdown.serviceFeeExclVat;
-      const serviceFeeVat = serviceFeeBreakdown.serviceFeeVat;
-      const totalAmount = ticketTotal + serviceFee;
+      const serviceFee = feeBreakdown.serviceFee.serviceFeeInclVat;
+      const serviceFeeExclVat = feeBreakdown.serviceFee.serviceFeeExclVat;
+      const serviceFeeVat = feeBreakdown.serviceFee.serviceFeeVat;
+
+      // Payment fee fields (optional) - use Decimal for precise storage
+      const paymentMethod = feeBreakdown.paymentFee ? "ideal" : undefined;
+      const paymentFee = feeBreakdown.paymentFee?.paymentFeeInclVat; // 38.72 (decimal)
+      const paymentFeeExclVat = feeBreakdown.paymentFee?.paymentFeeExclVat; // 32
+      const paymentFeeVat = feeBreakdown.paymentFee?.paymentFeeVat; // 6.72 (decimal)
+
+      // Total amount (round to cents for storage)
+      const totalAmount = Math.round(feeBreakdown.totalAmount);
 
       // Order expires in 30 minutes if not paid
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
@@ -340,6 +297,11 @@ export async function createOrder(
           serviceFeeVat,
           totalAmount,
           expiresAt,
+          // Payment fee fields (optional) - convert to Decimal for precision
+          paymentMethod: paymentFee ? paymentMethod : undefined,
+          paymentFeeBuyerExclVat: paymentFee ? new Prisma.Decimal(paymentFeeExclVat!) : undefined,
+          paymentFeeBuyerVatAmount: paymentFee ? new Prisma.Decimal(paymentFeeVat!) : undefined,
+          paymentFeeBuyerInclVat: paymentFee ? new Prisma.Decimal(paymentFee) : undefined,
         },
         orderItems
       );

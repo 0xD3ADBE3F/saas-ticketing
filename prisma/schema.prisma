@@ -110,6 +110,9 @@ model Event {
   isPaid         Boolean     @default(true) // Does event have paid tickets (requires Mollie)?
   vatRate        VatRate     @default(STANDARD_21) // VAT rate for tickets
 
+  // Pass payment fees to buyer (default: OFF)
+  passPaymentFeesToBuyer Boolean @default(false) // Show payment fees as separate line item
+
   // Service fee configuration (NULL = use platform defaults)
   // Platform admin can override these per event
   serviceFeeFixed      Int?    // Fixed fee in cents (e.g., 50 = €0.50)
@@ -217,10 +220,16 @@ model Order {
   serviceFee      Int         // Service fee in cents (VAT-inclusive)
   serviceFeeExclVat Int?      // Service fee excluding VAT (for reporting)
   serviceFeeVat   Int?        // Service fee VAT amount (for reporting)
+
+  // Payment fee passthrough (optional, only if event.passPaymentFeesToBuyer = true)
+  paymentMethod              String?  // Payment method used (ideal, bancontact, card)
+  paymentFeeBuyerExclVat     Decimal? @db.Decimal(10, 2) // Payment fee excl VAT in cents (e.g., 32.00)
+  paymentFeeBuyerVatAmount   Decimal? @db.Decimal(10, 2) // VAT on payment fee in cents (e.g., 6.72)
+  paymentFeeBuyerInclVat     Decimal? @db.Decimal(10, 2) // Total payment fee incl VAT in cents (e.g., 38.72)
+
   totalAmount     Int         // Grand total in cents (VAT-inclusive)
   status          OrderStatus @default(PENDING)
   paymentId       String?     @unique // Mollie payment ID
-  paymentMethod   String?
   paidAt          DateTime?
   refundedAt      DateTime?
   expiresAt       DateTime?   // When pending order expires

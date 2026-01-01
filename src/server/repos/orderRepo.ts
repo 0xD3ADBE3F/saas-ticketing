@@ -11,6 +11,11 @@ export type CreateOrderInput = {
   serviceFeeVat?: number;
   totalAmount: number;
   expiresAt?: Date;
+  // Payment fee passthrough fields (optional) - use Decimal for precision
+  paymentMethod?: string;
+  paymentFeeBuyerExclVat?: number | Prisma.Decimal;
+  paymentFeeBuyerVatAmount?: number | Prisma.Decimal;
+  paymentFeeBuyerInclVat?: number | Prisma.Decimal;
 };
 
 export type OrderItemInput = {
@@ -95,6 +100,11 @@ export const orderRepo = {
         serviceFeeVat: data.serviceFeeVat,
         totalAmount: data.totalAmount,
         expiresAt: data.expiresAt,
+        // Payment fee passthrough (optional)
+        paymentMethod: data.paymentMethod,
+        paymentFeeBuyerExclVat: data.paymentFeeBuyerExclVat,
+        paymentFeeBuyerVatAmount: data.paymentFeeBuyerVatAmount,
+        paymentFeeBuyerInclVat: data.paymentFeeBuyerInclVat,
         orderItems: {
           create: items.map((item) => ({
             ticketTypeId: item.ticketTypeId,

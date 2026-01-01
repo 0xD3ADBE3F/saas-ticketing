@@ -21,6 +21,7 @@ type OrderSummaryData = {
   serviceFee: number;
   ticketTotal: number;
   totalAmount: number;
+  paymentFee?: number; // Optional payment fee passthrough
 };
 
 export function EventTickets({
@@ -65,6 +66,7 @@ export function EventTickets({
             serviceFee: data.serviceFee,
             ticketTotal: data.ticketTotal,
             totalAmount: data.totalAmount,
+            paymentFee: data.paymentFee, // Include payment fee if present
           });
         }
       } catch (error) {
@@ -122,6 +124,7 @@ export function EventTickets({
           <OrderSummary
             selections={selections}
             ticketTypes={ticketTypes}
+            paymentFee={summary?.paymentFee}
             serviceFee={summary?.serviceFee}
           />
 

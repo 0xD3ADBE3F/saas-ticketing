@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { formatPrice } from "@/lib/currency";
+import { calculatePaymentFee } from "@/server/services/feeService";
 
 interface Balance {
   id: string;
@@ -27,6 +28,7 @@ interface Settlement {
 interface EventPayoutBreakdown {
   eventId: string;
   eventTitle: string;
+  vatRate: string;
   ticketsSold: number;
   grossRevenue: number;
   grossRevenueExclVat: number;
@@ -468,11 +470,11 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
             </div>
           </div>
 
-          {/* Per event breakdown */}
+          {/* Per VAT rate breakdown */}
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
             <div className="p-6 border-b border-gray-200 dark:border-gray-800">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Uitsplitsing per evenement
+                Uitsplitsing per BTW-tarief
               </h2>
             </div>
 
@@ -482,77 +484,198 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 dark:bg-gray-800">
+                <table className="w-full border-collapse">
+                  <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800 border-b-2 border-gray-200 dark:border-gray-700">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                         Evenement
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                         Tickets
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                         Omzet excl. BTW
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                         BTW tickets
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Service fees excl. BTW
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                        Service fees excl.
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        BTW service fees
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                        BTW service
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                         Platform fee
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                         Mollie fees
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                         Netto
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                    {payoutSummary.events.map((event) => (
-                      <tr
-                        key={event.eventId}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                      >
-                        <td className="px-6 py-4">
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {event.eventTitle}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                          {event.ticketsSold}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                          {formatPrice(event.grossRevenueExclVat)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                          {formatPrice(event.ticketVat)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                          {formatPrice(event.serviceFeeExclVat)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                          {formatPrice(event.serviceFeeVat)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                          -{formatPrice(event.platformFee)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                          -{formatPrice(event.mollieFees)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <span className="text-sm font-bold text-green-600 dark:text-green-400">
-                            {formatPrice(event.netPayout)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                  <tbody>
+                    {(() => {
+                      // Group events by VAT rate
+                      interface VatRateGroup {
+                        vatRate: string;
+                        events: EventPayoutBreakdown[];
+                        ticketsSold: number;
+                        grossRevenueExclVat: number;
+                        ticketVat: number;
+                        serviceFeeExclVat: number;
+                        serviceFeeVat: number;
+                        platformFee: number;
+                        mollieFees: number;
+                        netPayout: number;
+                      }
+
+                      const vatRateGroups = payoutSummary.events.reduce(
+                        (groups, event) => {
+                          const rate = event.vatRate;
+                          if (!groups[rate]) {
+                            groups[rate] = {
+                              vatRate: rate,
+                              events: [],
+                              ticketsSold: 0,
+                              grossRevenueExclVat: 0,
+                              ticketVat: 0,
+                              serviceFeeExclVat: 0,
+                              serviceFeeVat: 0,
+                              platformFee: 0,
+                              mollieFees: 0,
+                              netPayout: 0,
+                            };
+                          }
+                          groups[rate].events.push(event);
+                          groups[rate].ticketsSold += event.ticketsSold;
+                          groups[rate].grossRevenueExclVat +=
+                            event.grossRevenueExclVat;
+                          groups[rate].ticketVat += event.ticketVat;
+                          groups[rate].serviceFeeExclVat +=
+                            event.serviceFeeExclVat;
+                          groups[rate].serviceFeeVat += event.serviceFeeVat;
+                          groups[rate].platformFee += event.platformFee;
+                          groups[rate].mollieFees += event.mollieFees;
+                          groups[rate].netPayout += event.netPayout;
+                          return groups;
+                        },
+                        {} as Record<string, VatRateGroup>
+                      );
+
+                      const vatRateLabels: Record<string, string> = {
+                        STANDARD_21: "21% (standaard)",
+                        REDUCED_9: "9% (verlaagd)",
+                        EXEMPT: "0% (vrijgesteld)",
+                      };
+
+                      return Object.values(vatRateGroups).flatMap(
+                        (group: VatRateGroup, groupIndex: number) => [
+                          // VAT rate header row
+                          <tr
+                            key={`vat-${group.vatRate}`}
+                            className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-t-2 border-blue-200 dark:border-blue-700"
+                          >
+                            <td className="px-6 py-3" colSpan={9}>
+                              <div className="flex items-center gap-3">
+                                <div className="h-8 w-1 bg-blue-500 dark:bg-blue-400 rounded-full"></div>
+                                <span className="text-sm font-bold text-blue-900 dark:text-blue-100 uppercase tracking-wide">
+                                  BTW-tarief:{" "}
+                                  {vatRateLabels[group.vatRate] ||
+                                    group.vatRate}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>,
+                          // Individual event rows
+                          ...group.events.map((event, eventIndex) => (
+                            <tr
+                              key={event.eventId}
+                              className="hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors border-b border-gray-100 dark:border-gray-800"
+                            >
+                              <td className="px-6 py-3 pl-12">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                    {event.eventTitle}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium text-gray-600 dark:text-gray-300">
+                                {event.ticketsSold}
+                              </td>
+                              <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium text-gray-900 dark:text-white">
+                                {formatPrice(event.grossRevenueExclVat)}
+                              </td>
+                              <td className="px-6 py-3 whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-400">
+                                {formatPrice(event.ticketVat)}
+                              </td>
+                              <td className="px-6 py-3 whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-400">
+                                {formatPrice(event.serviceFeeExclVat)}
+                              </td>
+                              <td className="px-6 py-3 whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-400">
+                                {formatPrice(event.serviceFeeVat)}
+                              </td>
+                              <td className="px-6 py-3 whitespace-nowrap text-right text-sm text-red-600 dark:text-red-400 font-medium">
+                                -{formatPrice(event.platformFee)}
+                              </td>
+                              <td className="px-6 py-3 whitespace-nowrap text-right text-sm text-red-600 dark:text-red-400 font-medium">
+                                -{formatPrice(event.mollieFees)}
+                              </td>
+                              <td className="px-6 py-3 whitespace-nowrap text-right">
+                                <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                                  {formatPrice(event.netPayout)}
+                                </span>
+                              </td>
+                            </tr>
+                          )),
+                          // Group subtotal row
+                          group.events.length > 1 ? (
+                            <tr
+                              key={`subtotal-${group.vatRate}`}
+                              className="bg-blue-100/50 dark:bg-blue-900/30 border-b-2 border-blue-300 dark:border-blue-700"
+                            >
+                              <td className="px-6 py-3.5 pl-12">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 bg-blue-500 dark:bg-blue-400 rounded-full"></div>
+                                  <span className="text-sm font-bold text-blue-900 dark:text-blue-100 uppercase tracking-wide">
+                                    Subtotaal {vatRateLabels[group.vatRate]}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-3.5 whitespace-nowrap text-right text-sm font-bold text-blue-900 dark:text-blue-100">
+                                {group.ticketsSold}
+                              </td>
+                              <td className="px-6 py-3.5 whitespace-nowrap text-right text-sm font-bold text-blue-900 dark:text-blue-100">
+                                {formatPrice(group.grossRevenueExclVat)}
+                              </td>
+                              <td className="px-6 py-3.5 whitespace-nowrap text-right text-sm font-bold text-blue-900 dark:text-blue-100">
+                                {formatPrice(group.ticketVat)}
+                              </td>
+                              <td className="px-6 py-3.5 whitespace-nowrap text-right text-sm font-bold text-blue-900 dark:text-blue-100">
+                                {formatPrice(group.serviceFeeExclVat)}
+                              </td>
+                              <td className="px-6 py-3.5 whitespace-nowrap text-right text-sm font-bold text-blue-900 dark:text-blue-100">
+                                {formatPrice(group.serviceFeeVat)}
+                              </td>
+                              <td className="px-6 py-3.5 whitespace-nowrap text-right text-sm font-bold text-red-700 dark:text-red-400">
+                                -{formatPrice(group.platformFee)}
+                              </td>
+                              <td className="px-6 py-3.5 whitespace-nowrap text-right text-sm font-bold text-red-700 dark:text-red-400">
+                                -{formatPrice(group.mollieFees)}
+                              </td>
+                              <td className="px-6 py-3.5 whitespace-nowrap text-right">
+                                <span className="text-sm font-bold text-green-700 dark:text-green-400 text-base">
+                                  {formatPrice(group.netPayout)}
+                                </span>
+                              </td>
+                            </tr>
+                          ) : null,
+                        ]
+                      );
+                    })()}
                   </tbody>
                 </table>
               </div>
@@ -579,11 +702,13 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
           </svg>
           <p className="text-sm text-blue-700 dark:text-blue-300">
             Uitbetalingen worden verwerkt via Mollie. De platform fee (service
-            fee minus €0,35 Mollie kosten incl. BTW) wordt automatisch
-            ingehouden. De Mollie transactiekosten (€0,35 per order, incl. BTW)
-            worden van je uitbetaling afgetrokken. BTW uitsplitsing toont de
-            belastbare omzet voor je BTW-aangifte. Je kunt je bankrekening en
-            uitbetalingsfrequentie beheren in het{" "}
+            fee minus {formatPrice(calculatePaymentFee().paymentFeeInclVat)}{" "}
+            Mollie kosten incl. BTW) wordt automatisch ingehouden. De Mollie
+            transactiekosten (
+            {formatPrice(calculatePaymentFee().paymentFeeInclVat)} per order,
+            incl. BTW) worden van je uitbetaling afgetrokken. BTW uitsplitsing
+            toont de belastbare omzet voor je BTW-aangifte. Je kunt je
+            bankrekening en uitbetalingsfrequentie beheren in het{" "}
             <a
               href="https://my.mollie.com/dashboard"
               target="_blank"

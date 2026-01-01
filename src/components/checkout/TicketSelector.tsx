@@ -211,12 +211,14 @@ interface OrderSummaryProps {
   selections: TicketSelection[];
   ticketTypes: TicketTypeForSelection[];
   serviceFee?: number; // in cents, if already calculated
+  paymentFee?: number; // in cents, optional payment fee passthrough
 }
 
 export function OrderSummary({
   selections,
   ticketTypes,
   serviceFee: preCalculatedServiceFee,
+  paymentFee: preCalculatedPaymentFee,
 }: OrderSummaryProps) {
   const summary = useMemo(() => {
     let ticketTotal = 0;
@@ -243,10 +245,16 @@ export function OrderSummary({
     // Use pre-calculated service fee from server
     // Never calculate client-side - always fetch from API
     const serviceFee = preCalculatedServiceFee ?? 0;
-    const totalAmount = ticketTotal + serviceFee;
+    const paymentFee = preCalculatedPaymentFee ?? 0;
+    const totalAmount = ticketTotal + serviceFee + paymentFee;
 
-    return { items, ticketTotal, serviceFee, totalAmount };
-  }, [selections, ticketTypes, preCalculatedServiceFee]);
+    return { items, ticketTotal, serviceFee, paymentFee, totalAmount };
+  }, [
+    selections,
+    ticketTypes,
+    preCalculatedServiceFee,
+    preCalculatedPaymentFee,
+  ]);
 
   if (summary.items.length === 0) {
     return null;
@@ -274,6 +282,20 @@ export function OrderSummary({
         <div className="flex justify-between text-gray-600 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-700">
           <span>Servicekosten</span>
           <span>{formatPrice(summary.serviceFee)}</span>
+          {summary.paymentFee > 0 && (
+            <div className="flex justify-between text-gray-600 dark:text-gray-400">
+              <span className="flex items-center gap-1">
+                Betaalkosten
+                <span
+                  className="inline-block w-4 h-4 rounded-full border border-gray-400 text-xs leading-none flex items-center justify-center cursor-help"
+                  title="Deze kosten dekken de betalingsverwerking. De daadwerkelijke kosten kunnen per betaalmethode afwijken."
+                >
+                  ?
+                </span>
+              </span>
+              <span>{formatPrice(summary.paymentFee)}</span>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-between font-medium text-gray-900 dark:text-white pt-2 border-t border-gray-200 dark:border-gray-700">

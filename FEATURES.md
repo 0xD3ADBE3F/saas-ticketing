@@ -453,6 +453,205 @@
   - TypeScript compilation successful
   - Production build successful
 
+#### Pass Payment Fees to Buyer (Event-Level Toggle)
+
+**Status:** ✅ Implemented (31 December 2024)
+
+**Overview:**
+Organizers can optionally pass estimated payment processing fees to buyers as a separate line item in checkout. This is an event-level toggle labeled "Betaalkosten doorberekenen aan koper" (Pass payment fees to buyer).
+
+**Key Characteristics:**
+
+- Toggle exists per event (default: OFF)
+- When enabled, checkout shows an extra line: "Betaalkosten" (payment fees)
+- Fee is an **estimated** payment processing cost
+- Actual costs are charged by Mollie to organizer (not Entro)
+- Never shows "Mollie" branding; kept generic as "Betaalkosten"
+- NOT part of Entro's revenue (separate line item, not invoiced to organizer)
+
+**Data Model:**
+
+```typescript
+// events table
+pass_payment_fees_to_buyer: boolean (default: false)
+
+// orders table
+payment_method: text (e.g., "ideal", "bancontact", "card")
+payment_fee_buyer_excl_vat: numeric (amount charged to buyer, excl VAT)
+payment_fee_buyer_vat_amount: numeric (VAT on payment fee)
+payment_fee_buyer_incl_vat: numeric (total payment fee charged to buyer)
+```
+
+**Pricing Logic:**
+
+A) **Entro Service Fee (unchanged):**
+
+- base_excl_vat = 0.35 + (ticket_subtotal × 0.02)
+- entro_vat = round(base_excl_vat × 0.21, 2)
+- entro_incl_vat = base_excl_vat + entro_vat
+- Label: "Servicekosten"
+
+B) **Payment Fee to Buyer (new, only if toggle ON):**
+
+- Explicitly described as "estimated payment fee"
+- iDEAL: fixed €0.32 excl VAT (MVP implementation)
+- Other methods: €0.00 (safe default, can be configured later)
+- VAT handling: payment_fee_incl_vat = round(payment_fee_excl_vat × 1.21, 2)
+- Stored: both excl and incl amounts for auditing
+- **IMPORTANT:** Not included in Entro's VAT base (not Entro revenue)
+
+**Checkout UI Behavior:**
+
+```
+Tickets subtotal:         €50.00
+Servicekosten:            €1.35    [Entro fee with VAT]
+Betaalkosten:             €0.39    [Only if toggle ON, with tooltip]
+────────────────────────────────
+Total:                    €51.74   (or €51.35 if toggle OFF)
+```
+
+Tooltip for "Betaalkosten":
+"Deze kosten dekken de betalingsverwerking. De daadwerkelijke kosten kunnen per betaalmethode afwijken."
+
+**Event Settings UI:**
+
+- Label (NL): "Betaalkosten doorberekenen aan koper"
+- Helper text: "Toon betalingskosten als aparte regel in de checkout. Dit bedrag is een schatting; de daadwerkelijke kosten worden door Mollie aan jou gefactureerd."
+- Toggle component with clear on/off states
+- Only event owner/admin can change
+- Persisted via server action with auth checks
+
+**Backend Behavior:**
+
+_Checkout Calculation:_
+
+1. Check if `event.pass_payment_fees_to_buyer === true`
+2. If yes, determine payment method (iDEAL by default for MVP)
+3. Calculate payment fee based on method config
+4. Apply 21% VAT to payment fee
+5. Add to order total
+6. Store all fee components in order record
+
+_Order Persistence:_
+
+- Always store `payment_method` (for auditing)
+- If toggle ON: store `payment_fee_buyer_excl_vat`, `payment_fee_buyer_vat_amount`, `payment_fee_buyer_incl_vat`
+- If toggle OFF: store NULL or 0 for payment fee fields
+- Ensure idempotency (don't recalculate on webhook retry)
+
+**Invoicing/Reporting:**
+
+- Entro → Organizer invoice: MUST include only Entro platform fee + VAT
+- Payment fee charged to buyer: NOT invoiced as Entro revenue
+- Optional informational section on organizer dashboard:
+  ```
+  Doorberekende betaalkosten (door koper betaald): €X (incl. btw)
+  Mollie factureert de daadwerkelijke betaalproviderkosten rechtstreeks aan de organisator.
+  ```
+
+**Edge Cases & Rules:**
+
+1. **Free tickets:**
+   - If ticket subtotal = €0.00, do NOT charge any fees (Entro fee = 0, payment fee = 0)
+   - Toggle is ignored for free orders
+
+2. **Refunds:**
+   - Entro service fee: NOT refunded (kept by platform)
+   - Payment fee: Refunded to buyer (they paid it, they get it back)
+   - Note: Mollie's actual provider fees are not recovered by organizer
+   - Database: set `payment_fee_buyer_*` to negative values for refunded amounts
+
+3. **Payment method unknown at checkout:**
+   - MVP: Default to iDEAL (€0.32 excl VAT)
+   - Future: Allow method selection before checkout or update after redirect
+   - If method changes, recalculate (with idempotency check)
+
+4. **Rounding:**
+   - All amounts: Math.round() to nearest cent (2 decimals)
+   - Applied consistently across fee calculations
+   - VAT calculations use precise formula: amount × 0.21
+
+**Implementation Details:**
+
+_Database Migration:_
+
+```sql
+-- Migration: 20241231_add_payment_fee_passthrough
+ALTER TABLE events
+  ADD COLUMN pass_payment_fees_to_buyer BOOLEAN NOT NULL DEFAULT false;
+
+ALTER TABLE orders
+  ADD COLUMN payment_method TEXT,
+  ADD COLUMN payment_fee_buyer_excl_vat NUMERIC(10,2) DEFAULT 0,
+  ADD COLUMN payment_fee_buyer_vat_amount NUMERIC(10,2) DEFAULT 0,
+  ADD COLUMN payment_fee_buyer_incl_vat NUMERIC(10,2) DEFAULT 0;
+
+-- Index for reporting
+CREATE INDEX idx_orders_payment_method ON orders(payment_method);
+```
+
+_Backfill Strategy:_
+
+- Existing events: `pass_payment_fees_to_buyer` defaults to `false` (no behavior change)
+- Existing orders: payment fee fields default to 0 (accurate, as feature didn't exist)
+
+_Utilities (src/server/lib/paymentFees.ts):_
+
+```typescript
+export const PAYMENT_METHOD_FEES: Record<string, number> = {
+  ideal: 32, // €0.32 excl VAT
+  bancontact: 0, // TODO: define
+  card: 0, // TODO: define
+  // Add more as needed
+};
+
+export function calculatePaymentFeeWithVat(paymentMethod: string): {
+  paymentFeeExclVat: number;
+  paymentFeeVat: number;
+  paymentFeeInclVat: number;
+} {
+  const feeExclVat = PAYMENT_METHOD_FEES[paymentMethod] || 0;
+  const feeVat = Math.round(feeExclVat * 0.21);
+  const feeInclVat = feeExclVat + feeVat;
+
+  return {
+    paymentFeeExclVat: feeExclVat,
+    paymentFeeVat: feeVat,
+    paymentFeeInclVat: feeInclVat,
+  };
+}
+```
+
+_Testing:_
+
+- ✅ Unit tests: `calculatePaymentFeeWithVat()` for all methods
+- ✅ Unit tests: iDEAL fee €0.32 → €0.39 incl VAT
+- ✅ Integration test: toggle ON changes checkout total
+- ✅ Integration test: toggle OFF excludes payment fee
+- ✅ Integration test: free orders ignore toggle
+- ✅ E2E test: full checkout flow with payment fee
+
+**Benefits:**
+
+- **Transparency:** Buyers see exactly what they're paying for
+- **Organizer choice:** Can decide to absorb fees or pass them on
+- **Accurate accounting:** Separate tracking of payment fees vs platform fees
+- **Compliance:** Clear breakdown for tax/accounting purposes
+
+**Limitations (MVP):**
+
+- Only iDEAL fee configured (€0.32 excl VAT)
+- Payment method selection not dynamic (defaults to iDEAL)
+- No A/B testing on conversion impact
+- Cannot adjust fee per event (uses global config)
+
+**Future Enhancements:**
+
+- Configure fees per payment method (admin UI)
+- Allow payment method selection before checkout
+- Per-event fee customization
+- Analytics: conversion rate with/without payment fee passthrough
+
 #### Subscription System Removed
 
 - ✅ **Simplified to service fee model** - Removed all subscription/plan-based logic

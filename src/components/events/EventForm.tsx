@@ -19,6 +19,7 @@ interface FormData {
   endsAt: string;
   isPaid: boolean;
   vatRate: VatRate;
+  passPaymentFeesToBuyer: boolean;
 }
 
 export function EventForm({ event, mode }: EventFormProps) {
@@ -53,6 +54,7 @@ export function EventForm({ event, mode }: EventFormProps) {
       : getDefaultEndDate(),
     isPaid: event?.isPaid ?? true,
     vatRate: event?.vatRate || "STANDARD_21",
+    passPaymentFeesToBuyer: event?.passPaymentFeesToBuyer ?? false,
   });
 
   const handleChange = (
@@ -90,6 +92,7 @@ export function EventForm({ event, mode }: EventFormProps) {
           endsAt: new Date(formData.endsAt).toISOString(),
           isPaid: formData.isPaid,
           vatRate: formData.vatRate,
+          passPaymentFeesToBuyer: formData.passPaymentFeesToBuyer,
         }),
       });
 
@@ -324,6 +327,44 @@ export function EventForm({ event, mode }: EventFormProps) {
         </div>
       )}
 
+      {/* Pass Payment Fees to Buyer (only for paid events) */}
+      {formData.isPaid && (
+        <div>
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="passPaymentFeesToBuyer"
+              checked={formData.passPaymentFeesToBuyer}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  passPaymentFeesToBuyer: e.target.checked,
+                }))
+              }
+              className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <div className="flex-1">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Betaalkosten doorberekenen aan koper
+              </span>
+              <p className="mt-1 text-sm text-gray-500">
+                Toon betalingskosten als aparte regel in de checkout. Dit bedrag
+                is een schatting; de daadwerkelijke kosten worden door Mollie
+                aan jou gefactureerd.
+              </p>
+              {formData.passPaymentFeesToBuyer && (
+                <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-sm text-blue-700 dark:text-blue-300">
+                  <strong>Let op:</strong> Kopers zien een extra regel
+                  "Betaalkosten" (geschat €0,39 voor iDEAL) in hun winkelwagen.
+                  De werkelijke kosten variëren per betaalmethode.
+                </div>
+              )}
+            </div>
+          </label>
+        </div>
+      )}
+
+      {/*
       {/* Actions */}
       <div className="flex flex-col sm:flex-row justify-between gap-4 pt-4 border-t border-gray-200 dark:border-gray-800">
         <div>

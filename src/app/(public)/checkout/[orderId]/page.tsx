@@ -295,6 +295,23 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
                   <span>Servicekosten</span>
                   <span>{formatPrice(order.serviceFee)}</span>
                 </div>
+                {order.paymentFeeBuyerInclVat &&
+                  Number(order.paymentFeeBuyerInclVat) > 0 && (
+                    <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                      <span className="flex items-center gap-1">
+                        Betaalkosten
+                        <span
+                          className="inline-block w-4 h-4 rounded-full border border-gray-400 text-xs leading-none flex items-center justify-center cursor-help"
+                          title="Deze kosten dekken de betalingsverwerking. De daadwerkelijke kosten kunnen per betaalmethode afwijken."
+                        >
+                          ?
+                        </span>
+                      </span>
+                      <span>
+                        {formatPrice(Number(order.paymentFeeBuyerInclVat))}
+                      </span>
+                    </div>
+                  )}
                 <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700 font-medium text-gray-900 dark:text-white">
                   <span>Totaal</span>
                   <span>{formatPrice(order.totalAmount)}</span>

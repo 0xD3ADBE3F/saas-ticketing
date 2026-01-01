@@ -25,10 +25,10 @@ vi.mock("@/server/lib/prisma", () => ({
 
 import { prisma } from "@/server/lib/prisma";
 import {
-  calculateServiceFee,
   calculateOrderSummary,
   createOrder,
 } from "@/server/services/orderService";
+import { calculateServiceFee } from "@/server/services/feeService";
 
 const mockPrisma = prisma as unknown as {
   event: {
@@ -57,55 +57,60 @@ const mockPrisma = prisma as unknown as {
 describe("Service fee calculation", () => {
   describe("calculateServiceFee", () => {
     it("should return 0 for free orders", () => {
-      expect(calculateServiceFee(0)).toBe(0);
+      const result = calculateServiceFee(0);
+      expect(result.serviceFeeInclVat).toBe(0);
     });
 
     it("should calculate service fee for small orders (minimum fee applies)", () => {
       // For €5 order (500 cents):
-      // Mollie: €0.29 (29 cents)
-      // Platform excl VAT: €0.21 + (€5 × 2%) = €0.31 (31 cents)
-      // Platform VAT (21%): €0.31 × 0.21 = €0.07 (7 cents, rounded)
-      // Total: €0.29 + €0.31 + €0.07 = €0.67 (67 cents)
-      const fee = calculateServiceFee(500);
-      expect(fee).toBe(67);
+      // Platform fixed: €0.35 (35 cents)
+      // Platform variable: €5 × 2% = €0.10 (10 cents)
+      // Platform excl VAT: 45 cents
+      // Platform VAT (21%): 45 × 0.21 = 9.45 → 9 cents
+      // Total: 45 + 9 = 54 cents (€0.54)
+      const result = calculateServiceFee(500);
+      expect(result.serviceFeeInclVat).toBe(54);
     });
 
     it("should calculate service fee for medium orders", () => {
       // For €50 order (5000 cents):
-      // Mollie: €0.29 (29 cents)
-      // Platform excl VAT: €0.21 + (€50 × 2%) = €1.21 (121 cents)
-      // Platform VAT (21%): €1.21 × 0.21 = €0.25 (25 cents, rounded)
-      // Total: €0.29 + €1.21 + €0.25 = €1.75 (175 cents)
-      const fee = calculateServiceFee(5000);
-      expect(fee).toBe(175);
+      // Platform fixed: €0.35 (35 cents)
+      // Platform variable: €50 × 2% = €1.00 (100 cents)
+      // Platform excl VAT: 135 cents
+      // Platform VAT (21%): 135 × 0.21 = 28.35 → 28 cents
+      // Total: 135 + 28 = 163 cents (€1.63)
+      const result = calculateServiceFee(5000);
+      expect(result.serviceFeeInclVat).toBe(163);
     });
 
     it("should calculate service fee for large orders", () => {
       // For €500 order (50000 cents):
-      // Mollie: €0.29 (29 cents)
-      // Platform excl VAT: €0.21 + (€500 × 2%) = €10.21 (1021 cents)
-      // Platform VAT (21%): €10.21 × 0.21 = €2.14 (214 cents, rounded)
-      // Total: €0.29 + €10.21 + €2.14 = €12.64 (1264 cents)
-      const fee = calculateServiceFee(50000);
-      expect(fee).toBe(1264);
+      // Platform fixed: €0.35 (35 cents)
+      // Platform variable: €500 × 2% = €10.00 (1000 cents)
+      // Platform excl VAT: 1035 cents
+      // Platform VAT (21%): 1035 × 0.21 = 217.35 → 217 cents
+      // Total: 1035 + 217 = 1252 cents (€12.52)
+      const result = calculateServiceFee(50000);
+      expect(result.serviceFeeInclVat).toBe(1252);
     });
 
     it("should apply minimum fee for very small orders", () => {
       // For €1 order (100 cents):
-      // Fixed: 50 + Percentage: 2.5 = 52.5, rounded to 53
-      // Min is 50, so 53 is returned
-      const fee = calculateServiceFee(100);
-      expect(fee).toBeGreaterThanOrEqual(50);
+      // Platform fixed: 35 + Platform variable: 2 = 37 cents excl VAT
+      // VAT: 8 cents → Total: 45 cents
+      const result = calculateServiceFee(100);
+      expect(result.serviceFeeInclVat).toBeGreaterThanOrEqual(45);
     });
 
     it("should be consistent - same input gives same output", () => {
-      const fee1 = calculateServiceFee(2500);
-      const fee2 = calculateServiceFee(2500);
-      expect(fee1).toBe(fee2);
+      const result1 = calculateServiceFee(2500);
+      const result2 = calculateServiceFee(2500);
+      expect(result1.serviceFeeInclVat).toBe(result2.serviceFeeInclVat);
     });
 
     it("should use event-specific config when provided", () => {
-      // Custom event config: €1.00 fixed + 5%
+      // NOTE: Event-specific config is not yet implemented
+      // This test documents that custom config is TODO
       const eventConfig = {
         serviceFeeFixed: 100,
         serviceFeePercentage: 0.05,
@@ -113,25 +118,17 @@ describe("Service fee calculation", () => {
         serviceFeeMaximum: 1000,
       };
 
-      // NOTE: Event-specific config is not yet implemented (marked as TODO)
-      // Currently falls back to default structure
-      // For €50 order (5000 cents): €1.75 (same as default)
-      const fee = calculateServiceFee(5000, eventConfig);
-      expect(fee).toBe(175); // Falls back to default until custom config is implemented
+      // For now, calculateServiceFee doesn't accept config parameter
+      // It uses global constants from feeService
+      const result = calculateServiceFee(5000);
+      expect(result.serviceFeeInclVat).toBe(163); // Uses default structure
     });
 
     it("should fall back to defaults when event config is null", () => {
-      const eventConfig = {
-        serviceFeeFixed: null,
-        serviceFeePercentage: null,
-        serviceFeeMinimum: null,
-        serviceFeeMaximum: null,
-      };
-
-      // Should use new default: Mollie €0.29 + Platform (€0.21 + 2%) × 1.21
-      // For €50: €1.75
-      const fee = calculateServiceFee(5000, eventConfig);
-      expect(fee).toBe(175); // New default with proper VAT treatment
+      // Service fee now uses global constants, no event config supported yet
+      // For €50: €1.63
+      const result = calculateServiceFee(5000);
+      expect(result.serviceFeeInclVat).toBe(163);
     });
   });
 });
@@ -490,29 +487,32 @@ describe("Order creation", () => {
 describe("Service fee edge cases", () => {
   it("should apply per-order, not per-ticket", () => {
     // Two identical orders should have same service fee
-    const singleTicketFee = calculateServiceFee(2500);
-    const twoTicketsFee = calculateServiceFee(5000);
+    const singleTicketResult = calculateServiceFee(2500);
+    const twoTicketsResult = calculateServiceFee(5000);
 
     // Fee for 2 tickets should not be 2x single ticket fee
-    expect(twoTicketsFee).not.toBe(singleTicketFee * 2);
+    expect(twoTicketsResult.serviceFeeInclVat).not.toBe(singleTicketResult.serviceFeeInclVat * 2);
 
     // But it should be higher due to percentage component
-    expect(twoTicketsFee).toBeGreaterThan(singleTicketFee);
+    expect(twoTicketsResult.serviceFeeInclVat).toBeGreaterThan(singleTicketResult.serviceFeeInclVat);
   });
 
   it("should handle edge case at minimum boundary", () => {
-    // Very small amounts should still return minimum fee
-    const fee = calculateServiceFee(1);
-    expect(fee).toBeGreaterThanOrEqual(50); // minimum fee
+    // Very small amounts should still calculate correctly
+    const result = calculateServiceFee(1);
+    // Platform fixed: 35 + Platform variable: 0 = 35 cents excl VAT
+    // VAT: 7 cents → Total: 42 cents
+    expect(result.serviceFeeInclVat).toBeGreaterThanOrEqual(42);
   });
 
   it("should handle edge case at maximum boundary", () => {
     // Very large amounts (€10,000 order):
-    // Mollie: €0.29
-    // Platform excl VAT: €0.21 + (€10,000 × 2%) = €200.21
-    // Platform VAT: €200.21 × 0.21 = €42.04
-    // Total: €242.54 (24254 cents)
-    const fee = calculateServiceFee(1000000);
-    expect(fee).toBe(24254); // No cap in new structure
+    // Platform fixed: €0.35 (35 cents)
+    // Platform variable: €10,000 × 2% = €200.00 (20000 cents)
+    // Platform excl VAT: 20035 cents
+    // Platform VAT: 20035 × 0.21 = 4207.35 → 4207 cents
+    // Total: 20035 + 4207 = 24242 cents (€242.42)
+    const result = calculateServiceFee(1000000);
+    expect(result.serviceFeeInclVat).toBe(24242);
   });
 });
