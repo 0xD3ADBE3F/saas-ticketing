@@ -11,6 +11,13 @@
       "env": {
         "MOLLIE_API_OAUTH_ORG_TOKEN": "access_27Kq6ysHnPcGV2UWhasEBU7cJysfjNm6Maay3TPH"
       }
+    },
+    "shadcn": {
+      "command": "npx",
+      "args": [
+        "shadcn@latest",
+        "mcp"
+      ]
     }
   }
 }

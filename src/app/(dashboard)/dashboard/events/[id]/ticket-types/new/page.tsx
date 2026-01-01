@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getUser } from "@/server/lib/supabase";
 import { getEvent } from "@/server/services/eventService";
 import { TicketTypeForm } from "@/components/ticket-types/TicketTypeForm";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface NewTicketTypePageProps {
   params: Promise<{ id: string }>;
@@ -48,13 +49,15 @@ export default async function NewTicketTypePage({
 
       <h1 className="text-2xl font-bold mb-6">Nieuw tickettype</h1>
 
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-        <TicketTypeForm
-          eventId={eventId}
-          eventIsPaid={event.isPaid}
-          mode="create"
-        />
-      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <TicketTypeForm
+            eventId={eventId}
+            eventIsPaid={event.isPaid}
+            mode="create"
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

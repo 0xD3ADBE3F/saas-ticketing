@@ -8,6 +8,9 @@ import {
   type TicketTypeForSelection,
   type TicketSelection,
 } from "@/components/checkout";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Ticket } from "lucide-react";
 
 interface EventTicketsProps {
   eventSlug: string;
@@ -91,11 +94,11 @@ export function EventTickets({
 
   if (ticketTypes.length === 0) {
     return (
-      <div className="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-        <p className="text-gray-500 dark:text-gray-400">
-          Er zijn nog geen tickets beschikbaar voor dit evenement.
-        </p>
-      </div>
+      <EmptyState
+        icon={Ticket}
+        title="Geen tickets beschikbaar"
+        description="Er zijn nog geen tickets beschikbaar voor dit evenement."
+      />
     );
   }
 
@@ -128,16 +131,17 @@ export function EventTickets({
             serviceFee={summary?.serviceFee}
           />
 
-          <button
+          <Button
             type="button"
             onClick={handleProceedToCheckout}
             disabled={isLoadingSummary}
-            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+            className="w-full"
+            size="lg"
           >
             {isLoadingSummary
               ? "Berekenen..."
               : `Doorgaan naar afrekenen (${totalTickets} ${totalTickets === 1 ? "ticket" : "tickets"})`}
-          </button>
+          </Button>
         </>
       )}
     </div>

@@ -2,6 +2,7 @@ import { getUser } from "@/server/lib/supabase";
 import { redirect } from "next/navigation";
 import { prisma } from "@/server/lib/prisma";
 import { TerminalList } from "@/components/dashboard/TerminalList";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function TerminalsPage() {
   const user = await getUser();
@@ -45,15 +46,10 @@ export default async function TerminalsPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Scanner Terminals
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Maak inlogcodes voor deur-personeel om tickets te scannen op hun
-          mobiel
-        </p>
-      </div>
+      <PageHeader
+        title="Scanner Terminals"
+        description="Maak inlogcodes voor deur-personeel om tickets te scannen op hun mobiel"
+      />
 
       <TerminalList
         terminals={terminals.map((t) => ({

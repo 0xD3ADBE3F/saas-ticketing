@@ -3,6 +3,8 @@ import { getUser } from "@/server/lib/supabase";
 import { getUserOrganizations } from "@/server/services/organizationService";
 import { MollieConnection } from "@/components/dashboard/MollieConnection";
 import { OrganizationForm } from "@/components/dashboard/OrganizationForm";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default async function SettingsPage() {
   const user = await getUser();
@@ -22,43 +24,53 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-6">
       {/* Mollie Connection */}
-      <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-        <h2 className="font-semibold mb-4">Betalingen</h2>
-        <MollieConnection organizationId={currentOrg.id} />
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle>Betalingen</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MollieConnection organizationId={currentOrg.id} />
+        </CardContent>
+      </Card>
 
-      <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-        <h2 className="font-semibold mb-4">Algemeen</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          Deze gegevens zijn verplicht voor facturering en worden gebruikt op
-          facturen.
-        </p>
-        <OrganizationForm
-          organization={{
-            id: currentOrg.id,
-            name: currentOrg.name,
-            email: currentOrg.email,
-            firstName: currentOrg.firstName,
-            lastName: currentOrg.lastName,
-            streetAndNumber: currentOrg.streetAndNumber,
-            postalCode: currentOrg.postalCode,
-            city: currentOrg.city,
-            country: currentOrg.country,
-            registrationNumber: currentOrg.registrationNumber,
-            vatNumber: currentOrg.vatNumber,
-          }}
-        />
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle>Algemeen</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+            Deze gegevens zijn verplicht voor facturering en worden gebruikt op
+            facturen.
+          </p>
+          <OrganizationForm
+            organization={{
+              id: currentOrg.id,
+              name: currentOrg.name,
+              email: currentOrg.email,
+              firstName: currentOrg.firstName,
+              lastName: currentOrg.lastName,
+              streetAndNumber: currentOrg.streetAndNumber,
+              postalCode: currentOrg.postalCode,
+              city: currentOrg.city,
+              country: currentOrg.country,
+              registrationNumber: currentOrg.registrationNumber,
+              vatNumber: currentOrg.vatNumber,
+            }}
+          />
+        </CardContent>
+      </Card>
 
-      <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-        <h2 className="font-semibold mb-4">Teamleden</h2>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">
-          Beheer wie toegang heeft tot jouw organisatie.
-        </p>
-        <button className="mt-4 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-          + Lid Uitnodigen
-        </button>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle>Teamleden</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
+            Beheer wie toegang heeft tot jouw organisatie.
+          </p>
+          <Button variant="outline">+ Lid Uitnodigen</Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

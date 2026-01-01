@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 
 export default function ScannerLoginPage() {
   const [code, setCode] = useState("");
@@ -75,10 +80,10 @@ export default function ScannerLoginPage() {
       <form onSubmit={handleSubmit} className="w-full max-w-xs space-y-6">
         {/* Code Input */}
         <div>
-          <label htmlFor="code" className="sr-only">
+          <Label htmlFor="code" className="sr-only">
             Terminal Code
-          </label>
-          <input
+          </Label>
+          <Input
             id="code"
             type="text"
             value={code}
@@ -90,35 +95,35 @@ export default function ScannerLoginPage() {
             autoCapitalize="characters"
             spellCheck={false}
             disabled={loading}
-            className="w-full text-center text-4xl tracking-[0.5em] py-4 px-6 bg-gray-800 border-2 border-gray-700 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-colors placeholder:text-gray-600 placeholder:tracking-[0.25em] disabled:opacity-50"
+            className="text-center text-4xl tracking-[0.5em] py-8 placeholder:tracking-[0.25em]"
           />
-          <p className="text-center text-xs text-gray-500 mt-2">
+          <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-2">
             6 tekens (3 letters + 3 cijfers)
           </p>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-900/30 border border-red-700 rounded-lg p-3 text-center">
-            <p className="text-red-400 text-sm">{error}</p>
-          </div>
+          <Alert variant="destructive">
+            <AlertDescription className="text-center">{error}</AlertDescription>
+          </Alert>
         )}
 
         {/* Submit Button */}
-        <button
+        <Button
           type="submit"
           disabled={loading || code.length !== 6}
-          className="w-full py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full h-12"
         >
           {loading ? (
-            <span className="flex items-center justify-center gap-2">
-              <span className="inline-block animate-spin">⏳</span>
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
               Inloggen...
-            </span>
+            </>
           ) : (
             "Inloggen"
           )}
-        </button>
+        </Button>
       </form>
 
       {/* Help Text */}

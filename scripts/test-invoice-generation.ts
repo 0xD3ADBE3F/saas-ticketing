@@ -35,9 +35,7 @@ async function testInvoiceGeneration(eventId?: string) {
     } else {
       // Test batch generation (events from last 7 days)
       console.log("Generating invoices for events from last 7 days...");
-      const invoices = await platformFeeInvoiceService.generateMissingInvoices(
-        7
-      );
+      const invoices = await platformFeeInvoiceService.generateMissingInvoices();
 
       console.log(`\n✅ Generated ${invoices.length} invoice(s):`);
       invoices.forEach((inv) => {

@@ -3,6 +3,9 @@ import Link from "next/link";
 import { getUser } from "@/server/lib/supabase";
 import { getEvent } from "@/server/services/eventService";
 import { EventForm } from "@/components/events/EventForm";
+import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 interface EditEventPageProps {
   params: Promise<{ id: string }>;
@@ -46,20 +49,21 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
 
       <h1 className="text-2xl font-bold mb-6">Evenement bewerken</h1>
 
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-        <EventForm event={event} mode="edit" />
-      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <EventForm event={event} mode="edit" />
+        </CardContent>
+      </Card>
 
       {event.status !== "DRAFT" && (
-        <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-          <h3 className="font-medium text-yellow-900 dark:text-yellow-100 mb-2">
-            ⚠️ Let op
-          </h3>
-          <p className="text-sm text-yellow-700 dark:text-yellow-300">
+        <Alert variant="warning" className="mt-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            <strong className="block mb-1">Let op</strong>
             Dit evenement is al {event.status === "LIVE" ? "live" : "afgelopen"}
             . Wijzigingen worden direct zichtbaar voor bezoekers.
-          </p>
-        </div>
+          </AlertDescription>
+        </Alert>
       )}
     </div>
   );

@@ -5,6 +5,10 @@ import { getTicketsWithQR } from "@/server/services/ticketService";
 import { formatPrice } from "@/lib/currency";
 import { formatDateRange } from "@/lib/date";
 import { TicketDisplay } from "@/components/checkout/TicketDisplay";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { XCircle, CheckCircle, ArrowLeft, MapPin } from "lucide-react";
 
 interface CompletePageProps {
   params: Promise<{ orderId: string }>;
@@ -61,64 +65,38 @@ export default async function CompletePage({ params }: CompletePageProps) {
         </header>
 
         <main className="max-w-2xl mx-auto px-4 py-8">
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-            <div className="p-6 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
-                  <svg
-                    className="w-6 h-6 text-red-600 dark:text-red-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h1 className="text-xl font-semibold text-red-700 dark:text-red-400">
-                    Betaling{" "}
-                    {order.status === "CANCELLED" ? "geannuleerd" : "mislukt"}
-                  </h1>
-                  <p className="text-red-600 dark:text-red-400">
-                    {order.status === "CANCELLED"
-                      ? "Je hebt de betaling geannuleerd."
-                      : "Er is iets misgegaan met de betaling."}
-                  </p>
-                </div>
-              </div>
-            </div>
+          <Card>
+            <Alert
+              variant="destructive"
+              className="rounded-none border-x-0 border-t-0"
+            >
+              <XCircle className="h-6 w-6" />
+              <AlertDescription>
+                <h1 className="text-xl font-semibold mb-1">
+                  Betaling{" "}
+                  {order.status === "CANCELLED" ? "geannuleerd" : "mislukt"}
+                </h1>
+                <p>
+                  {order.status === "CANCELLED"
+                    ? "Je hebt de betaling geannuleerd."
+                    : "Er is iets misgegaan met de betaling."}
+                </p>
+              </AlertDescription>
+            </Alert>
 
-            <div className="p-6">
+            <CardContent className="p-6">
               <p className="text-gray-600 dark:text-gray-400 mb-4">
                 Je kunt het opnieuw proberen door een nieuwe bestelling te
                 plaatsen.
               </p>
-              <Link
-                href={`/e/${event.slug}`}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                  />
-                </svg>
-                Terug naar evenement
-              </Link>
-            </div>
-          </div>
+              <Button asChild>
+                <Link href={`/e/${event.slug}`}>
+                  <ArrowLeft className="w-4 h-4" />
+                  Terug naar evenement
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
         </main>
       </div>
     );
@@ -149,19 +127,7 @@ export default async function CompletePage({ params }: CompletePageProps) {
           <div className="p-6 bg-green-50 dark:bg-green-900/20 border-b border-green-200 dark:border-green-800">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
-                <svg
-                  className="w-6 h-6 text-green-600 dark:text-green-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-green-700 dark:text-green-400">
@@ -187,8 +153,9 @@ export default async function CompletePage({ params }: CompletePageProps) {
                   {formatDateRange(event.startsAt, event.endsAt)}
                 </p>
                 {event.location && (
-                  <p className="text-gray-500 dark:text-gray-500 text-sm">
-                    📍 {event.location}
+                  <p className="text-gray-500 dark:text-gray-500 text-sm flex items-center gap-1">
+                    <MapPin className="w-3 h-3" />
+                    {event.location}
                   </p>
                 )}
               </div>

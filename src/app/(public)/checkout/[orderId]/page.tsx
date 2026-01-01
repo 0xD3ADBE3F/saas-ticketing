@@ -7,6 +7,9 @@ import { formatDateTime, formatDateRange } from "@/lib/date";
 import { PaymentButton } from "@/components/checkout/PaymentButton";
 import { TicketDisplay } from "@/components/checkout/TicketDisplay";
 import { PaymentStatusPoller } from "@/components/checkout/PaymentStatusPoller";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, CheckCircle, XCircle, Clock, Ban } from "lucide-react";
 
 interface CheckoutPageProps {
   params: Promise<{ orderId: string }>;
@@ -76,107 +79,70 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
           {/* Status Banner */}
           {isExpired && (
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
-              <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span className="font-medium">Deze bestelling is verlopen</span>
-              </div>
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                De reservering is niet op tijd betaald. Je kunt een nieuwe
-                bestelling plaatsen.
-              </p>
-              <Link
-                href={`/e/${event.slug}`}
-                className="mt-3 inline-block px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                Terug naar evenement
-              </Link>
-            </div>
+            <Alert
+              variant="destructive"
+              className="rounded-none border-x-0 border-t-0"
+            >
+              <AlertCircle className="h-5 w-5" />
+              <AlertDescription>
+                <span className="font-medium block mb-1">
+                  Deze bestelling is verlopen
+                </span>
+                <p className="mb-3">
+                  De reservering is niet op tijd betaald. Je kunt een nieuwe
+                  bestelling plaatsen.
+                </p>
+                <Button asChild variant="destructive" size="sm">
+                  <Link href={`/e/${event.slug}`}>Terug naar evenement</Link>
+                </Button>
+              </AlertDescription>
+            </Alert>
           )}
 
           {isPaid && (
-            <div className="p-4 bg-green-50 dark:bg-green-900/20 border-b border-green-200 dark:border-green-800">
-              <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-                <span className="font-medium">Betaling ontvangen</span>
-              </div>
-              <p className="mt-1 text-sm text-green-600 dark:text-green-400">
-                Je tickets zijn verstuurd naar {order.buyerEmail}
-              </p>
-            </div>
+            <Alert
+              variant="success"
+              className="rounded-none border-x-0 border-t-0"
+            >
+              <CheckCircle className="h-5 w-5" />
+              <AlertDescription>
+                <span className="font-medium block mb-1">
+                  Betaling ontvangen
+                </span>
+                <p>Je tickets zijn verstuurd naar {order.buyerEmail}</p>
+              </AlertDescription>
+            </Alert>
           )}
 
           {isFailed && (
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
-              <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-                <span className="font-medium">Betaling mislukt</span>
-              </div>
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                De betaling is niet geslaagd. Je kunt het opnieuw proberen of de
-                bestelling annuleren.
-              </p>
-            </div>
+            <Alert
+              variant="destructive"
+              className="rounded-none border-x-0 border-t-0"
+            >
+              <XCircle className="h-5 w-5" />
+              <AlertDescription>
+                <span className="font-medium block mb-1">Betaling mislukt</span>
+                <p>
+                  De betaling is niet geslaagd. Je kunt het opnieuw proberen of
+                  de bestelling annuleren.
+                </p>
+              </AlertDescription>
+            </Alert>
           )}
 
           {isCancelled && (
-            <div className="p-4 bg-gray-50 dark:bg-gray-900/20 border-b border-gray-200 dark:border-gray-800">
-              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-400">
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
-                  />
-                </svg>
-                <span className="font-medium">Bestelling geannuleerd</span>
-              </div>
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                Deze bestelling is geannuleerd.
-              </p>
-            </div>
+            <Alert
+              variant="default"
+              className="rounded-none border-x-0 border-t-0"
+            >
+              <Ban className="h-5 w-5" />
+              <AlertDescription>
+                <span className="font-medium block mb-1">
+                  Bestelling geannuleerd
+                </span>
+                <p>Deze bestelling is geannuleerd.</p>
+              </AlertDescription>
+            </Alert>
           )}
 
           {/* Show tickets for paid orders */}
@@ -202,27 +168,20 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
           )}
 
           {isPending && (
-            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800">
-              <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400">
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span className="font-medium">Wachtend op betaling</span>
-              </div>
-              <p className="mt-1 text-sm text-yellow-600 dark:text-yellow-400">
-                Je tickets worden gereserveerd tot de betaling is voltooid.
-              </p>
-            </div>
+            <Alert
+              variant="warning"
+              className="rounded-none border-x-0 border-t-0"
+            >
+              <Clock className="h-5 w-5" />
+              <AlertDescription>
+                <span className="font-medium block mb-1">
+                  Wachtend op betaling
+                </span>
+                <p>
+                  Je tickets worden gereserveerd tot de betaling is voltooid.
+                </p>
+              </AlertDescription>
+            </Alert>
           )}
 
           {/* Order Header - Only show for pending/expired orders */}
@@ -342,12 +301,9 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
                     totalAmount={order.totalAmount}
                   />
                   <form action={`/api/orders/${order.id}/cancel`} method="POST">
-                    <button
-                      type="submit"
-                      className="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    >
+                    <Button type="submit" variant="outline" className="w-full">
                       Bestelling annuleren
-                    </button>
+                    </Button>
                   </form>
                 </div>
               )}

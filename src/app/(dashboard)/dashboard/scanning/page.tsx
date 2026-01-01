@@ -6,6 +6,10 @@ import {
 } from "@/server/services/organizationService";
 import Link from "next/link";
 import { eventRepo } from "@/server/repos/eventRepo";
+import { Alert } from "@/components/ui/alert";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Card, CardContent } from "@/components/ui/card";
+import { Calendar, MapPin, ScanLine, AlertCircle } from "lucide-react";
 
 export default async function ScanningPage() {
   const user = await getUser();
@@ -30,15 +34,14 @@ export default async function ScanningPage() {
   if (!canScan) {
     return (
       <div className="max-w-2xl mx-auto">
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
-          <h1 className="text-xl font-bold text-red-900 dark:text-red-300 mb-2">
-            Geen Toegang
-          </h1>
-          <p className="text-red-800 dark:text-red-400">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <h1 className="text-xl font-bold mb-2">Geen Toegang</h1>
+          <p>
             Je hebt geen toegang tot de scanner functionaliteit. Vraag een
             administrator om je de SCANNER rol te geven.
           </p>
-        </div>
+        </Alert>
       </div>
     );
   }
@@ -51,23 +54,15 @@ export default async function ScanningPage() {
     return (
       <div className="max-w-2xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">Scannen</h1>
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
-          <div className="text-center">
-            <div className="text-4xl mb-3">📱</div>
-            <h2 className="text-lg font-semibold text-blue-900 dark:text-blue-300 mb-2">
-              Geen Evenementen
-            </h2>
-            <p className="text-blue-800 dark:text-blue-400 mb-4">
-              Er zijn nog geen gepubliceerde evenementen om te scannen.
-            </p>
-            <Link
-              href="/dashboard/events"
-              className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Ga naar Evenementen
-            </Link>
-          </div>
-        </div>
+        <EmptyState
+          icon={ScanLine}
+          title="Geen Evenementen"
+          description="Er zijn nog geen gepubliceerde evenementen om te scannen."
+          action={{
+            label: "Ga naar Evenementen",
+            href: "/dashboard/events",
+          }}
+        />
       </div>
     );
   }
@@ -78,42 +73,42 @@ export default async function ScanningPage() {
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {publishedEvents.map((event) => (
-          <Link
-            key={event.id}
-            href={`/dashboard/scanning/${event.id}`}
-            className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6 hover:border-blue-500 dark:hover:border-blue-500 transition-colors group"
-          >
-            <div className="flex items-start justify-between mb-3">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                {event.title}
-              </h2>
-              <span className="text-2xl">📱</span>
-            </div>
-
-            <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-              <div className="flex items-center gap-2">
-                <span>📅</span>
-                <span>
-                  {new Date(event.startsAt).toLocaleDateString("nl-NL", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </span>
-              </div>
-              {event.location && (
-                <div className="flex items-center gap-2">
-                  <span>📍</span>
-                  <span className="truncate">{event.location}</span>
+          <Link key={event.id} href={`/dashboard/scanning/${event.id}`}>
+            <Card className="hover:border-blue-500 transition-colors group">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between mb-3">
+                  <h2 className="text-lg font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    {event.title}
+                  </h2>
+                  <ScanLine className="w-6 h-6 text-gray-400" />
                 </div>
-              )}
-            </div>
 
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
-              <span className="text-sm text-blue-600 dark:text-blue-400 font-medium group-hover:underline">
-                Open Scanner →
-              </span>
-            </div>
+                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    <span>
+                      {new Date(event.startsAt).toLocaleDateString("nl-NL", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  {event.location && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4" />
+                      <span className="truncate">{event.location}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
+                  <span className="text-sm text-blue-600 dark:text-blue-400 font-medium group-hover:underline">
+                    Open Scanner →
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
           </Link>
         ))}
       </div>

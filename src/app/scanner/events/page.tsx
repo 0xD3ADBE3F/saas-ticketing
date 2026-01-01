@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Calendar, MapPin, Loader2 } from "lucide-react";
 
 interface Event {
   id: string;
@@ -90,8 +95,10 @@ export default function ScannerEventsPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-4xl animate-pulse mb-4">📱</div>
-          <p className="text-gray-400">Evenementen laden...</p>
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600 dark:text-gray-400">
+            Evenementen laden...
+          </p>
         </div>
       </div>
     );
@@ -102,24 +109,23 @@ export default function ScannerEventsPage() {
       {/* Header */}
       <header className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold">{org?.name || "Scanner"}</h1>
-          <p className="text-sm text-gray-400">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+            {org?.name || "Scanner"}
+          </h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Terminal: {terminal?.name || "Onbekend"}
           </p>
         </div>
-        <button
-          onClick={handleLogout}
-          className="px-3 py-1 text-sm bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
-        >
+        <Button onClick={handleLogout} variant="outline" size="sm">
           Uitloggen
-        </button>
+        </Button>
       </header>
 
       {/* Error */}
       {error && (
-        <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 mb-6">
-          <p className="text-red-400">{error}</p>
-        </div>
+        <Alert variant="destructive" className="mb-6">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {/* Events List */}
@@ -129,38 +135,39 @@ export default function ScannerEventsPage() {
         </h2>
 
         {events.length === 0 ? (
-          <div className="bg-gray-800 rounded-xl p-8 text-center">
-            <div className="text-4xl mb-3">📅</div>
-            <p className="text-gray-400">Geen actieve evenementen</p>
-            <p className="text-sm text-gray-500 mt-2">
-              Er zijn geen live evenementen om te scannen.
-            </p>
-          </div>
+          <EmptyState
+            icon={Calendar}
+            title="Geen actieve evenementen"
+            description="Er zijn geen live evenementen om te scannen."
+          />
         ) : (
           <div className="space-y-3">
             {events.map((event) => (
-              <Link
-                key={event.id}
-                href={`/scanner/scan/${event.id}`}
-                className="block bg-gray-800 rounded-xl p-4 hover:bg-gray-750 transition-colors active:scale-[0.98]"
-              >
-                <h3 className="text-lg font-semibold mb-2">{event.title}</h3>
-                <div className="flex items-center gap-4 text-sm text-gray-400">
-                  <span className="flex items-center gap-1">
-                    📅{" "}
-                    {new Date(event.startsAt).toLocaleDateString("nl-NL", {
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                  {event.location && (
-                    <span className="flex items-center gap-1 truncate">
-                      📍 {event.location}
-                    </span>
-                  )}
-                </div>
+              <Link key={event.id} href={`/scanner/scan/${event.id}`}>
+                <Card className="hover:shadow-md transition-all active:scale-[0.98]">
+                  <CardContent className="p-4">
+                    <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">
+                      {event.title}
+                    </h3>
+                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {new Date(event.startsAt).toLocaleDateString("nl-NL", {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      {event.location && (
+                        <span className="flex items-center gap-1 truncate">
+                          <MapPin className="w-4 h-4" />
+                          {event.location}
+                        </span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               </Link>
             ))}
           </div>

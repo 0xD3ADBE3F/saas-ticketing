@@ -3,6 +3,14 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import type { OrderStatus } from "@/generated/prisma";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Badge } from "@/components/ui/badge";
+import { getOrderStatusVariant } from "@/lib/status-variants";
+import { ShoppingCart, Loader2 } from "lucide-react";
 
 interface Order {
   id: string;
@@ -110,26 +118,29 @@ export function OrderList({ organizationId }: OrderListProps) {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
+      <Card className="p-4">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {/* Search */}
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <Label htmlFor="search" className="mb-2">
               Zoeken (email of ordernummer)
-            </label>
-            <input
+            </Label>
+            <Input
+              id="search"
               type="text"
               placeholder="Zoeken..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
             />
           </div>
 
           {/* Status */}
           <div>
-            <label className="block text-sm font-medium mb-2">Status</label>
+            <Label htmlFor="status" className="mb-2">
+              Status
+            </Label>
             <select
+              id="status"
               value={status}
               onChange={(e) => setStatus(e.target.value as OrderStatus | "ALL")}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
@@ -145,8 +156,11 @@ export function OrderList({ organizationId }: OrderListProps) {
 
           {/* Date From */}
           <div>
-            <label className="block text-sm font-medium mb-2">Van datum</label>
-            <input
+            <Label htmlFor="dateFrom" className="mb-2">
+              Van datum
+            </Label>
+            <Input
+              id="dateFrom"
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
@@ -156,12 +170,14 @@ export function OrderList({ organizationId }: OrderListProps) {
 
           {/* Date To */}
           <div>
-            <label className="block text-sm font-medium mb-2">Tot datum</label>
-            <input
+            <Label htmlFor="dateTo" className="mb-2">
+              Tot datum
+            </Label>
+            <Input
+              id="dateTo"
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent"
             />
           </div>
         </div>
@@ -172,31 +188,28 @@ export function OrderList({ organizationId }: OrderListProps) {
             {total} {total === 1 ? "bestelling" : "bestellingen"} gevonden
           </p>
         </div>
-      </div>
+      </Card>
 
       {/* Loading state */}
       {loading && (
         <div className="text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400" />
+          <p className="text-gray-500 dark:text-gray-400 mt-2">
             Bestellingen laden...
           </p>
         </div>
       )}
 
       {/* Error state */}
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <p className="text-red-800 dark:text-red-200">{error}</p>
-        </div>
-      )}
+      {error && <Alert variant="destructive">{error}</Alert>}
 
       {/* Orders list */}
       {!loading && !error && orders.length === 0 && (
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-8 text-center">
-          <p className="text-gray-500 dark:text-gray-400">
-            Geen bestellingen gevonden
-          </p>
-        </div>
+        <EmptyState
+          icon={ShoppingCart}
+          title="Geen bestellingen"
+          description="Geen bestellingen gevonden"
+        />
       )}
 
       {!loading && !error && orders.length > 0 && (
@@ -264,13 +277,9 @@ export function OrderList({ organizationId }: OrderListProps) {
                       {formatCurrency(order.totalAmount)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          STATUS_COLORS[order.status]
-                        }`}
-                      >
+                      <Badge variant={getOrderStatusVariant(order.status)}>
                         {STATUS_LABELS[order.status]}
-                      </span>
+                      </Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {formatDate(order.createdAt)}

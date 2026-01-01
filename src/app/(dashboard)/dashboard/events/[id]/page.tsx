@@ -11,6 +11,12 @@ import { formatDateTime, formatRelativeTime, isPast } from "@/lib/date";
 import { EventStatusActions } from "@/components/events/EventStatusActions";
 import { TicketTypeList } from "@/components/ticket-types/TicketTypeList";
 import { prisma } from "@/server/lib/prisma";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { getEventStatusVariant } from "@/lib/status-variants";
+import { CheckCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 interface EventDetailPageProps {
   params: Promise<{ id: string }>;
@@ -63,11 +69,12 @@ export default async function EventDetailPage({
     <div>
       {/* Payment Success Message */}
       {paymentSuccess && (
-        <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-          <p className="text-green-700 dark:text-green-400 font-medium">
-            ✅ Betaling geslaagd! Je evenement is nu live.
-          </p>
-        </div>
+        <Alert variant="success" className="mb-6">
+          <CheckCircle className="h-4 w-4" />
+          <AlertDescription className="font-medium">
+            Betaling geslaagd! Je evenement is nu live.
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Breadcrumb */}
@@ -87,11 +94,9 @@ export default async function EventDetailPage({
         <div>
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-2xl font-bold">{event.title}</h1>
-            <span
-              className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${statusColors[event.status]}`}
-            >
+            <Badge variant={getEventStatusVariant(event.status)}>
               {statusLabels[event.status]}
-            </span>
+            </Badge>
           </div>
           {event.location && (
             <p className="text-gray-600 dark:text-gray-400">{event.location}</p>
@@ -99,20 +104,15 @@ export default async function EventDetailPage({
         </div>
 
         <div className="flex gap-2">
-          <Link
-            href={`/dashboard/events/${event.id}/edit`}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-          >
-            Bewerken
-          </Link>
+          <Button variant="outline" asChild>
+            <Link href={`/dashboard/events/${event.id}/edit`}>Bewerken</Link>
+          </Button>
           {event.status === "LIVE" && (
-            <Link
-              href={`/e/${event.slug}`}
-              target="_blank"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Bekijk publieke pagina
-            </Link>
+            <Button asChild>
+              <Link href={`/e/${event.slug}`} target="_blank">
+                Bekijk publieke pagina
+              </Link>
+            </Button>
           )}
         </div>
       </div>
@@ -121,118 +121,134 @@ export default async function EventDetailPage({
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Event Details */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">Details</h2>
-
-            <dl className="space-y-4">
-              <div>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Datum & tijd
-                </dt>
-                <dd className="mt-1 text-gray-900 dark:text-white">
-                  <p>{formatDateTime(event.startsAt)}</p>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    tot {formatDateTime(event.endsAt)}
-                  </p>
-                  {!isEventPast && (
-                    <p className="mt-1 text-sm text-blue-600 dark:text-blue-400">
-                      {formatRelativeTime(event.startsAt)}
-                    </p>
-                  )}
-                </dd>
-              </div>
-
-              {event.description && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="space-y-4">
                 <div>
                   <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Beschrijving
+                    Datum & tijd
                   </dt>
-                  <dd className="mt-1 text-gray-900 dark:text-white whitespace-pre-wrap">
-                    {event.description}
+                  <dd className="mt-1 text-gray-900 dark:text-white">
+                    <p>{formatDateTime(event.startsAt)}</p>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      tot {formatDateTime(event.endsAt)}
+                    </p>
+                    {!isEventPast && (
+                      <p className="mt-1 text-sm text-blue-600 dark:text-blue-400">
+                        {formatRelativeTime(event.startsAt)}
+                      </p>
+                    )}
                   </dd>
                 </div>
-              )}
 
-              <div>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Publieke link
-                </dt>
-                <dd className="mt-1">
-                  {event.status === "LIVE" ? (
-                    <a
-                      href={`/e/${event.slug}`}
-                      target="_blank"
-                      className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                    >
-                      {typeof window !== "undefined"
-                        ? `${window.location.origin}/e/${event.slug}`
-                        : `/e/${event.slug}`}
-                    </a>
-                  ) : (
-                    <span className="text-gray-500 dark:text-gray-400">
-                      Beschikbaar wanneer evenement live is
-                    </span>
-                  )}
-                </dd>
-              </div>
-            </dl>
-          </div>
+                {event.description && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Beschrijving
+                    </dt>
+                    <dd className="mt-1 text-gray-900 dark:text-white whitespace-pre-wrap">
+                      {event.description}
+                    </dd>
+                  </div>
+                )}
+
+                <div>
+                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Publieke link
+                  </dt>
+                  <dd className="mt-1">
+                    {event.status === "LIVE" ? (
+                      <a
+                        href={`/e/${event.slug}`}
+                        target="_blank"
+                        className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                      >
+                        {typeof window !== "undefined"
+                          ? `${window.location.origin}/e/${event.slug}`
+                          : `/e/${event.slug}`}
+                      </a>
+                    ) : (
+                      <span className="text-gray-500 dark:text-gray-400">
+                        Beschikbaar wanneer evenement live is
+                      </span>
+                    )}
+                  </dd>
+                </div>
+              </dl>
+            </CardContent>
+          </Card>
 
           {/* Ticket Types */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Tickettypes</h2>
-              <Link
-                href={`/dashboard/events/${event.id}/ticket-types/new`}
-                className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                + Tickettype
-              </Link>
-            </div>
-            <TicketTypeList ticketTypes={ticketTypes} eventId={event.id} />
-          </div>
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Tickettypes</CardTitle>
+                <Button size="sm" asChild>
+                  <Link href={`/dashboard/events/${event.id}/ticket-types/new`}>
+                    + Tickettype
+                  </Link>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <TicketTypeList ticketTypes={ticketTypes} eventId={event.id} />
+            </CardContent>
+          </Card>
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Status Actions */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">Status</h2>
-            <EventStatusActions event={event} />
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <EventStatusActions event={event} />
+            </CardContent>
+          </Card>
 
           {/* Stats */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">Statistieken</h2>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">
-                  Tickets verkocht
-                </span>
-                <span className="font-medium">
-                  {stats.totalSold} / {stats.totalCapacity}
-                </span>
+          <Card>
+            <CardHeader>
+              <CardTitle>Statistieken</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">
+                    Tickets verkocht
+                  </span>
+                  <span className="font-medium">
+                    {stats.totalSold} / {stats.totalCapacity}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">
+                    Tickets gescand
+                  </span>
+                  <span className="font-medium">0</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">
+                    Omzet
+                  </span>
+                  <span className="font-medium">
+                    {formatPrice(stats.totalRevenue)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">
+                    Tickettypes
+                  </span>
+                  <span className="font-medium">{stats.ticketTypes}</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">
-                  Tickets gescand
-                </span>
-                <span className="font-medium">0</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Omzet</span>
-                <span className="font-medium">
-                  {formatPrice(stats.totalRevenue)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">
-                  Tickettypes
-                </span>
-                <span className="font-medium">{stats.ticketTypes}</span>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

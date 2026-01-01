@@ -2,6 +2,7 @@ import { getUser } from "@/server/lib/supabase";
 import { getUserOrganizations } from "@/server/services/organizationService";
 import { redirect } from "next/navigation";
 import { OrderList } from "@/components/dashboard/OrderList";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function OrdersPage() {
   const user = await getUser();
@@ -20,7 +21,7 @@ export default async function OrdersPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Bestellingen</h1>
+      <PageHeader title="Bestellingen" />
       <OrderList organizationId={organization.id} />
     </div>
   );

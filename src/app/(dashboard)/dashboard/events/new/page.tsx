@@ -4,6 +4,9 @@ import { getUser } from "@/server/lib/supabase";
 import { getUserOrganizations } from "@/server/services/organizationService";
 import { EventForm } from "@/components/events/EventForm";
 import { OnboardingEventForm } from "@/components/onboarding/OnboardingEventForm";
+import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Info, Lightbulb } from "lucide-react";
 
 export default async function NewEventPage({
   searchParams,
@@ -43,30 +46,32 @@ export default async function NewEventPage({
       </h1>
 
       {isOnboarding && (
-        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <p className="text-blue-700 dark:text-blue-300">
+        <Alert variant="info" className="mb-6">
+          <Info className="h-4 w-4" />
+          <AlertDescription>
             <strong>Bijna klaar!</strong> Vul de basisgegevens in voor je eerste
             evenement. Je kunt later altijd meer details toevoegen.
-          </p>
-        </div>
+          </AlertDescription>
+        </Alert>
       )}
 
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-        {isOnboarding ? <OnboardingEventForm /> : <EventForm mode="create" />}
-      </div>
+      <Card>
+        <CardContent className="pt-6">
+          {isOnboarding ? <OnboardingEventForm /> : <EventForm mode="create" />}
+        </CardContent>
+      </Card>
 
       {/* Help Text */}
       {!isOnboarding && (
-        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
-            💡 Tip
-          </h3>
-          <p className="text-sm text-blue-700 dark:text-blue-300">
+        <Alert variant="info" className="mt-6">
+          <Lightbulb className="h-4 w-4" />
+          <AlertDescription>
+            <strong className="block mb-1">Tip</strong>
             Je evenement wordt aangemaakt als concept. Je kunt later tickettypes
             toevoegen en het evenement live zetten wanneer je klaar bent voor
             verkoop.
-          </p>
-        </div>
+          </AlertDescription>
+        </Alert>
       )}
     </div>
   );

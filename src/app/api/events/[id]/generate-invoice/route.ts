@@ -12,8 +12,9 @@ import { platformFeeInvoiceService } from "@/server/services/platformFeeInvoiceS
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     // 1. Authenticate user
     const supabase = await createSupabaseServerClient();
@@ -27,7 +28,7 @@ export async function POST(
 
     // 2. Get event and verify organization membership
     const event = await prisma.event.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         organization: {
           include: {
@@ -54,7 +55,7 @@ export async function POST(
     }
 
     // 3. Generate invoice
-    const invoice = await platformFeeInvoiceService.generateEventInvoice(params.eventId);
+    const invoice = await platformFeeInvoiceService.generateEventInvoice(id);
 
     if (!invoice) {
       return NextResponse.json(

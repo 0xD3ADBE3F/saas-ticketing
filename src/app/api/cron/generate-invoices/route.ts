@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       timestamp: new Date().toISOString(),
     });
 
-    const invoices = await platformFeeInvoiceService.generateMissingInvoices(1);
+    const invoices = await platformFeeInvoiceService.generateMissingInvoices();
 
     const duration = Date.now() - startTime;
 

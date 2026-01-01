@@ -4,6 +4,9 @@ import { useEffect, useState, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { QRScanner } from "@/components/scanner/QRScanner";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowLeft } from "lucide-react";
 
 interface Stats {
   totalSold: number;
@@ -203,27 +206,25 @@ export default function ScannerPage({ params }: Props) {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 bg-gray-900/50 backdrop-blur-sm">
+      <header className="flex items-center justify-between p-4 bg-gray-900/50 dark:bg-gray-900/50 backdrop-blur-sm">
         <div className="flex items-center gap-3">
-          <Link
-            href="/scanner/events"
-            className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            ←
-          </Link>
+          <Button asChild variant="ghost" size="icon">
+            <Link href="/scanner/events">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+          </Button>
           <div>
-            <h1 className="font-semibold truncate max-w-[200px]">
+            <h1 className="font-semibold truncate max-w-[200px] text-gray-900 dark:text-white">
               {event?.title || "Scanner"}
             </h1>
-            <p className="text-xs text-gray-400">{terminal?.name}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              {terminal?.name}
+            </p>
           </div>
         </div>
-        <button
-          onClick={handleLogout}
-          className="px-3 py-1 text-sm bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
-        >
+        <Button onClick={handleLogout} variant="outline" size="sm">
           Uit
-        </button>
+        </Button>
       </header>
 
       {/* Stats Bar */}
@@ -253,15 +254,18 @@ export default function ScannerPage({ params }: Props) {
       {/* Scanner Area */}
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         {error ? (
-          <div className="bg-red-900/30 border border-red-700 rounded-xl p-6 text-center max-w-sm">
-            <div className="text-4xl mb-3">❌</div>
-            <p className="text-red-400">{error}</p>
-            <button
+          <div className="max-w-sm">
+            <Alert variant="destructive" className="text-center">
+              <div className="text-4xl mb-3">❌</div>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+            <Button
               onClick={() => window.location.reload()}
-              className="mt-4 px-4 py-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
+              variant="outline"
+              className="mt-4 w-full"
             >
               Opnieuw proberen
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="w-full max-w-sm">
