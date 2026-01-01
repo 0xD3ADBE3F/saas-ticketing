@@ -6,15 +6,10 @@ import { usePathname } from "next/navigation";
 const settingsNav = [
   { href: "/dashboard/settings", label: "Algemeen", icon: "⚙️", exact: true },
   {
-    href: "/dashboard/settings/subscription",
-    label: "Abonnement",
-    icon: "💳",
-    exact: true,
-  },
-  {
-    href: "/dashboard/settings/subscription/billing",
+    href: "/dashboard/settings/invoicing",
     label: "Facturatie",
     icon: "📄",
+    exact: false,
   },
 ];
 
@@ -30,7 +25,7 @@ export default function SettingsLayout({
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Instellingen</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Beheer je organisatie en abonnement
+          Beheer je organisatie en bekijk je facturen
         </p>
       </div>
 

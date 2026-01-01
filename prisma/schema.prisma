@@ -129,6 +129,7 @@ model Event {
   tickets          Ticket[]
   orders           Order[]
   scannerTerminals ScannerTerminal[]
+  invoices         Invoice[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
@@ -415,6 +416,7 @@ model Invoice {
 
   // Relations
   organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event        Event?        @relation(fields: [eventId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
   @@index([eventId])

@@ -32,6 +32,9 @@ const serverEnvSchema = z.object({
   // Email
   RESEND_API_KEY: z.string().min(1),
 
+  // Cronjobs
+  CRON_SECRET: z.string().min(32).optional(),
+
   // App
   NODE_ENV: z
     .enum(["development", "test", "production"])

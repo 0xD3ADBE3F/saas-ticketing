@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/server/lib/supabase";
+import { getUser } from "@/server/lib/supabase";
+import { prisma } from "@/server/lib/prisma";
 
 export async function GET(
   request: NextRequest,
@@ -9,23 +10,24 @@ export async function GET(
     const { id } = await params;
 
     // 1. Authenticate user
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    // 2. Get the invoice from database with pdfUrl
-    const { data: invoice, error: invoiceError } = await supabase
-      .from("subscription_invoices")
-      .select("id, organizationId, pdfUrl, invoiceNumber")
-      .eq("id", id)
-      .single();
 
-    if (invoiceError || !invoice) {
+    // 2. Get the invoice from database with pdfUrl
+    const invoice = await prisma.invoice.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        organizationId: true,
+        pdfUrl: true,
+        invoiceNumber: true,
+      },
+    });
+
+    if (!invoice) {
       return NextResponse.json(
         { error: "Invoice not found" },
         { status: 404 }
@@ -33,18 +35,15 @@ export async function GET(
     }
 
     // 3. Verify user has access to the organization via membership
-    const { data: membership, error: membershipError } = await supabase
-      .from("memberships")
-      .select("id")
-      .eq("userId", user.id)
-      .eq("organizationId", invoice.organizationId)
-      .single();
+    const membership = await prisma.membership.findFirst({
+      where: {
+        userId: user.id,
+        organizationId: invoice.organizationId,
+      },
+    });
 
-    if (membershipError || !membership) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      );
+    if (!membership) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     if (!invoice.pdfUrl) {

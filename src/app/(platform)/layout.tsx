@@ -58,9 +58,6 @@ function PlatformNav({ adminEmail }: { adminEmail: string }) {
             <NavLink href="/platform/organizations" icon="🏢">
               Organizations
             </NavLink>
-            <NavLink href="/platform/subscriptions" icon="💳">
-              Subscriptions
-            </NavLink>
             <NavLink href="/platform/analytics" icon="📈">
               Analytics
             </NavLink>

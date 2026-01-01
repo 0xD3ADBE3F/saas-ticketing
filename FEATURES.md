@@ -163,11 +163,12 @@
 
 **Invoice Generation**
 
-- ⬜ Automated invoice creation post-event
+- 🟨 Mollie Sales Invoice API integration (see detailed plan below)
   - Model exists, ready for PLATFORM_FEE invoices
-  - Need: Cron job or manual trigger to generate invoices
-  - Need: PDF generation (invoice template)
-  - Need: Email delivery to `organization.billingEmail`
+  - Need: Automated invoice creation post-event (cronjob)
+  - Need: Mollie Sales Invoice API service
+  - Need: Email notification to organizers
+  - Need: UI for viewing invoices (Instellingen → Facturatie)
 
 #### 🚧 Needs New Implementation (Larger Features)
 
@@ -1273,6 +1274,685 @@ _The invoice UI improvements from 30 December were part of the subscription syst
 - Email template changes require preview before saving
 - Maintenance mode doesn't affect admin access
 - Rate limits respect plan-based overrides
+
+---
+
+## Slice 18: Platform Fee Invoicing with Mollie Sales Invoice API
+
+**Status:** 🚧 Planned
+**Priority:** High
+**Depends On:** Fase 4 (Fees & Payouts)
+
+### Business Context
+
+After an event ends, Entro needs to invoice organizers for the platform fees collected during that event. Instead of building a custom invoicing system, we'll use Mollie's Sales Invoice API (beta) to:
+
+1. Generate professional invoices with Mollie-hosted PDFs
+2. Leverage Mollie's payment infrastructure for invoice payments
+3. Provide a unified billing experience (same provider for payments and invoices)
+
+### What Gets Invoiced
+
+**Platform Fee Calculation per Event:**
+
+```
+Total Platform Fee = Service Fees Collected - Mollie Transaction Fees
+
+Example Event:
+- 100 tickets sold @ €20 each = €2,000 gross revenue
+- Service fees collected = (€0.50 + 2%) × 100 orders = €50 + €40 = €90
+- Mollie transaction fees = €0.35 × 100 orders = €35
+- Platform fee (invoice amount) = €90 - €35 = €55
+```
+
+**VAT Treatment:**
+
+- Service fees are subject to 21% VAT (already collected from buyers)
+- Platform fee invoice is VAT-inclusive (21% standard rate)
+- Mollie's Sales Invoice API handles VAT calculation
+
+### Implementation Plan
+
+#### 1. Database Schema Updates
+
+**Current Invoice Model** (already exists in `schema.prisma`):
+
+```prisma
+model Invoice {
+  id              String        @id @default(uuid())
+  organizationId  String
+  eventId         String?       // Link to specific event
+  type            InvoiceType   @default(PLATFORM_FEE)
+
+  // Mollie Sales Invoice API fields
+  mollieSalesInvoiceId String?   @unique  // inv_xxxx from Sales Invoice API
+  invoiceNumber        String?   @unique  // e.g., "2024-001"
+  invoiceDate          DateTime  @default(now())
+  dueDate              DateTime?
+
+  // Financial details
+  amount          Int           // Total amount in cents
+  vatAmount       Int           @default(0)
+  vatRate         Decimal       @default(21.00) @db.Decimal(5, 2)
+  currency        String        @default("EUR")
+
+  // Payment tracking
+  status          InvoiceStatus @default(PENDING)
+  molliePaymentId String?       @unique
+  paidAt          DateTime?
+
+  // PDF & Links
+  pdfUrl          String?       // Mollie-hosted PDF URL
+
+  // Metadata
+  description     String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  organization Organization  @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([eventId])
+}
+```
+
+**Enums** (already defined):
+
+```prisma
+enum InvoiceType {
+  PLATFORM_FEE  // Post-event platform fee invoice
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+  FAILED
+}
+```
+
+**✅ No schema changes needed** - existing structure supports Mollie Sales Invoice API.
+
+#### 2. Mollie Sales Invoice Service
+
+**File:** `src/server/services/mollieSalesInvoiceService.ts`
+
+**Core Functions:**
+
+```typescript
+interface SalesInvoiceParams {
+  organizationId: string;
+  eventId: string;
+  amount: number; // Platform fee in cents (excl VAT)
+  description: string;
+  paymentTerm?: "7 days" | "14 days" | "30 days"; // Default: 30 days
+}
+
+// Create sales invoice via Mollie API
+async function createSalesInvoice(params: SalesInvoiceParams): Promise<Invoice>;
+
+// Get sales invoice from Mollie
+async function getSalesInvoice(
+  mollieSalesInvoiceId: string
+): Promise<MollieSalesInvoice>;
+
+// Update sales invoice status (sync from Mollie)
+async function syncInvoiceStatus(invoiceId: string): Promise<Invoice>;
+
+// Send invoice email via Mollie
+async function sendInvoiceEmail(
+  mollieSalesInvoiceId: string,
+  subject: string,
+  body: string
+): Promise<void>;
+```
+
+**Mollie API Integration:**
+
+- Endpoint: `POST https://api.mollie.com/v2/sales-invoices`
+- Authentication: Use platform's Mollie API key (NOT OAuth token)
+- Status values: `draft` → `issued` → `paid`
+- PDF generation: Automatic via `_links.pdfLink`
+
+**Key Implementation Details:**
+
+1. Use organization's billing address from `Organization` model
+2. Set `recipientIdentifier` = `organizationId` for Mollie tracking
+3. Invoice lines:
+   - Line 1: "Platform fees for [Event Name] ([Date])"
+   - Quantity: 1
+   - Unit price: Platform fee (excl VAT)
+   - VAT rate: 21%
+4. Payment term: 30 days default
+5. Set status to `issued` to trigger email + enable payment
+
+#### 3. Invoice Generation Workflow
+
+**Trigger: Event Status Change to ENDED**
+
+**Option A: Real-time Generation** (recommended for MVP)
+
+```typescript
+// In event status update handler
+if (newStatus === "ENDED" && oldStatus !== "ENDED") {
+  // Queue invoice generation (background job)
+  await queueInvoiceGeneration(eventId);
+}
+```
+
+**Option B: Scheduled Cronjob** (more robust for production)
+
+```typescript
+// Runs daily at 2 AM
+// Finds events that ended yesterday with no invoice
+async function generateMissingInvoices() {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  yesterday.setHours(0, 0, 0, 0);
+
+  const eventsNeedingInvoices = await prisma.event.findMany({
+    where: {
+      status: "ENDED",
+      endsAt: {
+        gte: yesterday,
+        lt: new Date(yesterday.getTime() + 24 * 60 * 60 * 1000),
+      },
+      invoices: {
+        none: {}, // No invoice created yet
+      },
+    },
+    include: {
+      organization: true,
+    },
+  });
+
+  for (const event of eventsNeedingInvoices) {
+    await generateEventInvoice(event.id);
+  }
+}
+```
+
+**Invoice Generation Logic:**
+
+```typescript
+async function generateEventInvoice(eventId: string): Promise<Invoice> {
+  // 1. Calculate platform fee breakdown
+  const breakdown = await payoutService.getEventPayoutBreakdown(eventId, orgId);
+
+  // 2. Validate: skip if platform fee = 0 (free event or no sales)
+  if (breakdown.platformFee === 0) {
+    return; // No invoice needed
+  }
+
+  // 3. Check for existing invoice
+  const existing = await invoiceRepo.findByEventId(eventId);
+  if (existing) {
+    return existing; // Already generated
+  }
+
+  // 4. Fetch organization billing info
+  const org = await prisma.organization.findUnique({
+    where: { id: organizationId },
+  });
+
+  // 5. Create Mollie sales invoice
+  const mollieInvoice = await mollieSalesInvoiceService.create({
+    organizationId,
+    eventId,
+    recipientIdentifier: organizationId,
+    recipient: {
+      type: "business",
+      organizationName: org.billingName || org.name,
+      email: org.billingEmail,
+      vatNumber: org.billingVatNumber,
+      streetAndNumber: org.billingStreetAndNumber,
+      postalCode: org.billingPostalCode,
+      city: org.billingCity,
+      country: org.billingCountry || "NL",
+      locale: "nl_NL",
+    },
+    lines: [
+      {
+        description: `Platform fees - ${event.title} (${formatDate(event.endsAt)})`,
+        quantity: 1,
+        vatRate: "21.00",
+        unitPrice: {
+          currency: "EUR",
+          value: centsToEuros(breakdown.platformFee), // Excl VAT
+        },
+      },
+    ],
+    status: "issued", // Send invoice + enable payment
+    vatMode: "exclusive", // Apply 21% VAT on top of amount
+    paymentTerm: "30 days",
+    emailDetails: {
+      subject: `Invoice for ${event.title}`,
+      body: `Dear ${org.name},\n\nThank you for using Entro!\n\nPlease find attached your invoice for the platform fees related to your event "${event.title}".\n\nPayment is due within 30 days.\n\nBest regards,\nThe Entro Team`,
+    },
+  });
+
+  // 6. Store in database
+  return await invoiceRepo.create({
+    organizationId,
+    eventId,
+    type: "PLATFORM_FEE",
+    mollieSalesInvoiceId: mollieInvoice.id,
+    invoiceNumber: mollieInvoice.invoiceNumber,
+    invoiceDate: new Date(mollieInvoice.issuedAt),
+    dueDate: new Date(mollieInvoice.dueAt),
+    amount: breakdown.platformFee,
+    vatAmount: breakdown.platformFee * 0.21, // 21% VAT
+    vatRate: 21.0,
+    currency: "EUR",
+    status: "SENT",
+    pdfUrl: mollieInvoice._links.pdfLink?.href,
+    description: `Platform fees for ${event.title}`,
+  });
+}
+```
+
+#### 4. Organizer Dashboard UI
+
+**Route:** `/dashboard/instellingen/facturatie` (Settings → Invoicing)
+
+**Features:**
+
+- List all invoices for organization
+- Display: Invoice number, date, event, amount, status, due date
+- Actions: View PDF, Download, Pay (if unpaid)
+- Filters: Status (all/pending/paid/overdue), Date range
+- Status badges with color coding:
+  - PENDING: Yellow
+  - PAID: Green
+  - OVERDUE: Red
+  - CANCELLED: Gray
+
+**Table Columns:**
+| Invoice # | Event | Date | Amount | Status | Due Date | Actions |
+|-----------|-------|------|--------|--------|----------|---------|
+| INV-001 | Test Event | 1 Jan 2026 | €55,00 | Paid | 31 Jan | [PDF] |
+| INV-002 | Festival X | 15 Jan | €120,50 | Pending | 14 Feb | [PDF] [Pay] |
+
+**Component Structure:**
+
+```typescript
+// src/app/(dashboard)/instellingen/facturatie/page.tsx
+export default async function InvoicesPage() {
+  const invoices = await invoiceRepo.findByOrganization(orgId);
+
+  return (
+    <div>
+      <h1>Invoices</h1>
+      <InvoiceFilters />
+      <InvoiceTable invoices={invoices} />
+    </div>
+  );
+}
+
+// src/components/dashboard/InvoiceTable.tsx
+function InvoiceTable({ invoices }) {
+  return (
+    <table>
+      {invoices.map(invoice => (
+        <InvoiceRow key={invoice.id} invoice={invoice} />
+      ))}
+    </table>
+  );
+}
+
+// src/components/dashboard/InvoiceRow.tsx
+function InvoiceRow({ invoice }) {
+  return (
+    <tr>
+      <td>{invoice.invoiceNumber}</td>
+      <td>{invoice.event?.title || 'N/A'}</td>
+      <td>{formatDate(invoice.invoiceDate)}</td>
+      <td>{formatCurrency(invoice.amount + invoice.vatAmount)}</td>
+      <td><StatusBadge status={invoice.status} /></td>
+      <td>{formatDate(invoice.dueDate)}</td>
+      <td>
+        <Button href={invoice.pdfUrl}>Download PDF</Button>
+        {invoice.status === 'PENDING' && (
+          <Button onClick={() => payInvoice(invoice.id)}>Pay Now</Button>
+        )}
+      </td>
+    </tr>
+  );
+}
+```
+
+#### 5. Email Notifications
+
+**Trigger: Invoice Created**
+
+**Email Template:**
+
+```
+Subject: New Invoice from Entro - {{invoiceNumber}}
+
+Hi {{organizationName}},
+
+Your invoice for {{eventTitle}} is now available.
+
+Invoice Details:
+- Invoice Number: {{invoiceNumber}}
+- Amount: €{{totalAmount}} (incl. VAT)
+- Due Date: {{dueDate}}
+
+[View Invoice] [Pay Now]
+
+The invoice covers platform fees for {{ticketsSold}} tickets sold.
+
+Best regards,
+The Entro Team
+```
+
+**Implementation:**
+
+- Use Resend for email delivery
+- Include Mollie payment link in "Pay Now" button
+- Attach PDF (optional - Mollie link is primary)
+- Send to `organization.billingEmail`
+
+**Service Function:**
+
+```typescript
+// src/server/services/emailService.ts
+async function sendInvoiceCreatedEmail(invoice: Invoice): Promise<void> {
+  const org = await prisma.organization.findUnique({
+    where: { id: invoice.organizationId },
+  });
+
+  const event = invoice.eventId
+    ? await prisma.event.findUnique({ where: { id: invoice.eventId } })
+    : null;
+
+  await resend.emails.send({
+    from: "Entro <billing@entro.nl>",
+    to: org.billingEmail,
+    subject: `New Invoice - ${invoice.invoiceNumber}`,
+    html: renderInvoiceEmail({
+      organizationName: org.name,
+      invoiceNumber: invoice.invoiceNumber,
+      eventTitle: event?.title,
+      totalAmount: formatCurrency(invoice.amount + invoice.vatAmount),
+      dueDate: formatDate(invoice.dueDate),
+      pdfUrl: invoice.pdfUrl,
+      paymentUrl: `https://app.entro.nl/dashboard/instellingen/facturatie/${invoice.id}/pay`,
+    }),
+  });
+}
+```
+
+#### 6. Webhook Handler for Invoice Status Updates
+
+**Mollie Webhook:** Listen for invoice payment status changes
+
+**Endpoint:** `POST /api/webhooks/mollie/invoices`
+
+```typescript
+export async function POST(request: Request) {
+  const { id } = await request.json(); // Mollie invoice ID
+
+  // Fetch latest status from Mollie
+  const mollieInvoice = await mollieSalesInvoiceService.get(id);
+
+  // Find local invoice
+  const invoice = await invoiceRepo.findByMollieId(id);
+  if (!invoice) {
+    return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+  }
+
+  // Update status
+  if (mollieInvoice.status === "paid") {
+    await invoiceRepo.update(invoice.id, {
+      status: "PAID",
+      paidAt: new Date(mollieInvoice.paidAt),
+      molliePaymentId: mollieInvoice.paymentDetails[0]?.sourceReference,
+    });
+
+    // Send payment confirmation email
+    await emailService.sendInvoicePaidEmail(invoice);
+  }
+
+  return NextResponse.json({ success: true });
+}
+```
+
+#### 7. Cronjob Setup
+
+**Infrastructure Options:**
+
+**Option A: Vercel Cron (Recommended for MVP)**
+
+```json
+// vercel.json
+{
+  "crons": [
+    {
+      "path": "/api/cron/generate-invoices",
+      "schedule": "0 2 * * *"
+    }
+  ]
+}
+```
+
+**Option B: GitHub Actions**
+
+```yaml
+# .github/workflows/invoice-generation.yml
+name: Generate Invoices
+on:
+  schedule:
+    - cron: "0 2 * * *" # Daily at 2 AM UTC
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Invoice Generation
+        run: |
+          curl -X POST ${{ secrets.APP_URL }}/api/cron/generate-invoices \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+```
+
+**Cron Endpoint:**
+
+```typescript
+// src/app/api/cron/generate-invoices/route.ts
+export async function POST(request: Request) {
+  // Verify cron secret
+  const authHeader = request.headers.get("authorization");
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const results = await generateMissingInvoices();
+
+  return NextResponse.json({
+    success: true,
+    invoicesGenerated: results.length,
+    invoices: results.map((inv) => ({
+      id: inv.id,
+      organizationId: inv.organizationId,
+      eventId: inv.eventId,
+      amount: inv.amount,
+    })),
+  });
+}
+```
+
+#### 8. Testing Strategy
+
+**Unit Tests:**
+
+- ✅ Platform fee calculation (use existing `feeService.test.ts`)
+- ✅ Invoice generation logic
+- ✅ Mollie API response handling
+- ✅ Email template rendering
+
+**Integration Tests:**
+
+- ✅ End-to-end invoice creation flow
+- ✅ Webhook handling (mock Mollie responses)
+- ✅ Invoice status transitions
+
+**Manual Testing Checklist:**
+
+- [ ] Generate invoice for ended event
+- [ ] Verify PDF is generated and accessible
+- [ ] Verify email is sent to billing address
+- [ ] Pay invoice via Mollie (test mode)
+- [ ] Verify status updates to PAID
+- [ ] Verify paid confirmation email sent
+- [ ] Test overdue invoice detection
+- [ ] Test invoice list filtering/sorting
+
+#### 9. Edge Cases & Error Handling
+
+**Scenarios to Handle:**
+
+1. **Event with €0 platform fee**
+   - Don't create invoice
+   - Log skipped event for audit
+
+2. **Organization missing billing info**
+   - Create invoice in DRAFT status
+   - Send admin notification to complete billing details
+   - Don't send invoice until billing info complete
+
+3. **Mollie API failure**
+   - Retry with exponential backoff (3 attempts)
+   - Store failed attempts in database
+   - Send alert to platform admin
+   - Manual retry option in admin dashboard
+
+4. **Duplicate invoice generation**
+   - Check for existing invoice before creation
+   - Use `eventId` as unique constraint
+   - Log warning if duplicate attempt detected
+
+5. **Invoice payment failure**
+   - Mollie handles payment retries
+   - Update status to OVERDUE after due date
+   - Send reminder email (7 days after due date)
+
+6. **Organization deletion**
+   - Keep invoices for accounting (don't cascade delete)
+   - Mark organization as deleted but preserve invoice history
+
+#### 10. Monitoring & Alerts
+
+**Metrics to Track:**
+
+- Invoice generation success rate
+- Average time to payment
+- Overdue invoice count
+- Failed invoice creations
+- Email delivery rate
+
+**Alerts:**
+
+- Failed invoice generation (Slack/email to platform admin)
+- Overdue invoices > 30 days (weekly report)
+- Mollie API errors (immediate alert)
+
+**Logging:**
+
+```typescript
+logger.info("Invoice generated", {
+  invoiceId: invoice.id,
+  organizationId: invoice.organizationId,
+  eventId: invoice.eventId,
+  amount: invoice.amount,
+  mollieSalesInvoiceId: invoice.mollieSalesInvoiceId,
+});
+```
+
+### Implementation Checklist
+
+**Phase 1: Core Service (Week 1)**
+
+**Phase 2: Invoice Generation (Week 1)**
+
+- [ ] Implement `generateEventInvoice()` function
+- [ ] Add validation for billing info completeness
+- [ ] Implement duplicate detection
+- [ ] Add transaction handling (DB + Mollie in single transaction)
+- [ ] Write integration tests
+
+**Phase 3: Cronjob & Automation (Week 2)**
+
+- [ ] Create `/api/cron/generate-invoices` endpoint
+- [ ] Add cron secret validation
+- [ ] Configure Vercel Cron schedule
+- [ ] Test cronjob locally
+- [ ] Deploy and verify cronjob runs
+
+**Phase 4: Email Notifications (Week 2)**
+
+- [ ] Design invoice email template
+- [ ] Implement `sendInvoiceCreatedEmail()`
+- [ ] Implement `sendInvoicePaidEmail()`
+- [ ] Add invoice reminder email (7 days overdue)
+- [ ] Test email delivery end-to-end
+
+**Phase 5: Organizer UI (Week 3)**
+
+- [ ] Create `/dashboard/instellingen/facturatie` page
+- [ ] Build `InvoiceTable` component
+- [ ] Add invoice filters (status, date range)
+- [ ] Implement PDF download action
+- [ ] Implement "Pay Now" action (redirect to Mollie)
+- [ ] Add mobile-responsive styling
+
+**Phase 6: Webhook Handler (Week 3)**
+
+- [ ] Create `/api/webhooks/mollie/invoices` endpoint
+- [ ] Implement webhook signature verification
+- [ ] Add status synchronization logic
+- [ ] Test with Mollie webhook simulator
+- [ ] Deploy and register webhook URL with Mollie
+
+**Phase 7: Monitoring & Polish (Week 4)**
+
+- [ ] Add Slack alerts for failed invoices
+- [ ] Create admin dashboard widget (invoice stats)
+- [ ] Implement overdue invoice detection
+- [ ] Add manual retry for failed invoices
+- [ ] Write end-to-end documentation
+- [ ] Update SPEC.md with invoicing flow
+
+### Success Criteria
+
+- ✅ Invoices generated automatically for all ended events
+- ✅ Organizers receive email notification with PDF
+- ✅ Organizers can view and pay invoices in dashboard
+- ✅ Invoice status syncs automatically via webhook
+- ✅ Platform admin receives alerts for failures
+- ✅ 100% invoice generation success rate (with retries)
+- ✅ <1% overdue invoices after 30 days
+
+### Documentation Updates
+
+**Files to Update:**
+
+- `SPEC.md` - Add invoicing workflow section
+- `docs/MOLLIE_PLATFORM.md` - Document Sales Invoice API usage
+- `README.md` - Add invoice generation to features list
+
+### Future Enhancements (Out of Scope for MVP)
+
+- Multiple invoices per event (for ongoing events)
+- Invoice exports (CSV, Excel)
+- Credit notes for refunds
+- Automatic payment via SEPA Direct Debit
+- Invoice payment reminders (automated)
+- Multi-currency support
+- PDF customization (branding, footer text)
 
 ---
 
