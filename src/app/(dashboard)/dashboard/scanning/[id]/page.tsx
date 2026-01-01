@@ -7,6 +7,7 @@ import {
 import { eventRepo } from "@/server/repos/eventRepo";
 import { ScannerInterface } from "@/components/scanner";
 import Link from "next/link";
+import { ChevronLeft, AlertCircle } from "lucide-react";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -38,20 +39,28 @@ export default async function EventScannerPage({ params }: Props) {
   if (!canScan) {
     return (
       <div className="max-w-2xl mx-auto">
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
-          <h1 className="text-xl font-bold text-red-900 dark:text-red-300 mb-2">
-            Geen Toegang
-          </h1>
-          <p className="text-red-800 dark:text-red-400 mb-4">
-            Je hebt geen toegang tot de scanner functionaliteit. Vraag een
-            administrator om je de SCANNER rol te geven.
-          </p>
-          <Link
-            href="/dashboard/scanning"
-            className="text-sm text-red-600 dark:text-red-400 hover:underline"
-          >
-            ← Terug naar scannen
-          </Link>
+        <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 backdrop-blur-xl border-2 border-red-200/50 dark:border-red-800/50 rounded-2xl p-6 shadow-lg">
+          <div className="flex items-start gap-4">
+            <div className="p-2.5 bg-red-100 dark:bg-red-900/40 rounded-xl shrink-0">
+              <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-xl font-bold text-red-900 dark:text-red-300 mb-2">
+                Geen Toegang
+              </h1>
+              <p className="text-red-800 dark:text-red-400 mb-4 leading-relaxed">
+                Je hebt geen toegang tot de scanner functionaliteit. Vraag een
+                administrator om je de SCANNER rol te geven.
+              </p>
+              <Link
+                href="/dashboard/scanning"
+                className="inline-flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Terug naar scannen
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -67,19 +76,28 @@ export default async function EventScannerPage({ params }: Props) {
   if (event.status !== "LIVE") {
     return (
       <div className="max-w-2xl mx-auto">
-        <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6">
-          <h1 className="text-xl font-bold text-orange-900 dark:text-orange-300 mb-2">
-            Evenement Niet Gepubliceerd
-          </h1>
-          <p className="text-orange-800 dark:text-orange-400 mb-4">
-            Dit evenement is nog niet gepubliceerd en kan niet gescand worden.
-          </p>
-          <Link
-            href="/dashboard/scanning"
-            className="text-sm text-orange-600 dark:text-orange-400 hover:underline"
-          >
-            ← Terug naar scannen
-          </Link>
+        <div className="bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 backdrop-blur-xl border-2 border-orange-200/50 dark:border-orange-800/50 rounded-2xl p-6 shadow-lg">
+          <div className="flex items-start gap-4">
+            <div className="p-2.5 bg-orange-100 dark:bg-orange-900/40 rounded-xl shrink-0">
+              <AlertCircle className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-xl font-bold text-orange-900 dark:text-orange-300 mb-2">
+                Evenement Niet Gepubliceerd
+              </h1>
+              <p className="text-orange-800 dark:text-orange-400 mb-4 leading-relaxed">
+                Dit evenement is nog niet gepubliceerd en kan niet gescand
+                worden.
+              </p>
+              <Link
+                href="/dashboard/scanning"
+                className="inline-flex items-center gap-1.5 text-sm text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Terug naar scannen
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -88,12 +106,13 @@ export default async function EventScannerPage({ params }: Props) {
   return (
     <div>
       {/* Back Link */}
-      <div className="mb-4">
+      <div className="mb-6">
         <Link
           href="/dashboard/scanning"
-          className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors inline-flex items-center gap-1"
+          className="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
         >
-          ← Terug naar overzicht
+          <ChevronLeft className="w-4 h-4" />
+          Terug naar overzicht
         </Link>
       </div>
 

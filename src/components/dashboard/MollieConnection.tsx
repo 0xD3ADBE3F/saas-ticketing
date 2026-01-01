@@ -1,6 +1,17 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import {
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  XCircle,
+  RefreshCw,
+  ExternalLink,
+  Zap,
+  Settings,
+  Lightbulb,
+} from "lucide-react";
 
 type MollieStatus =
   | "NOT_STARTED"
@@ -211,31 +222,36 @@ export function MollieConnection({ organizationId }: MollieConnectionProps) {
     switch (state.status) {
       case "COMPLETED":
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-            ✓ Verbonden
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-green-100 to-green-200 text-green-800 dark:from-green-900/30 dark:to-green-800/30 dark:text-green-200 border border-green-300 dark:border-green-700">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Verbonden
           </span>
         );
       case "IN_REVIEW":
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-            ⏳ In beoordeling
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 dark:from-yellow-900/30 dark:to-yellow-800/30 dark:text-yellow-200 border border-yellow-300 dark:border-yellow-700">
+            <Clock className="w-3.5 h-3.5" />
+            In beoordeling
           </span>
         );
       case "NEEDS_DATA":
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
-            ⚠ Extra gegevens nodig
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 dark:from-orange-900/30 dark:to-orange-800/30 dark:text-orange-200 border border-orange-300 dark:border-orange-700">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Extra gegevens nodig
           </span>
         );
       case "PENDING":
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-            ⏳ Wacht op voltooiing
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 dark:from-blue-900/30 dark:to-blue-800/30 dark:text-blue-200 border border-blue-300 dark:border-blue-700">
+            <Clock className="w-3.5 h-3.5" />
+            Wacht op voltooiing
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 dark:from-gray-800/50 dark:to-gray-700/50 dark:text-gray-200 border border-gray-300 dark:border-gray-700">
+            <XCircle className="w-3.5 h-3.5" />
             Niet verbonden
           </span>
         );
@@ -255,12 +271,15 @@ export function MollieConnection({ organizationId }: MollieConnectionProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-[#000] to-[#333] rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">M</span>
+          <div className="p-2.5 bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl shadow-md">
+            <span className="text-white font-bold text-base">M</span>
           </div>
           <div>
-            <h3 className="font-medium">Mollie Betalingen</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+              Mollie Betalingen
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5" />
               Ontvang betalingen via iDEAL
             </p>
           </div>
@@ -273,32 +292,47 @@ export function MollieConnection({ organizationId }: MollieConnectionProps) {
                 setState((prev) => ({ ...prev, loading: true }));
                 fetchStatus();
               }}
-              className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
               title="Ververs status"
             >
-              ↻
+              <RefreshCw className="w-4 h-4" />
             </button>
           )}
         </div>
       </div>
 
       {state.error && (
-        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">
-          {state.error}
+        <div className="p-4 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-2 border-red-200 dark:border-red-800 rounded-xl">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+              <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
+            </div>
+            <p className="text-sm text-red-700 dark:text-red-300 font-medium flex-1">
+              {state.error}
+            </p>
+          </div>
         </div>
       )}
 
       {state.isConnected ? (
         <div className="space-y-3">
-          <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-            <p className="text-sm text-green-700 dark:text-green-300">
-              ✓ Je Mollie account is verbonden. Je kunt nu betalingen ontvangen.
-            </p>
-            {state.profileId && (
-              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                Profiel ID: {state.profileId}
-              </p>
-            )}
+          <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-2 border-green-200 dark:border-green-800 rounded-xl">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-green-700 dark:text-green-300 font-medium">
+                  Je Mollie account is verbonden. Je kunt nu betalingen
+                  ontvangen.
+                </p>
+                {state.profileId && (
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                    Profiel ID: {state.profileId}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Test result display */}
@@ -326,21 +360,25 @@ export function MollieConnection({ organizationId }: MollieConnectionProps) {
             </div>
           )}
 
-          <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
               <a
                 href="https://my.mollie.com/dashboard"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors"
               >
-                Open Mollie Dashboard →
+                <ExternalLink className="w-4 h-4" />
+                Open Mollie Dashboard
               </a>
               <button
                 onClick={handleTestConnection}
                 disabled={testing}
-                className="text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 font-medium transition-colors disabled:opacity-50"
               >
+                <RefreshCw
+                  className={`w-4 h-4 ${testing ? "animate-spin" : ""}`}
+                />
                 {testing ? "Testen..." : "Test verbinding"}
               </button>
             </div>
@@ -348,25 +386,25 @@ export function MollieConnection({ organizationId }: MollieConnectionProps) {
             {!showDisconnectConfirm ? (
               <button
                 onClick={() => setShowDisconnectConfirm(true)}
-                className="text-sm text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
+                className="text-sm text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 font-medium transition-colors"
               >
                 Verbinding verbreken
               </button>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-red-600 dark:text-red-400">
+                <span className="text-sm text-red-600 dark:text-red-400 font-medium">
                   Weet je het zeker?
                 </span>
                 <button
                   onClick={handleDisconnect}
                   disabled={disconnecting}
-                  className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 transition-colors"
+                  className="min-h-[36px] px-4 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-all active:scale-95 font-medium"
                 >
                   {disconnecting ? "Bezig..." : "Ja, verbreken"}
                 </button>
                 <button
                   onClick={() => setShowDisconnectConfirm(false)}
-                  className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  className="min-h-[36px] px-4 py-1.5 text-sm border-2 border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all active:scale-95 font-medium"
                 >
                   Annuleren
                 </button>
@@ -376,70 +414,94 @@ export function MollieConnection({ organizationId }: MollieConnectionProps) {
         </div>
       ) : state.status === "PENDING" && state.onboardingUrl ? (
         <div className="space-y-3">
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <p className="text-sm text-blue-700 dark:text-blue-300">
-              Je Mollie account is aangemaakt. Voltooi de verificatie om
-              betalingen te kunnen ontvangen.
-            </p>
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <p className="text-sm text-blue-700 dark:text-blue-300 font-medium flex-1">
+                Je Mollie account is aangemaakt. Voltooi de verificatie om
+                betalingen te kunnen ontvangen.
+              </p>
+            </div>
           </div>
 
           <a
             href={state.onboardingUrl}
-            className="inline-flex items-center justify-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+            className="inline-flex items-center gap-2 min-h-[48px] px-6 py-3 bg-gradient-to-r from-gray-900 to-gray-700 text-white font-medium rounded-xl hover:from-gray-800 hover:to-gray-600 transition-all active:scale-95 shadow-lg"
           >
-            Verificatie voltooien →
+            <ExternalLink className="w-4 h-4" />
+            Verificatie voltooien
           </a>
         </div>
       ) : state.status === "NEEDS_DATA" || state.status === "IN_REVIEW" ? (
         <div className="space-y-3">
-          <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-            <p className="text-sm text-yellow-700 dark:text-yellow-300">
-              {state.status === "NEEDS_DATA"
-                ? "Mollie heeft extra gegevens nodig om je account te verifiëren."
-                : "Je account wordt beoordeeld door Mollie. Dit kan enkele dagen duren."}
-            </p>
+          <div className="p-4 bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-xl">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                {state.status === "NEEDS_DATA" ? (
+                  <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                ) : (
+                  <Clock className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                )}
+              </div>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300 font-medium flex-1">
+                {state.status === "NEEDS_DATA"
+                  ? "Mollie heeft extra gegevens nodig om je account te verifiëren."
+                  : "Je account wordt beoordeeld door Mollie. Dit kan enkele dagen duren."}
+              </p>
+            </div>
           </div>
 
           <a
             href="https://my.mollie.com/dashboard/onboarding"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+            className="inline-flex items-center gap-2 min-h-[48px] px-6 py-3 bg-gradient-to-r from-gray-900 to-gray-700 text-white font-medium rounded-xl hover:from-gray-800 hover:to-gray-600 transition-all active:scale-95 shadow-lg"
           >
-            Naar Mollie Dashboard →
+            <ExternalLink className="w-4 h-4" />
+            Naar Mollie Dashboard
           </a>
         </div>
       ) : (
-        <div className="space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div className="space-y-4 p-5 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/50 dark:to-gray-800/50">
           {state.hasRequiredData ? (
             <>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Verbind je Mollie account om betalingen te kunnen ontvangen. Je
-                organisatiegegevens worden automatisch vooraf ingevuld bij
-                Mollie.
-              </p>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={handleStartOnboarding}
-                  disabled={submitting}
-                  className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {submitting ? "Bezig..." : "Mollie account verbinden →"}
-                </button>
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <Zap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 flex-1">
+                  Verbind je Mollie account om betalingen te kunnen ontvangen.
+                  Je organisatiegegevens worden automatisch vooraf ingevuld bij
+                  Mollie.
+                </p>
               </div>
+
+              <button
+                onClick={handleStartOnboarding}
+                disabled={submitting}
+                className="min-h-[48px] px-6 py-3 bg-gradient-to-r from-gray-900 to-gray-700 text-white font-medium rounded-xl hover:from-gray-800 hover:to-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shadow-lg"
+              >
+                {submitting ? "Bezig..." : "Mollie account verbinden"}
+              </button>
             </>
           ) : (
             <>
-              <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                <p className="text-sm text-yellow-700 dark:text-yellow-300 font-medium mb-2">
-                  ⚠️ Vul eerst je organisatiegegevens aan
-                </p>
-                <p className="text-sm text-yellow-600 dark:text-yellow-400">
+              <div className="p-4 bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-xl">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                    <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300 font-semibold flex-1">
+                    Vul eerst je organisatiegegevens aan
+                  </p>
+                </div>
+                <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-2 ml-11">
                   Om je Mollie account te kunnen verbinden, hebben we de
                   volgende gegevens nodig:
                 </p>
-                <ul className="mt-2 text-sm text-yellow-600 dark:text-yellow-400 list-disc list-inside space-y-1">
+                <ul className="ml-11 text-sm text-yellow-600 dark:text-yellow-400 list-disc list-inside space-y-1">
                   <li>Contactpersoon (voor- en achternaam)</li>
                   <li>E-mailadres</li>
                   <li>Bedrijfsadres (straat, postcode, plaats)</li>
@@ -448,9 +510,10 @@ export function MollieConnection({ organizationId }: MollieConnectionProps) {
 
               <a
                 href="/dashboard/settings"
-                className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="inline-flex items-center gap-2 min-h-[48px] px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all active:scale-95 shadow-lg"
               >
-                Naar Instellingen →
+                <Settings className="w-4 h-4" />
+                Naar Instellingen
               </a>
             </>
           )}
@@ -458,9 +521,14 @@ export function MollieConnection({ organizationId }: MollieConnectionProps) {
       )}
 
       {!state.isConnected && (
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          💡 Je moet Mollie verbinden voordat je evenementen kunt publiceren.
-        </p>
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <Lightbulb className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Je moet Mollie verbinden voordat je evenementen kunt publiceren.
+          </p>
+        </div>
       )}
     </div>
   );

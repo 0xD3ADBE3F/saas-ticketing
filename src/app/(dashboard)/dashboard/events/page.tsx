@@ -36,12 +36,25 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
   });
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-bold">Evenementen</h1>
-        <Button asChild className="w-full sm:w-auto">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent mb-2">
+            Evenementen
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            {events.length} {events.length === 1 ? "evenement" : "evenementen"}
+            {status &&
+              ` · ${status === "DRAFT" ? "Concept" : status === "LIVE" ? "Live" : status === "ENDED" ? "Afgelopen" : "Geannuleerd"}`}
+          </p>
+        </div>
+        <Button
+          asChild
+          className="w-full sm:w-auto h-11 gap-2 shadow-lg shadow-blue-500/30 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+        >
           <Link href="/dashboard/events/new">
-            <Plus className="w-4 h-4" />
+            <Plus className="w-5 h-5" />
             Nieuw Evenement
           </Link>
         </Button>
@@ -50,27 +63,29 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
       <EventFilters currentStatus={status} currentSearch={search} />
 
       {events.length === 0 ? (
-        status || search ? (
-          <EmptyState
-            icon={Calendar}
-            title="Geen evenementen gevonden"
-            description="Geen evenementen gevonden met deze filters."
-            action={{
-              label: "Filters wissen",
-              href: "/dashboard/events",
-            }}
-          />
-        ) : (
-          <EmptyState
-            icon={Calendar}
-            title="Geen evenementen"
-            description="Je hebt nog geen evenementen. Maak je eerste evenement om te beginnen met ticketverkoop."
-            action={{
-              label: "Nieuw Evenement",
-              href: "/dashboard/events/new",
-            }}
-          />
-        )
+        <div className="mt-8">
+          {status || search ? (
+            <EmptyState
+              icon={Calendar}
+              title="Geen evenementen gevonden"
+              description="Geen evenementen gevonden met deze filters."
+              action={{
+                label: "Filters wissen",
+                href: "/dashboard/events",
+              }}
+            />
+          ) : (
+            <EmptyState
+              icon={Calendar}
+              title="Geen evenementen"
+              description="Je hebt nog geen evenementen. Maak je eerste evenement om te beginnen met ticketverkoop."
+              action={{
+                label: "Nieuw Evenement",
+                href: "/dashboard/events/new",
+              }}
+            />
+          )}
+        </div>
       ) : (
         <EventList events={events} />
       )}

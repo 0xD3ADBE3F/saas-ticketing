@@ -1,6 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import {
+  Building2,
+  Mail,
+  User,
+  MapPin,
+  Hash,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import { updateOrganization } from "@/app/(dashboard)/dashboard/settings/actions";
 
 interface OrganizationFormProps {
@@ -60,121 +70,163 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Basic Info */}
       <div className="space-y-4">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-          Basisgegevens
-        </h3>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+            <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+            Basisgegevens
+          </h3>
+        </div>
         <div>
           <label
             htmlFor="name"
-            className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
           >
             Organisatienaam <span className="text-red-500">*</span>
           </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            required
-            defaultValue={organization.name}
-            placeholder="Jouw organisatie"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Building2 className="w-4 h-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              required
+              defaultValue={organization.name}
+              placeholder="Jouw organisatie"
+              className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            />
+          </div>
         </div>
         <div>
           <label
             htmlFor="email"
-            className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
           >
             Contact E-mail <span className="text-red-500">*</span>
           </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            required
-            defaultValue={organization.email || ""}
-            placeholder="contact@voorbeeld.nl"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Mail className="w-4 h-4 text-gray-400" />
+            </div>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              required
+              defaultValue={organization.email || ""}
+              placeholder="contact@voorbeeld.nl"
+              className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            />
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
             Dit e-mailadres wordt gebruikt voor facturen
           </p>
         </div>
       </div>
 
       {/* Contact Person */}
-      <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-800">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-          Contactpersoon
-        </h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          Vereist voor Mollie onboarding
-        </p>
-        <div className="grid grid-cols-2 gap-4">
+      <div className="space-y-4 pt-6 border-t-2 border-gray-200 dark:border-gray-800">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+            <User className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+              Contactpersoon
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Vereist voor Mollie onboarding
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label
               htmlFor="firstName"
-              className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300"
+              className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
             >
               Voornaam <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              id="firstName"
-              name="firstName"
-              required
-              defaultValue={organization.firstName || ""}
-              placeholder="Jan"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <User className="w-4 h-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                id="firstName"
+                name="firstName"
+                required
+                defaultValue={organization.firstName || ""}
+                placeholder="Jan"
+                className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+              />
+            </div>
           </div>
           <div>
             <label
               htmlFor="lastName"
-              className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300"
+              className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
             >
               Achternaam <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              id="lastName"
-              name="lastName"
-              required
-              defaultValue={organization.lastName || ""}
-              placeholder="de Vries"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <User className="w-4 h-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                id="lastName"
+                name="lastName"
+                required
+                defaultValue={organization.lastName || ""}
+                placeholder="de Vries"
+                className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+              />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Address */}
-      <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-800">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-          Factuuradres
-        </h3>
+      <div className="space-y-4 pt-6 border-t-2 border-gray-200 dark:border-gray-800">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-xl">
+            <MapPin className="w-5 h-5 text-green-600 dark:text-green-400" />
+          </div>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+            Factuuradres
+          </h3>
+        </div>
         <div>
           <label
             htmlFor="streetAndNumber"
-            className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
           >
             Straat en huisnummer <span className="text-red-500">*</span>
           </label>
-          <input
-            type="text"
-            id="streetAndNumber"
-            name="streetAndNumber"
-            required
-            defaultValue={organization.streetAndNumber || ""}
-            placeholder="Hoofdstraat 123"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MapPin className="w-4 h-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              id="streetAndNumber"
+              name="streetAndNumber"
+              required
+              defaultValue={organization.streetAndNumber || ""}
+              placeholder="Hoofdstraat 123"
+              className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+            />
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label
               htmlFor="postalCode"
-              className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300"
+              className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
             >
               Postcode <span className="text-red-500">*</span>
             </label>
@@ -187,13 +239,13 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               placeholder="1234AB"
               maxLength={7}
               pattern="\d{4}\s?[A-Za-z]{2}"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2.5 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
             />
           </div>
           <div>
             <label
               htmlFor="city"
-              className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300"
+              className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
             >
               Plaats <span className="text-red-500">*</span>
             </label>
@@ -204,14 +256,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               required
               defaultValue={organization.city || ""}
               placeholder="Amsterdam"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2.5 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
             />
           </div>
         </div>
         <div>
           <label
             htmlFor="country"
-            className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
           >
             Land <span className="text-red-500">*</span>
           </label>
@@ -220,7 +272,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             name="country"
             required
             defaultValue={organization.country || "NL"}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2.5 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
           >
             <option value="NL">Nederland</option>
             <option value="BE">België</option>
@@ -230,43 +282,58 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
       </div>
 
       {/* Business Details */}
-      <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-800">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-          Bedrijfsgegevens (optioneel)
-        </h3>
+      <div className="space-y-4 pt-6 border-t-2 border-gray-200 dark:border-gray-800">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
+            <FileText className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+          </div>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+            Bedrijfsgegevens (optioneel)
+          </h3>
+        </div>
         <div>
           <label
             htmlFor="registrationNumber"
-            className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
           >
             KVK-nummer
           </label>
-          <input
-            type="text"
-            id="registrationNumber"
-            name="registrationNumber"
-            defaultValue={organization.registrationNumber || ""}
-            placeholder="12345678"
-            maxLength={8}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Hash className="w-4 h-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              id="registrationNumber"
+              name="registrationNumber"
+              defaultValue={organization.registrationNumber || ""}
+              placeholder="12345678"
+              maxLength={8}
+              className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+            />
+          </div>
         </div>
         <div>
           <label
             htmlFor="vatNumber"
-            className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
           >
             BTW-nummer
           </label>
-          <input
-            type="text"
-            id="vatNumber"
-            name="vatNumber"
-            defaultValue={organization.vatNumber || ""}
-            placeholder="NL123456789B01"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-transparent focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Hash className="w-4 h-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              id="vatNumber"
+              name="vatNumber"
+              defaultValue={organization.vatNumber || ""}
+              placeholder="NL123456789B01"
+              className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+            />
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
             Bijvoorbeeld: NL123456789B01
           </p>
         </div>
@@ -274,15 +341,27 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
 
       {/* Error/Success Messages */}
       {error && (
-        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <div className="p-4 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-2 border-red-200 dark:border-red-800 rounded-xl">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+              <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+            </div>
+            <p className="text-sm text-red-700 dark:text-red-300 font-medium flex-1">
+              {error}
+            </p>
+          </div>
         </div>
       )}
       {success && (
-        <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-          <p className="text-sm text-green-600 dark:text-green-400">
-            Gegevens succesvol opgeslagen
-          </p>
+        <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-2 border-green-200 dark:border-green-800 rounded-xl">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+            </div>
+            <p className="text-sm text-green-700 dark:text-green-300 font-medium flex-1">
+              Gegevens succesvol opgeslagen
+            </p>
+          </div>
         </div>
       )}
 
@@ -291,9 +370,9 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="min-h-[48px] px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shadow-lg hover:shadow-xl"
         >
-          {isSubmitting ? "Opslaan..." : "Opslaan"}
+          {isSubmitting ? "Opslaan..." : "Wijzigingen opslaan"}
         </button>
       </div>
     </form>

@@ -3,6 +3,16 @@
 import { useState, useEffect } from "react";
 import { formatPrice } from "@/lib/currency";
 import { calculatePaymentFee } from "@/server/services/feeService";
+import {
+  Download,
+  Wallet,
+  Clock,
+  TrendingUp,
+  FileText,
+  Ticket,
+  ScanLine,
+  Info,
+} from "lucide-react";
 
 interface Balance {
   id: string;
@@ -216,37 +226,52 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
       {/* Balance cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Available balance */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-            Beschikbaar saldo
-          </p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 backdrop-blur-xl border-2 border-green-200/50 dark:border-green-800/50 rounded-2xl p-6 shadow-lg">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2.5 bg-green-100 dark:bg-green-900/40 rounded-xl">
+              <Wallet className="w-5 h-5 text-green-600 dark:text-green-400" />
+            </div>
+            <p className="text-sm font-semibold text-green-700 dark:text-green-300">
+              Beschikbaar saldo
+            </p>
+          </div>
+          <p className="text-3xl font-bold text-green-900 dark:text-green-100">
             {balance ? formatPrice(balance.availableAmount) : "€ 0,00"}
           </p>
         </div>
 
         {/* Pending balance */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-            In behandeling
-          </p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 backdrop-blur-xl border-2 border-yellow-200/50 dark:border-yellow-800/50 rounded-2xl p-6 shadow-lg">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2.5 bg-yellow-100 dark:bg-yellow-900/40 rounded-xl">
+              <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+            </div>
+            <p className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">
+              In behandeling
+            </p>
+          </div>
+          <p className="text-3xl font-bold text-yellow-900 dark:text-yellow-100">
             {balance ? formatPrice(balance.pendingAmount) : "€ 0,00"}
           </p>
         </div>
 
         {/* Next payout */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-            Volgende uitbetaling
-          </p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+        <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 backdrop-blur-xl border-2 border-blue-200/50 dark:border-blue-800/50 rounded-2xl p-6 shadow-lg">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2.5 bg-blue-100 dark:bg-blue-900/40 rounded-xl">
+              <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+              Volgende uitbetaling
+            </p>
+          </div>
+          <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">
             {openSettlement
               ? formatPrice(openSettlement.amount.value)
               : "€ 0,00"}
           </p>
           {balance && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 font-medium">
               {frequencyLabels[balance.transferFrequency] ||
                 balance.transferFrequency}
             </p>
@@ -255,35 +280,38 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
       </div>
 
       {/* Export buttons */}
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <button
           onClick={() => handleExport("orders")}
-          className="px-4 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-2 border-gray-200/50 dark:border-gray-800/50 rounded-xl hover:border-blue-300 dark:hover:border-blue-600 transition-all font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-95 touch-manipulation"
         >
-          📊 Exporteer bestellingen
+          <FileText className="w-4 h-4" />
+          Exporteer bestellingen
         </button>
         <button
           onClick={() => handleExport("tickets")}
-          className="px-4 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-2 border-gray-200/50 dark:border-gray-800/50 rounded-xl hover:border-purple-300 dark:hover:border-purple-600 transition-all font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-95 touch-manipulation"
         >
-          🎫 Exporteer tickets
+          <Ticket className="w-4 h-4" />
+          Exporteer tickets
         </button>
         <button
           onClick={() => handleExport("scans")}
-          className="px-4 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-2 border-gray-200/50 dark:border-gray-800/50 rounded-xl hover:border-green-300 dark:hover:border-green-600 transition-all font-medium shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-95 touch-manipulation"
         >
-          📱 Exporteer scans
+          <ScanLine className="w-4 h-4" />
+          Exporteer scans
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-800">
-        <nav className="-mb-px flex space-x-8">
+      <div className="border-b-2 border-gray-200/50 dark:border-gray-800/50">
+        <nav className="-mb-0.5 flex space-x-8">
           <button
             onClick={() => setActiveTab("settlements")}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+            className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors ${
               activeTab === "settlements"
-                ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
+                ? "border-blue-500 text-blue-600 dark:text-blue-400"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
             }`}
           >
@@ -291,9 +319,9 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
           </button>
           <button
             onClick={() => setActiveTab("events")}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+            className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors ${
               activeTab === "events"
-                ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
+                ? "border-blue-500 text-blue-600 dark:text-blue-400"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
             }`}
           >
@@ -304,48 +332,48 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
 
       {/* Settlements tab */}
       {activeTab === "settlements" && (
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
-          <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-2 border-gray-200/50 dark:border-gray-800/50 rounded-2xl overflow-hidden shadow-xl">
+          <div className="p-6 border-b border-gray-200/50 dark:border-gray-800/50">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
               Uitbetalingshistorie
             </h2>
           </div>
 
           {settlements.length === 0 ? (
-            <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+            <div className="p-12 text-center text-gray-500 dark:text-gray-400">
               Nog geen uitbetalingen ontvangen.
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-800">
+                <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-800/30 border-b border-gray-200 dark:border-gray-800">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                       Referentie
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                       Bedrag
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                       Datum
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                <tbody className="divide-y divide-gray-200/50 dark:divide-gray-800">
                   {settlements.map((settlement) => (
                     <tr
                       key={settlement.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                      className="hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      <td className="px-6 py-5 whitespace-nowrap">
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white">
                           {settlement.reference}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-5 whitespace-nowrap">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             statusColors[settlement.status]
@@ -354,12 +382,12 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
                           {statusLabels[settlement.status]}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      <td className="px-6 py-5 whitespace-nowrap text-right">
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">
                           {formatPrice(settlement.amount.value)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
+                      <td className="px-6 py-5 whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-400">
                         {settlement.settledAt
                           ? new Date(settlement.settledAt).toLocaleDateString(
                               "nl-NL"
@@ -381,23 +409,13 @@ export function SettlementsView({ organizationId }: SettlementsViewProps) {
       {activeTab === "events" && payoutSummary && (
         <div className="space-y-4">
           {/* Explanation block */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <div className="flex items-start">
-              <svg
-                className="w-5 h-5 text-blue-500 mr-3 flex-shrink-0 mt-0.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 backdrop-blur-xl border-2 border-blue-200/50 dark:border-blue-800/50 rounded-2xl p-5 shadow-lg">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-xl shrink-0">
+                <Info className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
               <div className="flex-1">
-                <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">
+                <h3 className="text-sm font-bold text-blue-900 dark:text-blue-200 mb-2">
                   Hoe werkt dit overzicht?
                 </h3>
                 <div className="text-sm text-blue-700 dark:text-blue-300 space-y-2">

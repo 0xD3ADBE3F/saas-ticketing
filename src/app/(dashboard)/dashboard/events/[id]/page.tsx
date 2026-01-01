@@ -14,7 +14,17 @@ import { prisma } from "@/server/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getEventStatusVariant } from "@/lib/status-variants";
-import { CheckCircle } from "lucide-react";
+import {
+  CheckCircle,
+  ChevronLeft,
+  Edit,
+  ExternalLink,
+  Calendar,
+  MapPin,
+  Link as LinkIcon,
+  BarChart3,
+  Ticket,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
@@ -69,47 +79,73 @@ export default async function EventDetailPage({
     <div>
       {/* Payment Success Message */}
       {paymentSuccess && (
-        <Alert variant="success" className="mb-6">
-          <CheckCircle className="h-4 w-4" />
-          <AlertDescription className="font-medium">
-            Betaling geslaagd! Je evenement is nu live.
-          </AlertDescription>
-        </Alert>
+        <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 backdrop-blur-xl border-2 border-green-200/50 dark:border-green-800/50 rounded-2xl p-5 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-xl">
+              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+            </div>
+            <p className="font-semibold text-green-900 dark:text-green-100">
+              Betaling geslaagd! Je evenement is nu live.
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
+      <nav className="flex items-center gap-2 text-sm mb-6">
         <Link
           href="/dashboard/events"
-          className="hover:text-gray-700 dark:hover:text-gray-300"
+          className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
         >
+          <ChevronLeft className="w-4 h-4" />
           Evenementen
         </Link>
-        <span>/</span>
-        <span className="text-gray-900 dark:text-white">{event.title}</span>
+        <span className="text-gray-400">/</span>
+        <span className="text-gray-900 dark:text-white font-semibold">
+          {event.title}
+        </span>
       </nav>
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl font-bold">{event.title}</h1>
-            <Badge variant={getEventStatusVariant(event.status)}>
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2 flex-wrap">
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 dark:from-gray-100 dark:via-blue-100 dark:to-purple-100 bg-clip-text text-transparent">
+              {event.title}
+            </h1>
+            <Badge
+              variant={getEventStatusVariant(event.status)}
+              className="font-semibold"
+            >
               {statusLabels[event.status]}
             </Badge>
           </div>
           {event.location && (
-            <p className="text-gray-600 dark:text-gray-400">{event.location}</p>
+            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+              <MapPin className="w-4 h-4" />
+              <p>{event.location}</p>
+            </div>
           )}
         </div>
 
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link href={`/dashboard/events/${event.id}/edit`}>Bewerken</Link>
+        <div className="flex gap-2 shrink-0">
+          <Button variant="outline" asChild className="font-semibold">
+            <Link
+              href={`/dashboard/events/${event.id}/edit`}
+              className="flex items-center gap-2"
+            >
+              <Edit className="w-4 h-4" />
+              Bewerken
+            </Link>
           </Button>
           {event.status === "LIVE" && (
-            <Button asChild>
-              <Link href={`/e/${event.slug}`} target="_blank">
+            <Button asChild className="font-semibold shadow-lg">
+              <Link
+                href={`/e/${event.slug}`}
+                target="_blank"
+                className="flex items-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
                 Bekijk publieke pagina
               </Link>
             </Button>
@@ -121,23 +157,35 @@ export default async function EventDetailPage({
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Event Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="space-y-4">
+          <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-2 border-gray-200/50 dark:border-gray-800/50 rounded-2xl overflow-hidden shadow-xl">
+            <div className="px-6 py-5 border-b border-gray-200/50 dark:border-gray-800/50 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-800/30">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                  <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Details
+                </h2>
+              </div>
+            </div>
+            <div className="p-6">
+              <dl className="space-y-5">
                 <div>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  <dt className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                     Datum & tijd
                   </dt>
-                  <dd className="mt-1 text-gray-900 dark:text-white">
-                    <p>{formatDateTime(event.startsAt)}</p>
-                    <p className="text-gray-600 dark:text-gray-400">
+                  <dd className="text-gray-900 dark:text-white">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <p className="font-medium">
+                        {formatDateTime(event.startsAt)}
+                      </p>
+                    </div>
+                    <p className="text-gray-600 dark:text-gray-400 ml-6">
                       tot {formatDateTime(event.endsAt)}
                     </p>
                     {!isEventPast && (
-                      <p className="mt-1 text-sm text-blue-600 dark:text-blue-400">
+                      <p className="mt-2 text-sm text-blue-600 dark:text-blue-400 font-medium ml-6">
                         {formatRelativeTime(event.startsAt)}
                       </p>
                     )}
@@ -146,109 +194,130 @@ export default async function EventDetailPage({
 
                 {event.description && (
                   <div>
-                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <dt className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                       Beschrijving
                     </dt>
-                    <dd className="mt-1 text-gray-900 dark:text-white whitespace-pre-wrap">
+                    <dd className="text-gray-900 dark:text-white whitespace-pre-wrap leading-relaxed">
                       {event.description}
                     </dd>
                   </div>
                 )}
 
                 <div>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  <dt className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                     Publieke link
                   </dt>
-                  <dd className="mt-1">
+                  <dd>
                     {event.status === "LIVE" ? (
                       <a
                         href={`/e/${event.slug}`}
                         target="_blank"
-                        className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
                       >
+                        <LinkIcon className="w-4 h-4" />
                         {typeof window !== "undefined"
                           ? `${window.location.origin}/e/${event.slug}`
                           : `/e/${event.slug}`}
                       </a>
                     ) : (
-                      <span className="text-gray-500 dark:text-gray-400">
+                      <span className="text-gray-500 dark:text-gray-400 italic">
                         Beschikbaar wanneer evenement live is
                       </span>
                     )}
                   </dd>
                 </div>
               </dl>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Ticket Types */}
-          <Card>
-            <CardHeader>
+          <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-2 border-gray-200/50 dark:border-gray-800/50 rounded-2xl overflow-hidden shadow-xl">
+            <div className="px-6 py-5 border-b border-gray-200/50 dark:border-gray-800/50 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-800/30">
               <div className="flex justify-between items-center">
-                <CardTitle>Tickettypes</CardTitle>
-                <Button size="sm" asChild>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+                    <Ticket className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                    Tickettypes
+                  </h2>
+                </div>
+                <Button size="sm" asChild className="font-semibold shadow-lg">
                   <Link href={`/dashboard/events/${event.id}/ticket-types/new`}>
                     + Tickettype
                   </Link>
                 </Button>
               </div>
-            </CardHeader>
-            <CardContent>
+            </div>
+            <div className="p-6">
               <TicketTypeList ticketTypes={ticketTypes} eventId={event.id} />
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Status Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Status</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-2 border-gray-200/50 dark:border-gray-800/50 rounded-2xl overflow-hidden shadow-xl">
+            <div className="px-6 py-5 border-b border-gray-200/50 dark:border-gray-800/50 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-800/30">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                Status
+              </h2>
+            </div>
+            <div className="p-6">
               <EventStatusActions event={event} />
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Stats */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Statistieken</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">
+          <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 backdrop-blur-xl border-2 border-blue-200/50 dark:border-blue-800/50 rounded-2xl overflow-hidden shadow-xl">
+            <div className="px-6 py-5 border-b border-blue-200/50 dark:border-blue-800/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-xl">
+                  <BarChart3 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Statistieken
+                </h2>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Tickets verkocht
                   </span>
-                  <span className="font-medium">
+                  <span className="text-lg font-bold text-gray-900 dark:text-white">
                     {stats.totalSold} / {stats.totalCapacity}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Tickets gescand
                   </span>
-                  <span className="font-medium">0</span>
+                  <span className="text-lg font-bold text-gray-900 dark:text-white">
+                    0
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Omzet
                   </span>
-                  <span className="font-medium">
+                  <span className="text-lg font-bold text-green-600 dark:text-green-400">
                     {formatPrice(stats.totalRevenue)}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Tickettypes
                   </span>
-                  <span className="font-medium">{stats.ticketTypes}</span>
+                  <span className="text-lg font-bold text-gray-900 dark:text-white">
+                    {stats.ticketTypes}
+                  </span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>

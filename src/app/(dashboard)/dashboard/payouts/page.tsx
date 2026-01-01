@@ -24,7 +24,14 @@ export default async function PayoutsPage() {
 
   return (
     <div>
-      <PageHeader title="Uitbetalingen" />
+      <div className="mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 via-green-900 to-emerald-900 dark:from-gray-100 dark:via-green-100 dark:to-emerald-100 bg-clip-text text-transparent mb-2">
+          Uitbetalingen
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Bekijk je saldo en uitbetalingshistorie
+        </p>
+      </div>
 
       {!isMollieConnected ? (
         <EmptyState

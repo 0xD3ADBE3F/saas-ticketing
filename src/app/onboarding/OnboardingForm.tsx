@@ -2,6 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Building2,
+  Link as LinkIcon,
+  Mail,
+  Rocket,
+  Lightbulb,
+  AlertCircle,
+} from "lucide-react";
 
 interface OnboardingFormProps {
   defaultEmail: string;
@@ -62,16 +70,28 @@ export function OnboardingForm({ defaultEmail }: OnboardingFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
       {error && (
-        <div className="p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 text-sm animate-in fade-in slide-in-from-top-2 duration-300">
-          ⚠️ {error}
+        <div className="p-4 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-2 border-red-200 dark:border-red-800 rounded-xl animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+              <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+            </div>
+            <p className="text-sm text-red-700 dark:text-red-300 font-medium flex-1">
+              {error}
+            </p>
+          </div>
         </div>
       )}
 
       {/* Organization Details */}
       <div className="space-y-4">
-        <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">
-          🏢 Organisatiegegevens
-        </h2>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+            <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Organisatiegegevens
+          </h2>
+        </div>
 
         <div>
           <label
@@ -80,23 +100,29 @@ export function OnboardingForm({ defaultEmail }: OnboardingFormProps) {
           >
             Organisatienaam *
           </label>
-          <input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(e) => handleNameChange(e.target.value)}
-            required
-            className="w-full px-4 py-3 sm:py-2.5 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base sm:text-sm"
-            placeholder="Bv. Festival Zomerpret"
-          />
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Building2 className="w-4 h-4 text-gray-400" />
+            </div>
+            <input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => handleNameChange(e.target.value)}
+              required
+              className="w-full pl-10 pr-4 py-3 sm:py-2.5 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base sm:text-sm"
+              placeholder="Bv. Festival Zomerpret"
+            />
+          </div>
         </div>
 
         <div>
           <label
             htmlFor="slug"
-            className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
+            className="flex items-center gap-2 text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
           >
-            🔗 Jouw unieke URL *
+            <LinkIcon className="w-4 h-4" />
+            Jouw unieke URL *
           </label>
           <div className="flex items-center gap-2 border-2 border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 sm:py-2.5 bg-white dark:bg-gray-950 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all">
             <span className="text-gray-400 dark:text-gray-500 text-sm shrink-0">
@@ -113,37 +139,49 @@ export function OnboardingForm({ defaultEmail }: OnboardingFormProps) {
               placeholder="festival-zomerpret"
             />
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
-            💡 Alleen kleine letters, cijfers en streepjes
-          </p>
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <Lightbulb className="w-3.5 h-3.5 text-gray-400" />
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Alleen kleine letters, cijfers en streepjes
+            </p>
+          </div>
         </div>
 
         <div>
           <label
             htmlFor="email"
-            className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
+            className="flex items-center gap-2 text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
           >
-            📧 Contact e-mail *
+            <Mail className="w-4 h-4" />
+            Contact e-mail *
           </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full px-4 py-3 sm:py-2.5 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base sm:text-sm"
-            placeholder="info@festival-zomerpret.nl"
-          />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
-            📬 Voor belangrijke updates over je evenementen
-          </p>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Mail className="w-4 h-4 text-gray-400" />
+            </div>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full pl-10 pr-4 py-3 sm:py-2.5 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base sm:text-sm"
+              placeholder="info@festival-zomerpret.nl"
+            />
+          </div>
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <Lightbulb className="w-3.5 h-3.5 text-gray-400" />
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Voor belangrijke updates over je evenementen
+            </p>
+          </div>
         </div>
       </div>
 
       <button
         type="submit"
         disabled={loading || !name || !slug || !email}
-        className="w-full py-3.5 sm:py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg text-base sm:text-sm"
+        className="w-full min-h-[48px] py-3.5 sm:py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg text-base sm:text-sm active:scale-95"
       >
         {loading ? (
           <span className="flex items-center justify-center gap-2">
@@ -171,7 +209,8 @@ export function OnboardingForm({ defaultEmail }: OnboardingFormProps) {
           </span>
         ) : (
           <span className="flex items-center justify-center gap-2">
-            🚀 Start mijn evenement
+            <Rocket className="w-5 h-5" />
+            Start mijn evenement
           </span>
         )}
       </button>

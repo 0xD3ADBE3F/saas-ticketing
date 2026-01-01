@@ -9,7 +9,13 @@ import { eventRepo } from "@/server/repos/eventRepo";
 import { Alert } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent } from "@/components/ui/card";
-import { Calendar, MapPin, ScanLine, AlertCircle } from "lucide-react";
+import {
+  Calendar,
+  MapPin,
+  ScanLine,
+  AlertCircle,
+  ChevronRight,
+} from "lucide-react";
 
 export default async function ScanningPage() {
   const user = await getUser();
@@ -69,83 +75,133 @@ export default async function ScanningPage() {
 
   return (
     <div>
-      <h1 className="text-2xl md:text-3xl font-bold mb-6">Scannen</h1>
+      <div className="mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 dark:from-gray-100 dark:via-blue-100 dark:to-purple-100 bg-clip-text text-transparent mb-2">
+          Scannen
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          <span className="text-blue-600 dark:text-blue-400 font-semibold">
+            {publishedEvents.length}
+          </span>{" "}
+          {publishedEvents.length === 1 ? "evenement" : "evenementen"}{" "}
+          beschikbaar voor scanning
+        </p>
+      </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {publishedEvents.map((event) => (
-          <Link key={event.id} href={`/dashboard/scanning/${event.id}`}>
-            <Card className="hover:border-blue-500 transition-colors group">
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between mb-3">
-                  <h2 className="text-lg font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                    {event.title}
-                  </h2>
-                  <ScanLine className="w-6 h-6 text-gray-400" />
+          <Link
+            key={event.id}
+            href={`/dashboard/scanning/${event.id}`}
+            className="group"
+          >
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-2 border-gray-200/50 dark:border-gray-800/50 rounded-2xl p-6 hover:border-blue-300 dark:hover:border-blue-600 transition-all hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 active:scale-[0.98] touch-manipulation">
+              <div className="flex items-start justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors pr-2 flex-1">
+                  {event.title}
+                </h2>
+                <div className="p-2.5 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl shrink-0">
+                  <ScanLine className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
+              </div>
 
-                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    <span>
-                      {new Date(event.startsAt).toLocaleDateString("nl-NL", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
-                    </span>
+              <div className="space-y-2.5 mb-4">
+                <div className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="p-1.5 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <Calendar className="w-4 h-4 text-green-600 dark:text-green-400" />
                   </div>
-                  {event.location && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      <span className="truncate">{event.location}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
-                  <span className="text-sm text-blue-600 dark:text-blue-400 font-medium group-hover:underline">
-                    Open Scanner →
+                  <span>
+                    {new Date(event.startsAt).toLocaleDateString("nl-NL", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
                   </span>
                 </div>
-              </CardContent>
-            </Card>
+                {event.location && (
+                  <div className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-400">
+                    <div className="p-1.5 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                      <MapPin className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <span className="truncate">{event.location}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-gray-200/50 dark:border-gray-800/50">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                    Open Scanner
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </span>
+                  <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                    Live
+                  </div>
+                </div>
+              </div>
+            </div>
           </Link>
         ))}
       </div>
 
       {/* Mobile Scanner Card */}
-      <div className="mt-8 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
+      <div className="mt-8 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 backdrop-blur-xl border-2 border-purple-200/50 dark:border-purple-800/50 rounded-2xl p-6 shadow-lg">
         <div className="flex items-start justify-between">
-          <div>
-            <h3 className="font-semibold text-purple-900 dark:text-purple-300 mb-2">
-              📱 Mobiele Scanner
-            </h3>
-            <p className="text-sm text-purple-800 dark:text-purple-400 mb-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/40 rounded-xl">
+                <ScanLine className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <h3 className="font-bold text-lg text-purple-900 dark:text-purple-300">
+                Mobiele Scanner
+              </h3>
+            </div>
+            <p className="text-sm text-purple-800 dark:text-purple-400 mb-4 leading-relaxed">
               Maak terminal codes aan voor je deur-personeel. Zij kunnen op hun
               mobiel tickets scannen zonder in te loggen.
             </p>
             <Link
               href="/dashboard/scanning/terminals"
-              className="inline-block px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all text-sm font-semibold shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 hover:-translate-y-0.5 active:scale-95 touch-manipulation"
             >
-              Terminal Codes Beheren →
+              Terminal Codes Beheren
+              <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
-          <div className="text-4xl">🎫</div>
         </div>
       </div>
 
       {/* Info Box */}
-      <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
-          📖 Scanner Functies
-        </h3>
-        <ul className="text-sm text-blue-800 dark:text-blue-400 space-y-1">
-          <li>• Real-time scanning met live statistieken</li>
-          <li>• Zoeken op e-mailadres</li>
-          <li>• Recente scans inzien</li>
-          <li>• Handmatige overrides (alleen admin)</li>
-        </ul>
+      <div className="mt-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 backdrop-blur-xl border-2 border-blue-200/50 dark:border-blue-800/50 rounded-2xl p-5 shadow-lg">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-xl shrink-0">
+            <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-blue-900 dark:text-blue-300 mb-2">
+              Scanner Functies
+            </h3>
+            <ul className="text-sm text-blue-800 dark:text-blue-400 space-y-1.5">
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                Real-time scanning met live statistieken
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                Zoeken op e-mailadres
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                Recente scans inzien
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                Handmatige overrides (alleen admin)
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   );
