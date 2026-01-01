@@ -45,17 +45,28 @@ export default async function PublicEventPage({
   const isSameDay =
     event.startsAt.toDateString() === event.endsAt.toDateString();
 
+  // Apply theme from organization settings
+  const themeClass = event.organization.portalTheme === 'DARK' ? 'dark' : '';
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className={`min-h-screen bg-gray-50 dark:bg-gray-950 ${themeClass}`}>
       {/* Header */}
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <Link
-            href="/"
-            className="text-lg font-semibold text-gray-900 dark:text-white"
-          >
-            Entro
-          </Link>
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+          {event.organization.logoUrl ? (
+            <img
+              src={event.organization.logoUrl}
+              alt={event.organization.name}
+              className="h-10 w-auto object-contain"
+            />
+          ) : (
+            <Link
+              href="/"
+              className="text-lg font-semibold text-gray-900 dark:text-white"
+            >
+              {event.organization.name}
+            </Link>
+          )}
         </div>
       </header>
 

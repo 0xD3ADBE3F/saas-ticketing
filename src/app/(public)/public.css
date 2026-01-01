@@ -1,0 +1,213 @@
+/**
+ * Public-facing pages design system
+ * Isolated from dashboard/admin styles
+ *
+ * Design goals:
+ * - Consumer-friendly, welcoming aesthetic
+ * - High conversion focus
+ * - Mobile-first responsive
+ * - Accessible to all users
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap");
+@import "tailwindcss";
+
+/* Design tokens for public pages */
+@theme {
+  /* Color palette - warmer, more inviting than dashboard */
+  --color-public-primary: #3b82f6;
+  --color-public-primary-foreground: #ffffff;
+  --color-public-primary-hover: #2563eb;
+
+  /* Secondary - accent color for CTAs */
+  --color-public-accent: #10b981;
+  --color-public-accent-foreground: #ffffff;
+  --color-public-accent-hover: #059669;
+
+  /* Neutral palette - softer than admin */
+  --color-public-background: #ffffff;
+  --color-public-foreground: #1e293b;
+  --color-public-muted: #f8fafc;
+  --color-public-muted-foreground: #64748b;
+  --color-public-border: #e2e8f0;
+
+  /* Card styles */
+  --color-public-card: #ffffff;
+  --color-public-card-foreground: #1e293b;
+
+  /* Success/error states */
+  --color-public-success: #10b981;
+  --color-public-success-foreground: #ffffff;
+  --color-public-error: #ef4444;
+  --color-public-error-foreground: #ffffff;
+  --color-public-warning: #f59e0b;
+  --color-public-warning-foreground: #ffffff;
+}
+
+/* Base styles for public pages */
+.public-pages {
+  background: var(--color-public-background);
+  color: var(--color-public-foreground);
+  min-height: 100vh;
+  font-family:
+    "DM Sans",
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  .public-pages {
+    --color-public-primary: #60a5fa;
+    --color-public-primary-foreground: #1e293b;
+    --color-public-primary-hover: #3b82f6;
+
+    --color-public-accent: #34d399;
+    --color-public-accent-foreground: #ffffff;
+    --color-public-accent-hover: #10b981;
+
+    --color-public-background: #1e293b;
+    --color-public-foreground: #f1f5f9;
+    --color-public-muted: #334155;
+    --color-public-muted-foreground: #cbd5e1;
+    --color-public-border: #334155;
+
+    --color-public-card: #0f172a;
+    --color-public-card-foreground: #f1f5f9;
+  }
+}
+
+/* Public header styling */
+.public-header {
+  background: var(--color-public-card);
+  border-bottom: 1px solid var(--color-public-border);
+}
+
+/* Public button variants */
+.public-btn-primary {
+  background: var(--color-public-primary);
+  color: var(--color-public-primary-foreground);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.public-btn-primary:hover {
+  background: var(--color-public-primary-hover);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.public-btn-accent {
+  background: var(--color-public-accent);
+  color: var(--color-public-accent-foreground);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.public-btn-accent:hover {
+  background: var(--color-public-accent-hover);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+/* Public card styling */
+.public-card {
+  background: var(--color-public-card);
+  border: 1px solid var(--color-public-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease;
+}
+
+.public-card:hover {
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Public input styling */
+.public-input {
+  background: var(--color-public-background);
+  border: 1px solid var(--color-public-border);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  color: var(--color-public-foreground);
+  transition: all 0.2s ease;
+}
+
+.public-input:focus {
+  outline: none;
+  border-color: var(--color-public-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Badge variants for public pages */
+.public-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.public-badge-success {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--color-public-success);
+}
+
+.public-badge-warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--color-public-warning);
+}
+
+.public-badge-error {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-public-error);
+}
+
+.public-badge-neutral {
+  background: var(--color-public-muted);
+  color: var(--color-public-muted-foreground);
+}
+
+/* Public page container */
+.public-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 768px) {
+  .public-container {
+    padding: 0 2rem;
+  }
+}
+
+/* Smooth transitions for interactive elements */
+.public-interactive {
+  transition: all 0.2s ease;
+}
+
+.public-interactive:hover {
+  transform: translateY(-2px);
+}
+
+/* Mobile-first optimizations */
+@media (hover: none) {
+  .public-btn-primary:hover,
+  .public-btn-accent:hover,
+  .public-interactive:hover {
+    transform: none;
+  }
+}

@@ -388,7 +388,59 @@ export const eventRepo = {
 
 ---
 
-## 9. Open Questions & TODOs
+## 9. Design Systems
+
+Entro uses **two isolated design systems** to serve different audiences:
+
+### Dashboard Design System (Admin/Organizer)
+
+**Location:** Default Tailwind + `globals.css`
+
+**Purpose:** Tools for event organizers to manage their events, view analytics, process refunds
+
+**Characteristics:**
+
+- Professional, productivity-focused
+- Information-dense layouts
+- Complex navigation (sidebar)
+- Desktop-optimized (with mobile support)
+- Blue/purple gradient backgrounds
+
+**Target Users:** Event organizers (business users)
+
+### Public Design System (Consumer-facing)
+
+**Location:** `app/(public)/public.css` + `components/public/`
+
+**Purpose:** Consumer-facing pages where ticket buyers browse events and make purchases
+
+**Characteristics:**
+
+- Welcoming, conversion-optimized
+- Simple, focused layouts
+- Minimal navigation
+- Mobile-first (70%+ traffic)
+- Warmer color palette (blues/greens)
+- Larger touch targets
+
+**Target Users:** Ticket buyers (consumers)
+
+**Key Differences:**
+
+| Aspect             | Dashboard          | Public Pages      |
+| ------------------ | ------------------ | ----------------- |
+| **Audience**       | Organizers         | Buyers            |
+| **Goal**           | Productivity       | Conversion        |
+| **Layout**         | Complex, sidebar   | Simple, focused   |
+| **Colors**         | Professional blues | Warmer, inviting  |
+| **Typography**     | Compact            | Larger, scannable |
+| **Responsiveness** | Desktop-first      | Mobile-first      |
+
+**Documentation:** See [docs/PUBLIC_DESIGN_SYSTEM.md](./docs/PUBLIC_DESIGN_SYSTEM.md) for detailed guidance
+
+---
+
+## 10. Open Questions & TODOs
 
 > Add questions here. Resolve with decisions or safe defaults.
 
@@ -413,7 +465,7 @@ export const eventRepo = {
 
 ---
 
-## 10. Glossary
+## 11. Glossary
 
 | Term         | Definition                                       |
 | ------------ | ------------------------------------------------ |

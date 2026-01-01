@@ -49,6 +49,10 @@ model Organization {
   // Onboarding tracking
   firstLoginCompleted Boolean @default(false) // Has user completed welcome screen
 
+  // Design settings
+  logoUrl         String?      // Vercel Blob Storage URL
+  portalTheme     PortalTheme  @default(LIGHT) // Theme preference for public portal
+
   // Relations
   memberships      Membership[]
   events           Event[]
@@ -68,6 +72,11 @@ enum MollieOnboardingStatus {
   NEEDS_DATA
   IN_REVIEW
   COMPLETED
+}
+
+enum PortalTheme {
+  LIGHT
+  DARK
 }
 
 model Membership {

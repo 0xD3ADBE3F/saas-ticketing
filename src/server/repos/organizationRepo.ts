@@ -1,5 +1,5 @@
 import { prisma } from "@/server/lib/prisma";
-import type { Organization, Membership, Role } from "@/generated/prisma";
+import type { Organization, Membership, Role, PortalTheme } from "@/generated/prisma";
 
 export type CreateOrganizationInput = {
   name: string;
@@ -125,6 +125,30 @@ export const organizationRepo = {
       select: { id: true },
     });
     return !existing;
+  },
+
+  /**
+   * Update design settings (logo and/or theme)
+   */
+  updateDesignSettings: async (
+    orgId: string,
+    data: { logoUrl?: string | null; portalTheme?: PortalTheme }
+  ) => {
+    return prisma.organization.update({
+      where: { id: orgId },
+      data,
+      select: { id: true, logoUrl: true, portalTheme: true },
+    });
+  },
+
+  /**
+   * Get design settings for an organization
+   */
+  getDesignSettings: async (orgId: string) => {
+    return prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { logoUrl: true, portalTheme: true },
+    });
   },
 };
 

@@ -138,6 +138,8 @@ export const eventRepo = {
           select: {
             name: true,
             slug: true,
+            logoUrl: true,
+            portalTheme: true,
           },
         },
         ticketTypes: {
