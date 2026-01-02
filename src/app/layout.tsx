@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Roboto_Mono } from "next/font/google";
-import { Toaster } from "@/components/ui/sonner";
-import { ThemeProvider } from "@/components/providers/theme-provider";
 import "./globals.css";
 
 const robotoMono = Roboto_Mono({
@@ -51,17 +49,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="nl" suppressHydrationWarning>
+    <html lang="nl" className="dark">
       <body className={`${robotoMono.variable} font-mono antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <Toaster />
-          {children}
-        </ThemeProvider>
+        {children}
       </body>
     </html>
   );

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getOrderForCheckout } from "@/server/services/orderService";
+import { getOrderForCheckout, completeFreeOrder } from "@/server/services/orderService";
 import { orderRepo } from "@/server/repos/orderRepo";
 
 interface RouteParams {
@@ -114,6 +114,17 @@ export async function PATCH(
         { error: "Bestelling niet gevonden" },
         { status: 404 }
       );
+    }
+
+    // If this is a free order (totalAmount = 0), complete it immediately
+    if (order.totalAmount === 0 && order.status === "PENDING") {
+      const completeResult = await completeFreeOrder(orderId);
+
+      if (!completeResult.success) {
+        console.error("Failed to complete free order:", completeResult.error);
+        // Log error but don't fail the request - buyer details are saved
+        // The order can still be completed later
+      }
     }
 
     return NextResponse.json({

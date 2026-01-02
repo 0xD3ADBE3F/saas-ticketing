@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { AnalyticsSection } from "@/components/analytics/AnalyticsSection";
 
 export default async function DashboardPage() {
   const user = await getUser();
@@ -141,6 +142,14 @@ export default async function DashboardPage() {
             <p className="text-green-100 text-sm">Alle bestellingen</p>
           </div>
         </Link>
+      </div>
+
+      {/* Analytics Section */}
+      <div>
+        <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+          Statistieken
+        </h2>
+        <AnalyticsSection organizationId={currentOrg.id} />
       </div>
     </div>
   );

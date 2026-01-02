@@ -68,8 +68,7 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
     order.expiresAt &&
     new Date(order.expiresAt) < new Date();
   const isPending = order.status === "PENDING" && !isExpired && !isFreeOrder;
-  const isPaid =
-    order.status === "PAID" || (isFreeOrder && order.status === "PENDING");
+  const isPaid = order.status === "PAID";
   const isFailed = order.status === "FAILED";
   const isCancelled = order.status === "CANCELLED";
 

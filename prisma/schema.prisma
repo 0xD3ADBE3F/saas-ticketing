@@ -212,6 +212,7 @@ model Ticket {
   @@index([eventId])
   @@index([orderId])
   @@index([status])
+  @@index([eventId, status]) // For analytics: event scanning statistics
   @@map("tickets")
 }
 
@@ -263,6 +264,8 @@ model Order {
   @@index([buyerEmail])
   @@index([status])
   @@index([status, expiresAt]) // For efficient background job queries
+  @@index([organizationId, paidAt(sort: Desc)]) // For analytics: sales velocity
+  @@index([organizationId, createdAt(sort: Desc)]) // For analytics: time-based filtering
   @@map("orders")
 }
 
@@ -280,6 +283,7 @@ model OrderItem {
 
   @@unique([orderId, ticketTypeId])
   @@index([orderId])
+  @@index([ticketTypeId]) // For analytics: ticket type performance
   @@map("order_items")
 }
 
@@ -312,6 +316,7 @@ model ScanLog {
 
   @@index([ticketId])
   @@index([scannedAt])
+  @@index([ticketId, scannedAt(sort: Desc)]) // For analytics: scan time distribution
   @@map("scan_logs")
 }
 
