@@ -10,7 +10,8 @@ import type { Invoice } from "@/generated/prisma";
 import { formatPrice } from "@/lib/currency";
 import { formatDate } from "@/lib/date";
 
-interface InvoiceWithRelations extends Invoice {
+interface InvoiceWithRelations extends Omit<Invoice, "vatRate"> {
+  vatRate: number;
   organization: {
     id: string;
     name: string;
