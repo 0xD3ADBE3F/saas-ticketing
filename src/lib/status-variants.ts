@@ -13,7 +13,7 @@ export function getEventStatusVariant(
 }
 
 export function getOrderStatusVariant(
-  status: "PENDING" | "PAID" | "FAILED" | "CANCELLED" | "REFUNDED"
+  status: "PENDING" | "PAID" | "FAILED" | "CANCELLED" | "REFUNDED" | "EXPIRED"
 ): BadgeProps["variant"] {
   const variants = {
     PAID: "success",
@@ -21,6 +21,7 @@ export function getOrderStatusVariant(
     FAILED: "destructive",
     CANCELLED: "neutral",
     REFUNDED: "info",
+    EXPIRED: "warning",
   } as const;
   return variants[status] || "neutral";
 }

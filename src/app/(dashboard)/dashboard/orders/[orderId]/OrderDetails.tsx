@@ -68,7 +68,8 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
   FAILED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   CANCELLED: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
   REFUNDED: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  EXPIRED: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+  EXPIRED:
+    "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
 };
 
 const TICKET_STATUS_LABELS: Record<TicketStatus, string> = {

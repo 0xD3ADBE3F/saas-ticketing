@@ -29,13 +29,13 @@ export const orderExpirationService = {
     });
 
     if (expiredOrders.length === 0) {
-      logger.info("No expired orders found", { service: "orderExpiration" });
+      logger.info({ service: "orderExpiration" }, "No expired orders found");
       return 0;
     }
 
-    logger.info(`Found ${expiredOrders.length} expired orders`, {
+    logger.info({
       service: "orderExpiration",
-    });
+    }, `Found ${expiredOrders.length} expired orders`);
 
     let successCount = 0;
 
@@ -66,7 +66,6 @@ export const orderExpirationService = {
           });
 
           logger.info(
-            `Expired order ${order.orderNumber}, released ${order.orderItems.reduce((sum, item) => sum + item.quantity, 0)} tickets from soldCount, and deleted ${order.tickets.length} ticket records`,
             {
               service: "orderExpiration",
               orderId: order.id,
@@ -76,27 +75,28 @@ export const orderExpirationService = {
                 0
               ),
               ticketsDeleted: order.tickets.length,
-            }
+            },
+            `Expired order ${order.orderNumber}, released ${order.orderItems.reduce((sum, item) => sum + item.quantity, 0)} tickets from soldCount, and deleted ${order.tickets.length} ticket records`
           );
         });
 
         successCount++;
       } catch (error) {
-        logger.error(`Failed to expire order ${order.id}`, {
+        logger.error({
           service: "orderExpiration",
           orderId: order.id,
           error: error instanceof Error ? error.message : "Unknown error",
-        });
+        }, `Failed to expire order ${order.id}`);
       }
     }
 
     logger.info(
-      `Successfully expired ${successCount}/${expiredOrders.length} orders`,
       {
         service: "orderExpiration",
         successCount,
         totalCount: expiredOrders.length,
-      }
+      },
+      `Successfully expired ${successCount}/${expiredOrders.length} orders`
     );
 
     return successCount;

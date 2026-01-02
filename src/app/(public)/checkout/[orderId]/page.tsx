@@ -228,23 +228,6 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
                       <p className="font-medium">
                         {formatDateRange(event.startsAt, event.endsAt)}
                       </p>
-                      {event.location && <p>{event.location}</p>}
-                      {event.organization.websiteUrl && (
-                        <p>
-                          <a
-                            href={event.organization.websiteUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-                          >
-                            🌐{" "}
-                            {event.organization.websiteUrl.replace(
-                              /^https?:\/\//,
-                              ""
-                            )}
-                          </a>
-                        </p>
-                      )}
                     </div>
                   </div>
                 </div>

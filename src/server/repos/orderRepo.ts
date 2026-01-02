@@ -575,6 +575,12 @@ export const orderRepo = {
               startsAt: true,
               endsAt: true,
               location: true,
+              organization: {
+                select: {
+                  websiteUrl: true,
+                  showTicketAvailability: true,
+                },
+              },
             },
           },
           orderItems: {

@@ -15,9 +15,7 @@ export async function GET(req: NextRequest) {
     const cronSecret = process.env.CRON_SECRET;
 
     if (!cronSecret) {
-      logger.error("CRON_SECRET environment variable not set", {
-        service: "cronJob",
-      });
+      logger.error("CRON_SECRET environment variable not set");
       return NextResponse.json(
         { error: "Server configuration error" },
         { status: 500 }
@@ -25,20 +23,20 @@ export async function GET(req: NextRequest) {
     }
 
     if (authHeader !== `Bearer ${cronSecret}`) {
-      logger.warn("Unauthorized cron job attempt", {
+      logger.warn({
         service: "cronJob",
         ip: req.headers.get("x-forwarded-for") || "unknown",
-      });
+      }, "Unauthorized cron job attempt");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    logger.info("Starting order expiration cron job", { service: "cronJob" });
+    logger.info({ service: "cronJob" }, "Starting order expiration cron job");
     const expiredCount = await orderExpirationService.expireOldOrders();
 
-    logger.info("Order expiration cron job completed", {
+    logger.info({
       service: "cronJob",
       expiredCount,
-    });
+    }, "Order expiration cron job completed");
 
     return NextResponse.json({
       success: true,
@@ -46,11 +44,11 @@ export async function GET(req: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    logger.error("Cron job failed", {
+    logger.error({
       service: "cronJob",
       error: error instanceof Error ? error.message : "Unknown error",
       stack: error instanceof Error ? error.stack : undefined,
-    });
+    }, "Cron job failed");
 
     return NextResponse.json(
       {
