@@ -109,7 +109,7 @@ export function PlatformSettingsForm({ settings }: PlatformSettingsFormProps) {
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="unlock-fee">Unlock Fee (cents)</Label>
+          <Label htmlFor="unlock-fee">Unlock Fee (cents, excl. VAT)</Label>
           <div className="flex items-center gap-2 max-w-xs">
             <Input
               id="unlock-fee"
@@ -118,13 +118,17 @@ export function PlatformSettingsForm({ settings }: PlatformSettingsFormProps) {
               value={unlockFee}
               onChange={(e) => setUnlockFee(e.target.value)}
             />
-            <span className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
-              = €{(parseInt(unlockFee) / 100).toFixed(2)}
-            </span>
+            <div className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
+              <div>= €{(parseInt(unlockFee) / 100).toFixed(2)} excl. VAT</div>
+              <div className="text-xs">
+                (€{(Math.round(parseInt(unlockFee) * 1.21) / 100).toFixed(2)}{" "}
+                incl. 21% VAT)
+              </div>
+            </div>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400">
             One-time fee for organizers to unlock unlimited tickets (up to 2,500
-            system limit). Example: 2500 = €25.00
+            system limit). Example: 2500 = €25.00 excl. VAT (€30.25 incl. VAT)
           </p>
         </div>
       </div>
