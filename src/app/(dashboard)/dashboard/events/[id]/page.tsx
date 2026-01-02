@@ -14,6 +14,7 @@ import { prisma } from "@/server/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getEventStatusVariant } from "@/lib/status-variants";
+import { ConfettiAnimation } from "@/components/checkout/ConfettiAnimation";
 import {
   CheckCircle,
   ChevronLeft,
@@ -30,7 +31,11 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 interface EventDetailPageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ payment?: string; unlocked?: string }>;
+  searchParams: Promise<{
+    payment?: string;
+    unlocked?: string;
+    published?: string;
+  }>;
 }
 
 const statusLabels = {
@@ -57,9 +62,10 @@ export default async function EventDetailPage({
   }
 
   const { id } = await params;
-  const { payment, unlocked } = await searchParams;
+  const { payment, unlocked, published } = await searchParams;
   const paymentSuccess = payment === "success";
   const unlockSuccess = unlocked === "success";
+  const publishSuccess = published === "success";
 
   const result = await getEvent(id, user.id);
 
@@ -78,6 +84,9 @@ export default async function EventDetailPage({
 
   return (
     <div>
+      {/* Confetti Animation */}
+      {publishSuccess && <ConfettiAnimation />}
+
       {/* Payment Success Message */}
       {paymentSuccess && (
         <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 backdrop-blur-xl border-2 border-green-200/50 dark:border-green-800/50 rounded-2xl p-5 shadow-lg">

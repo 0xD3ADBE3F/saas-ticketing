@@ -7,7 +7,6 @@ import { EventPublishPaymentModal } from "./EventPublishPaymentModal";
 
 interface EventStatusActionsProps {
   event: Event;
-  isPayPerEvent?: boolean;
 }
 
 const statusTransitions: Record<
@@ -22,7 +21,7 @@ const statusTransitions: Record<
   DRAFT: [
     {
       label: "Live zetten",
-      payPerEventLabel: "Betaal & Publiceer (€59,29)",
+      payPerEventLabel: "Publiceer",
       next: "LIVE",
       variant: "primary",
     },
@@ -44,10 +43,7 @@ const variantClasses = {
     "bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30",
 };
 
-export function EventStatusActions({
-  event,
-  isPayPerEvent = false,
-}: EventStatusActionsProps) {
+export function EventStatusActions({ event }: EventStatusActionsProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState<EventStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -64,17 +60,10 @@ export function EventStatusActions({
       if (!confirmed) return;
     }
 
+    // Show modal for LIVE status (both pay-per-event and regular)
     if (newStatus === "LIVE") {
-      // Show modal for pay-per-event, confirm dialog for others
-      if (isPayPerEvent) {
-        setShowPaymentModal(true);
-        return;
-      } else {
-        const confirmed = window.confirm(
-          "Weet je zeker dat je dit evenement live wilt zetten? Het wordt dan zichtbaar voor het publiek."
-        );
-        if (!confirmed) return;
-      }
+      setShowPaymentModal(true);
+      return;
     }
 
     await processStatusChange(newStatus);
@@ -98,7 +87,12 @@ export function EventStatusActions({
         return;
       }
 
-      router.refresh();
+      // Redirect with confetti for publish action
+      if (newStatus === "LIVE") {
+        router.push(`/dashboard/events/${event.id}?published=success`);
+      } else {
+        router.refresh();
+      }
     } catch {
       setError("Er is iets misgegaan. Probeer het opnieuw.");
     } finally {
@@ -128,11 +122,6 @@ export function EventStatusActions({
       )}
 
       {transitions.map((transition) => {
-        const buttonLabel =
-          isPayPerEvent && transition.payPerEventLabel
-            ? transition.payPerEventLabel
-            : transition.label;
-
         return (
           <button
             key={transition.next}
@@ -140,28 +129,19 @@ export function EventStatusActions({
             disabled={isLoading !== null}
             className={`w-full px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 ${variantClasses[transition.variant]}`}
           >
-            {isLoading === transition.next ? "Bezig..." : buttonLabel}
+            {isLoading === transition.next ? "Bezig..." : transition.label}
           </button>
         );
       })}
 
       {event.status === "DRAFT" && (
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-          {isPayPerEvent ? (
-            <>
-              💰 Je betaalt €49 (excl. BTW) per evenement. Na betaling wordt je
-              evenement direct live gezet.
-            </>
-          ) : (
-            <>
-              💡 Zet je evenement live om ticketverkoop te starten. Je kunt het
-              daarna nog steeds bewerken.
-            </>
-          )}
+          💡 Zet je evenement live om ticketverkoop te starten. Je kunt het
+          daarna nog steeds bewerken.
         </p>
       )}
 
-      {/* Payment Modal */}
+      {/* Payment/Publish Modal */}
       <EventPublishPaymentModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
