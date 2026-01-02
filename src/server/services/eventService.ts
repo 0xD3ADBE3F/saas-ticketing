@@ -69,8 +69,59 @@ function validateStatusTransition(
   return null;
 }
 
+/**
+ * Check if event slug can be changed
+ * Slug cannot be changed if:
+ * - Event status is LIVE
+ * - Any tickets have been sold for this event
+ */
+export async function canChangeEventSlug(
+  eventId: string
+): Promise<{ allowed: boolean; reason?: string }> {
+  // Get event
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { status: true },
+  });
+
+  if (!event) {
+    return {
+      allowed: false,
+      reason: "Evenement niet gevonden",
+    };
+  }
+
+  // Check if event is LIVE
+  if (event.status === "LIVE") {
+    return {
+      allowed: false,
+      reason: "URL kan niet gewijzigd worden als evenement live is",
+    };
+  }
+
+  // Check if any tickets have been sold for this event
+  const soldTicketCount = await prisma.ticket.count({
+    where: {
+      order: {
+        eventId,
+        status: "PAID",
+      },
+    },
+  });
+
+  if (soldTicketCount > 0) {
+    return {
+      allowed: false,
+      reason: "URL kan niet gewijzigd worden nadat er tickets zijn verkocht",
+    };
+  }
+
+  return { allowed: true };
+}
+
 export type CreateEventData = {
   title: string;
+  slug?: string; // Custom slug (optional, auto-generated from title if not provided)
   description?: string;
   location?: string;
   startsAt: Date;
@@ -82,6 +133,7 @@ export type CreateEventData = {
 
 export type UpdateEventData = {
   title?: string;
+  slug?: string; // Custom slug (optional, validates if provided)
   description?: string | null;
   location?: string | null;
   startsAt?: Date;
@@ -113,8 +165,10 @@ export async function createEvent(
     return { success: false, error: dateError };
   }
 
-  // Generate unique slug
-  const slug = await createUniqueSlug(organizationId, data.title);
+  // Generate unique slug (use custom if provided, otherwise auto-generate from title)
+  const slug = data.slug
+    ? data.slug
+    : await createUniqueSlug(organizationId, data.title);
 
   const event = await eventRepo.create(organizationId, userId, {
     ...data,
@@ -151,11 +205,34 @@ export async function updateEvent(
     return { success: false, error: dateError };
   }
 
-  // Generate new slug if title is being updated
+  // Handle slug changes
   let slug = currentEvent.slug;
-  if (data.title && data.title !== currentEvent.title) {
-    slug = await createUniqueSlug(currentEvent.organizationId, data.title, eventId);
+
+  // If custom slug is provided and different from current
+  if (data.slug && data.slug !== currentEvent.slug) {
+    // Check if slug can be changed
+    const changeCheck = await canChangeEventSlug(eventId);
+    if (!changeCheck.allowed) {
+      return {
+        success: false,
+        error: changeCheck.reason || "Slug kan niet gewijzigd worden",
+      };
+    }
+
+    // Check availability
+    const isAvailable = await eventRepo.isSlugAvailable(
+      currentEvent.organizationId,
+      data.slug,
+      eventId
+    );
+    if (!isAvailable) {
+      return { success: false, error: "Deze slug is al in gebruik" };
+    }
+
+    slug = data.slug;
   }
+  // If title is updated but no custom slug provided, don't auto-regenerate
+  // (preserves manually set slugs)
 
   const event = await eventRepo.update(eventId, userId, {
     ...data,
@@ -245,7 +322,7 @@ export async function deleteEvent(
 export async function getEvent(
   eventId: string,
   userId: string
-): Promise<EventServiceResult<Event>> {
+): Promise<EventServiceResult<Event & { organization: { slug: string } }>> {
   const event = await eventRepo.findById(eventId, userId);
   if (!event) {
     return { success: false, error: "Evenement niet gevonden" };
@@ -275,10 +352,21 @@ export async function getUserEvents(
 }
 
 /**
- * Get public event by slug
+ * Get public event by slug - DEPRECATED
+ * Use getPublicEventByBothSlugs instead
  */
 export async function getPublicEvent(slug: string): Promise<PublicEvent | null> {
   return eventRepo.findPublicBySlug(slug);
+}
+
+/**
+ * Get public event by organization slug and event slug
+ */
+export async function getPublicEventByBothSlugs(
+  orgSlug: string,
+  eventSlug: string
+): Promise<PublicEvent | null> {
+  return eventRepo.findPublicByBothSlugs(orgSlug, eventSlug);
 }
 
 /**

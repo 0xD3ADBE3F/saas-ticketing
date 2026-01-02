@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getPublicEvent } from "@/server/services/eventService";
+import { getPublicEventByBothSlugs } from "@/server/services/eventService";
 import { formatDateTime, formatDateRange, isPast } from "@/lib/date";
 import { EventTickets } from "@/components/checkout";
 import { Badge } from "@/components/ui/badge";
@@ -17,13 +17,13 @@ import {
 import { PublicHero, PublicFeatureBadge } from "@/components/public";
 
 interface PublicEventPageProps {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ orgSlug: string; eventSlug: string }>;
   searchParams: Promise<{ error?: string }>;
 }
 
 export async function generateMetadata({ params }: PublicEventPageProps) {
-  const { slug } = await params;
-  const event = await getPublicEvent(slug);
+  const { orgSlug, eventSlug } = await params;
+  const event = await getPublicEventByBothSlugs(orgSlug, eventSlug);
 
   if (!event) {
     return {
@@ -46,9 +46,9 @@ export default async function PublicEventPage({
   params,
   searchParams,
 }: PublicEventPageProps) {
-  const { slug } = await params;
+  const { orgSlug, eventSlug } = await params;
   const { error } = await searchParams;
-  const event = await getPublicEvent(slug);
+  const event = await getPublicEventByBothSlugs(orgSlug, eventSlug);
 
   if (!event) {
     notFound();

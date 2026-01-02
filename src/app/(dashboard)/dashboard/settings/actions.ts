@@ -3,10 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { getUser } from "@/server/lib/supabase";
 import { organizationRepo } from "@/server/repos/organizationRepo";
-import { getUserOrganizations } from "@/server/services/organizationService";
+import { getUserOrganizations, canChangeSlug } from "@/server/services/organizationService";
+import { validateSlug } from "@/server/lib/slugValidation";
 
 export interface UpdateOrganizationData {
   name?: string;
+  slug?: string;
   email?: string;
   firstName?: string;
   lastName?: string;
@@ -33,6 +35,36 @@ export async function updateOrganization(data: UpdateOrganizationData) {
 
     const currentOrg = organizations[0];
 
+    // Validate and handle slug update
+    if (data.slug && data.slug !== currentOrg.slug) {
+      // Validate slug format and reserved words
+      const slugValidation = validateSlug(data.slug);
+      if (!slugValidation.valid) {
+        return {
+          success: false,
+          error: slugValidation.error || "Ongeldige slug",
+        };
+      }
+
+      // Check if slug can be changed
+      const changeCheck = await canChangeSlug(currentOrg.id);
+      if (!changeCheck.allowed) {
+        return {
+          success: false,
+          error: changeCheck.reason || "Slug kan niet gewijzigd worden",
+        };
+      }
+
+      // Check availability
+      const isAvailable = await organizationRepo.isSlugAvailable(data.slug);
+      if (!isAvailable) {
+        return {
+          success: false,
+          error: "Deze slug is al in gebruik",
+        };
+      }
+    }
+
     // Validate postal code format (Dutch: 1234AB)
     if (data.postalCode && !/^\d{4}\s?[A-Z]{2}$/i.test(data.postalCode)) {
       return {
@@ -44,6 +76,7 @@ export async function updateOrganization(data: UpdateOrganizationData) {
     // Update organization
     await organizationRepo.update(currentOrg.id, user.id, {
       name: data.name,
+      slug: data.slug,
       email: data.email,
       firstName: data.firstName,
       lastName: data.lastName,

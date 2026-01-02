@@ -26,7 +26,7 @@ export function PublicCheckoutSummary({
 }: PublicCheckoutSummaryProps) {
   return (
     <div
-      className={`public-card ${
+      className={`public-card border border-gray-200 dark:border-gray-700 ${
         isSticky ? "sticky top-24" : ""
       } divide-y divide-gray-200 dark:divide-gray-700`}
     >

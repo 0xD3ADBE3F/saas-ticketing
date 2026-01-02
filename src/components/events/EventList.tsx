@@ -109,7 +109,7 @@ export function EventList({ events }: EventListProps) {
                     </Link>
                     {event.status === "LIVE" && (
                       <Link
-                        href={`/e/${event.slug}`}
+                        href={`/e/${event.organization.slug}/${event.slug}`}
                         target="_blank"
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
                       >

@@ -2,6 +2,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { getUser } from "@/server/lib/supabase";
 import { getSuperAdmin } from "@/server/lib/platformAdmin";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export default async function PlatformLayout({
   children,
@@ -74,25 +75,25 @@ function PlatformNav({ adminEmail }: { adminEmail: string }) {
           <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
             Admin: {adminEmail}
           </div>
-          <a
-            href="/dashboard"
-            className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
-          >
-            ← Back to Organizer Dashboard
-          </a>
+          <div className="flex items-center gap-2 mb-2">
+            <a
+              href="/dashboard"
+              className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 flex-1"
+            >
+              ← Back to Organizer Dashboard
+            </a>
+            <ThemeToggle />
+          </div>
         </div>
       </nav>
 
       {/* Mobile Top Bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 z-50">
         <div className="flex items-center gap-2">
-          <Image
-            src="/logo-white.png"
-            alt="Entro"
-            width={80}
-            height={26}
-            className="dark:invert"
-          />
+          <div className="text-xs text-gray-600 dark:text-gray-400">
+            {adminEmail}
+          </div>
+          <ThemeToggle />
           <span className="text-xs font-medium text-red-600">Admin</span>
         </div>
         <div className="text-xs text-gray-600 dark:text-gray-400">

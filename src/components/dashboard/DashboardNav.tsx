@@ -16,6 +16,7 @@ import {
   X,
   ChevronRight,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const navItems = [
   {
@@ -77,18 +78,7 @@ export function DashboardNav({
       <nav className="hidden md:flex w-64 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-800/50 p-4 flex-col fixed inset-y-0 left-0 z-30">
         <div className="mb-8 pb-4 border-b border-gray-200/50 dark:border-gray-800/50">
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
-              <Image
-                src="/logo-icon.svg"
-                alt="Entro"
-                width={24}
-                height={24}
-                className="brightness-0 invert"
-              />
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-              Entro
-            </span>
+            <Image src="/logo-white.png" alt="Entro" width={200} height={30} />
           </Link>
         </div>
 
@@ -140,20 +130,23 @@ export function DashboardNav({
               {userEmail}
             </p>
           </div>
-          <form action="/api/auth/signout" method="POST">
-            <button
-              type="submit"
-              className="w-full px-4 py-3 text-sm text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all text-left flex items-center gap-3 group"
-            >
-              <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              <span className="font-medium">Uitloggen</span>
-            </button>
-          </form>
+          <div className="flex items-center gap-2 mb-2">
+            <form action="/api/auth/signout" method="POST" className="flex-1">
+              <button
+                type="submit"
+                className="w-full px-4 py-3 text-sm text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition-all text-left flex items-center gap-3 group"
+              >
+                <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Uitloggen</span>
+              </button>
+            </form>
+            <ThemeToggle />
+          </div>
         </div>
       </nav>
 
       {/* Mobile Header */}
-      <header className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 z-40 flex items-center justify-between px-4">
+      <header className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 z-50 flex items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 group">
           <div className="p-1.5 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
             <Image
@@ -164,21 +157,21 @@ export function DashboardNav({
               className="brightness-0 invert"
             />
           </div>
-          <span className="font-bold text-lg bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-            Entro
-          </span>
         </Link>
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors active:scale-95 touch-manipulation"
-          aria-label="Menu"
-        >
-          {mobileMenuOpen ? (
-            <X className="w-6 h-6" />
-          ) : (
-            <Menu className="w-6 h-6" />
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors active:scale-95 touch-manipulation"
+            aria-label="Menu"
+          >
+            {mobileMenuOpen ? (
+              <X className="w-6 h-6" />
+            ) : (
+              <Menu className="w-6 h-6" />
+            )}
+          </button>
+        </div>
       </header>
 
       {/* Mobile Slide-out Menu */}
@@ -188,7 +181,7 @@ export function DashboardNav({
             className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-in fade-in duration-200"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="md:hidden fixed top-16 right-0 bottom-0 w-80 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-l border-gray-200/50 dark:border-gray-800/50 z-50 p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+          <div className="md:hidden fixed top-16 right-0 bottom-0 w-80 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-l border-gray-200/50 dark:border-gray-800/50 z-45 p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
             <div className="p-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl text-sm mb-6 border border-blue-100 dark:border-blue-900/30">
               <p className="font-semibold truncate text-gray-900 dark:text-white mb-1">
                 {organizationName}
@@ -252,7 +245,7 @@ export function DashboardNav({
       )}
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-800/50 z-40 safe-area-bottom">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-800/50 z-40 safe-area-bottom">
         <ul className="flex h-full px-2">
           {mobileNavItems.map((item) => {
             const isActive =
@@ -264,14 +257,14 @@ export function DashboardNav({
               <li key={item.href} className="flex-1">
                 <Link
                   href={item.href}
-                  className={`flex flex-col items-center justify-center h-full gap-1 transition-all touch-manipulation relative group ${
+                  className={`flex items-center justify-center h-full transition-all touch-manipulation relative group ${
                     isActive
                       ? "text-blue-600 dark:text-blue-400"
                       : "text-gray-500 dark:text-gray-400 active:scale-95"
                   }`}
                 >
                   <div
-                    className={`p-2 rounded-xl transition-all ${
+                    className={`p-2.5 rounded-xl transition-all ${
                       isActive
                         ? "bg-blue-100 dark:bg-blue-900/30"
                         : "group-hover:bg-gray-100 dark:group-hover:bg-gray-800"
@@ -283,13 +276,6 @@ export function DashboardNav({
                       } transition-transform`}
                     />
                   </div>
-                  <span
-                    className={`text-[11px] font-medium ${
-                      isActive ? "font-semibold" : ""
-                    }`}
-                  >
-                    {item.label}
-                  </span>
                   {isActive && (
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full" />
                   )}

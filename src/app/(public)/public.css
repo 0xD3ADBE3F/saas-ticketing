@@ -61,6 +61,36 @@
 
 /* Base styles for public pages */
 .public-pages {
+  /* Explicitly set light mode variables with enhanced contrast */
+  --color-public-primary: #1d4ed8;
+  --color-public-primary-foreground: #ffffff;
+  --color-public-primary-hover: #1e40af;
+  --color-public-primary-light: #dbeafe;
+  --color-public-accent: #059669;
+  --color-public-accent-foreground: #ffffff;
+  --color-public-accent-hover: #047857;
+  --color-public-accent-light: #d1fae5;
+  --color-public-background: #ffffff;
+  --color-public-foreground: #0f172a;
+  --color-public-muted: #f1f5f9;
+  --color-public-muted-foreground: #475569;
+  --color-public-border: #cbd5e1;
+  --color-public-card: #ffffff;
+  --color-public-card-foreground: #0f172a;
+  --shadow-public-card:
+    0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-public-card-hover:
+    0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --color-public-success: #059669;
+  --color-public-success-foreground: #ffffff;
+  --color-public-success-light: #d1fae5;
+  --color-public-error: #dc2626;
+  --color-public-error-foreground: #ffffff;
+  --color-public-error-light: #fee2e2;
+  --color-public-warning: #d97706;
+  --color-public-warning-foreground: #ffffff;
+  --color-public-warning-light: #fef3c7;
+
   background: var(--color-public-background);
   color: var(--color-public-foreground);
   min-height: 100vh;
@@ -71,6 +101,19 @@
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Force background colors for better light mode visibility */
+.public-pages {
+  background-color: #ffffff;
+  background-image:
+    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.03) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.03) 0px, transparent 50%);
+}
+
+:where(.dark) .public-pages,
+:where(html.dark) .public-pages {
+  background-color: #0f172a;
 }
 
 /* Mobile-first container */
@@ -97,50 +140,49 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .public-pages {
-    --color-public-primary: #3b82f6;
-    --color-public-primary-foreground: #ffffff;
-    --color-public-primary-hover: #2563eb;
-    --color-public-primary-light: #1e3a8a;
+:where(.dark) .public-pages,
+:where(html.dark) .public-pages {
+  --color-public-primary: #3b82f6;
+  --color-public-primary-foreground: #ffffff;
+  --color-public-primary-hover: #2563eb;
+  --color-public-primary-light: #1e3a8a;
 
-    --color-public-accent: #34d399;
-    --color-public-accent-foreground: #0f172a;
-    --color-public-accent-hover: #10b981;
-    --color-public-accent-light: #064e3b;
+  --color-public-accent: #34d399;
+  --color-public-accent-foreground: #0f172a;
+  --color-public-accent-hover: #10b981;
+  --color-public-accent-light: #064e3b;
 
-    --color-public-background: #0f172a;
-    --color-public-foreground: #f1f5f9;
-    --color-public-muted: #1e293b;
-    --color-public-muted-foreground: #cbd5e1;
-    --color-public-border: #334155;
+  --color-public-background: #0f172a;
+  --color-public-foreground: #f1f5f9;
+  --color-public-muted: #1e293b;
+  --color-public-muted-foreground: #cbd5e1;
+  --color-public-border: #334155;
 
-    --color-public-card: #1e293b;
-    --color-public-card-foreground: #f1f5f9;
-    --shadow-public-card:
-      0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
-    --shadow-public-card-hover:
-      0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+  --color-public-card: #1e293b;
+  --color-public-card-foreground: #f1f5f9;
+  --shadow-public-card:
+    0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+  --shadow-public-card-hover:
+    0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
 
-    --color-public-success-light: #064e3b;
-    --color-public-error-light: #7f1d1d;
-    --color-public-warning-light: #78350f;
-  }
+  --color-public-success-light: #064e3b;
+  --color-public-error-light: #7f1d1d;
+  --color-public-warning-light: #78350f;
 }
 
 /* Public header styling with backdrop blur */
 .public-header {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--color-public-border);
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
   transition: all 0.3s ease;
 }
 
-@media (prefers-color-scheme: dark) {
-  .public-header {
-    background: rgba(30, 41, 59, 0.8);
-  }
+:where(.dark) .public-header,
+:where(html.dark) .public-header {
+  background: rgba(30, 41, 59, 0.8);
 }
 
 /* Button variants - Mobile-first with 48px touch targets */
@@ -179,7 +221,8 @@
   );
   color: var(--color-public-primary-foreground);
   box-shadow:
-    0 1px 3px 0 rgb(0 0 0 / 0.1),
+    0 1px 3px 0 rgb(0 0 0 / 0.12),
+    0 1px 2px -1px rgb(0 0 0 / 0.08),
     0 0 0 0 rgba(37, 99, 235, 0);
 }
 
@@ -255,6 +298,7 @@
 /* Card styling with modern shadows */
 .public-card {
   background: var(--color-public-card);
+  color: var(--color-public-card-foreground);
   border: 1px solid var(--color-public-border);
   border-radius: 1rem;
   box-shadow: var(--shadow-public-card);
@@ -262,9 +306,38 @@
   overflow: hidden;
 }
 
+/* Explicit light mode card styling with enhanced visibility */
+.public-card {
+  background-color: #ffffff;
+  color: #0f172a;
+  border-color: #cbd5e1;
+  box-shadow:
+    0 1px 3px 0 rgb(0 0 0 / 0.08),
+    0 1px 2px -1px rgb(0 0 0 / 0.06),
+    0 0 0 1px rgb(0 0 0 / 0.02);
+}
+
+/* Dark mode card overrides */
+:where(.dark) .public-card,
+:where(html.dark) .public-card {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  border-color: #334155;
+  box-shadow:
+    0 1px 3px 0 rgb(0 0 0 / 0.3),
+    0 1px 2px -1px rgb(0 0 0 / 0.3);
+}
+
 .public-card:hover {
   box-shadow: var(--shadow-public-card-hover);
   transform: translateY(-4px);
+}
+
+:where(.dark) .public-card:hover,
+:where(html.dark) .public-card:hover {
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.3),
+    0 4px 6px -4px rgb(0 0 0 / 0.3);
 }
 
 .public-card-interactive {
@@ -321,23 +394,27 @@
 }
 
 .public-badge-primary {
-  background: var(--color-public-primary-light);
-  color: var(--color-public-primary);
+  background: #dbeafe;
+  color: #1e40af;
+  font-weight: 600;
 }
 
 .public-badge-success {
-  background: var(--color-public-success-light);
-  color: var(--color-public-success);
+  background: #d1fae5;
+  color: #065f46;
+  font-weight: 600;
 }
 
 .public-badge-warning {
-  background: var(--color-public-warning-light);
-  color: var(--color-public-warning);
+  background: #fef3c7;
+  color: #92400e;
+  font-weight: 600;
 }
 
 .public-badge-error {
-  background: var(--color-public-error-light);
-  color: var(--color-public-error);
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 600;
 }
 
 /* Hero section */

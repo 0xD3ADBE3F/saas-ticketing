@@ -25,10 +25,12 @@ export function PublicFeatureBadge({
     typeof icon === "string" && icon in icons ? icons[icon as IconType] : null;
 
   const variantClasses = {
-    default: "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300",
+    default:
+      "bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700",
     success:
-      "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400",
-    primary: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
+      "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800",
+    primary:
+      "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800",
   };
 
   return (

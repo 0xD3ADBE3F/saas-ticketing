@@ -1,5 +1,6 @@
 import { organizationRepo, membershipRepo } from "@/server/repos/organizationRepo";
 import type { Organization, Role } from "@/generated/prisma";
+import { prisma } from "@/server/lib/prisma";
 
 export type CreateOrganizationResult =
   | { success: true; organization: Organization }
@@ -120,3 +121,49 @@ export async function requireRole(
     throw new Error("Insufficient permissions");
   }
 }
+
+/**
+ * Check if organization slug can be changed
+ * Slug cannot be changed if:
+ * - Any tickets have been sold (order status = PAID)
+ * - Any events are currently LIVE
+ */
+export async function canChangeSlug(
+  organizationId: string
+): Promise<{ allowed: boolean; reason?: string }> {
+  // Check if any tickets have been sold
+  const soldTicketCount = await prisma.ticket.count({
+    where: {
+      order: {
+        organizationId,
+        status: "PAID",
+      },
+    },
+  });
+
+  if (soldTicketCount > 0) {
+    return {
+      allowed: false,
+      reason: "URL kan niet gewijzigd worden nadat er tickets zijn verkocht",
+    };
+  }
+
+  // Check if any events are LIVE
+  const liveEvent = await prisma.event.findFirst({
+    where: {
+      organizationId,
+      status: "LIVE",
+    },
+    select: { id: true },
+  });
+
+  if (liveEvent) {
+    return {
+      allowed: false,
+      reason: "URL kan niet gewijzigd worden zolang er live evenementen zijn",
+    };
+  }
+
+  return { allowed: true };
+}
+

@@ -163,7 +163,9 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
                       bestelling plaatsen.
                     </p>
                     <Button asChild variant="destructive" size="sm">
-                      <Link href={`/e/${event.slug}`}>
+                      <Link
+                        href={`/e/${event.organization.slug}/${event.slug}`}
+                      >
                         Terug naar evenement
                       </Link>
                     </Button>
@@ -563,7 +565,7 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
           {(isPaid || isExpired || isCancelled) && (
             <div className="mt-8 text-center">
               <Link
-                href={`/e/${event.slug}`}
+                href={`/e/${event.organization.slug}/${event.slug}`}
                 className="public-btn public-btn-outline"
               >
                 ← Terug naar evenement

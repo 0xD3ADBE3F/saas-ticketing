@@ -21,6 +21,8 @@ export function PublicCard({
     <div
       className={cn(
         "public-card p-6",
+        "bg-white border border-gray-200",
+        "dark:bg-gray-800 dark:border-gray-700",
         {
           "cursor-pointer": hover,
         },
@@ -58,7 +60,11 @@ export function PublicCardTitle({
 }: HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={cn("text-xl font-bold text-public-foreground", className)}
+      className={cn(
+        "text-xl font-bold",
+        "text-gray-900 dark:text-white",
+        className
+      )}
       {...props}
     >
       {children}
@@ -76,7 +82,11 @@ export function PublicCardDescription({
 }: HTMLAttributes<HTMLParagraphElement>) {
   return (
     <p
-      className={cn("text-sm text-public-muted-foreground mt-1", className)}
+      className={cn(
+        "text-sm mt-1",
+        "text-gray-600 dark:text-gray-400",
+        className
+      )}
       {...props}
     >
       {children}

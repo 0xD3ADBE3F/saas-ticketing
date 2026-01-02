@@ -339,6 +339,7 @@ export async function getOrderForCheckout(
     location: string | null;
     organization: {
       name: string;
+      slug: string;
       logoUrl: string | null;
       websiteUrl: string | null;
       showTicketAvailability: boolean;

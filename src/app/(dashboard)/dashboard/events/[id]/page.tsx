@@ -141,7 +141,7 @@ export default async function EventDetailPage({
           {event.status === "LIVE" && (
             <Button asChild className="font-semibold shadow-lg">
               <Link
-                href={`/e/${event.slug}`}
+                href={`/e/${event.organization.slug}/${event.slug}`}
                 target="_blank"
                 className="flex items-center gap-2"
               >
@@ -210,14 +210,14 @@ export default async function EventDetailPage({
                   <dd>
                     {event.status === "LIVE" ? (
                       <a
-                        href={`/e/${event.slug}`}
+                        href={`/e/${event.organization.slug}/${event.slug}`}
                         target="_blank"
                         className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
                       >
                         <LinkIcon className="w-4 h-4" />
                         {typeof window !== "undefined"
-                          ? `${window.location.origin}/e/${event.slug}`
-                          : `/e/${event.slug}`}
+                          ? `${window.location.origin}/e/${event.organization.slug}/${event.slug}`
+                          : `/e/${event.organization.slug}/${event.slug}`}
                       </a>
                     ) : (
                       <span className="text-gray-500 dark:text-gray-400 italic">

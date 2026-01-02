@@ -26,6 +26,8 @@ export default async function NewEventPage({
   const params = await searchParams;
   const isOnboarding = params.onboarding === "true";
 
+  const currentOrg = organizations[0];
+
   return (
     <div className="max-w-2xl">
       {/* Breadcrumb */}
@@ -87,7 +89,15 @@ export default async function NewEventPage({
           </div>
         </div>
         <div className="p-6">
-          {isOnboarding ? <OnboardingEventForm /> : <EventForm mode="create" />}
+          {isOnboarding ? (
+            <OnboardingEventForm />
+          ) : (
+            <EventForm
+              mode="create"
+              organizationId={currentOrg.id}
+              organizationSlug={currentOrg.slug}
+            />
+          )}
         </div>
       </div>
 

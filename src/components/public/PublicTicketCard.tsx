@@ -40,14 +40,14 @@ export function PublicTicketCard({
   return (
     <div
       onClick={handleClick}
-      className={`public-card public-card-interactive relative transition-all duration-200 ${
+      className={`public-card public-card-interactive relative transition-all duration-200 border ${
         isSelected
-          ? "ring-2 ring-blue-500 shadow-lg border-blue-200 dark:border-blue-800"
-          : ""
+          ? "ring-2 ring-blue-600 dark:ring-blue-500 shadow-lg border-blue-300 dark:border-blue-700"
+          : "border-gray-200 dark:border-gray-700"
       } ${
         isSoldOut
-          ? "opacity-60 cursor-not-allowed"
-          : "hover:shadow-xl cursor-pointer"
+          ? "opacity-60 cursor-not-allowed bg-gray-50 dark:bg-gray-900"
+          : "hover:shadow-xl cursor-pointer bg-white dark:bg-gray-800"
       }`}
       role="button"
       tabIndex={isSoldOut ? -1 : 0}

@@ -56,13 +56,16 @@ export function PublicEventCard({ event }: PublicEventCardProps) {
 
   return (
     <PublicCard className="overflow-hidden">
-      <Link href={`/e/${event.slug}`} className="block group">
+      <Link
+        href={`/e/${event.organization.slug}/${event.slug}`}
+        className="block group"
+      >
         <div className="flex flex-col lg:flex-row gap-0">
           {/* Event Image or Placeholder */}
           <div className="lg:w-80 flex-shrink-0 relative overflow-hidden">
-            <div className="aspect-[16/10] lg:aspect-[4/5] bg-gradient-to-br from-blue-100 via-blue-50 to-indigo-50 dark:from-blue-900/40 dark:via-blue-900/30 dark:to-indigo-900/20 flex items-center justify-center relative group-hover:scale-105 transition-transform duration-300">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
-              <Calendar className="w-16 h-16 text-blue-400/40 dark:text-blue-400/30" />
+            <div className="aspect-[16/10] lg:aspect-[4/5] bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/40 dark:via-blue-900/30 dark:to-indigo-900/20 flex items-center justify-center relative group-hover:scale-105 transition-transform duration-300">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent" />
+              <Calendar className="w-16 h-16 text-blue-300 dark:text-blue-400/30" />
 
               {/* Status Badge Overlay */}
               {event.organization.showTicketAvailability && (
@@ -93,7 +96,7 @@ export function PublicEventCard({ event }: PublicEventCardProps) {
               </PublicCardTitle>
 
               {/* Date & Time - Prominent */}
-              <div className="flex items-center gap-2 text-base text-public-foreground font-medium mb-3">
+              <div className="flex items-center gap-2 text-base text-gray-900 dark:text-white font-medium mb-3">
                 <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                 <span>
                   {dateStr} om {timeStr}
@@ -102,7 +105,7 @@ export function PublicEventCard({ event }: PublicEventCardProps) {
 
               {/* Location */}
               {event.location && (
-                <div className="flex items-center gap-2 text-sm text-public-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                   <MapPin className="w-4 h-4 flex-shrink-0" />
                   <span className="truncate">{event.location}</span>
                 </div>
@@ -112,7 +115,7 @@ export function PublicEventCard({ event }: PublicEventCardProps) {
             <PublicCardContent className="flex-1">
               {/* Description */}
               {event.description && (
-                <p className="text-sm text-public-muted-foreground line-clamp-3 leading-relaxed">
+                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed">
                   {event.description}
                 </p>
               )}
@@ -134,15 +137,15 @@ export function PublicEventCard({ event }: PublicEventCardProps) {
                       />
                     </div>
                   ) : (
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center flex-shrink-0">
                       <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs text-public-muted-foreground">
+                    <p className="text-xs text-gray-500 dark:text-gray-500">
                       Georganiseerd door
                     </p>
-                    <p className="text-sm font-medium text-public-foreground truncate">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                       {event.organization.name}
                     </p>
                   </div>
@@ -151,7 +154,7 @@ export function PublicEventCard({ event }: PublicEventCardProps) {
                       href={event.organization.websiteUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-public-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      className="text-gray-500 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 transition-colors"
                       onClick={(e) => e.stopPropagation()}
                       aria-label="Bezoek website organisator"
                     >
@@ -163,10 +166,10 @@ export function PublicEventCard({ event }: PublicEventCardProps) {
                 {/* Pricing & CTA */}
                 <div className="flex items-center gap-4 sm:flex-shrink-0">
                   <div className="flex flex-col items-end">
-                    <span className="text-xs text-public-muted-foreground">
+                    <span className="text-xs text-gray-500 dark:text-gray-500">
                       {lowestPrice === 0 ? "Toegang" : "Vanaf"}
                     </span>
-                    <span className="text-2xl font-bold text-public-foreground">
+                    <span className="text-2xl font-bold text-gray-900 dark:text-white">
                       {lowestPrice === 0
                         ? "Gratis"
                         : `€${(lowestPrice / 100).toFixed(2)}`}

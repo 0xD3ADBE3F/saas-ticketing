@@ -10,6 +10,7 @@ import {
   FileText,
   CheckCircle2,
   AlertCircle,
+  Link2,
 } from "lucide-react";
 import { updateOrganization } from "@/app/(dashboard)/dashboard/settings/actions";
 
@@ -17,6 +18,7 @@ interface OrganizationFormProps {
   organization: {
     id: string;
     name: string;
+    slug: string;
     email: string | null;
     firstName: string | null;
     lastName: string | null;
@@ -124,6 +126,31 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
             Dit e-mailadres wordt gebruikt voor facturen
           </p>
+          <div>
+            <label
+              htmlFor="slug"
+              className="pt-5 block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
+            >
+              Organisatie URL
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Link2 className="w-4 h-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                id="slug"
+                name="slug"
+                disabled
+                defaultValue={organization.slug}
+                className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+              />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
+              Jouw evenementen zijn beschikbaar op: getentro.app/e/
+              {organization.slug}/...
+            </p>
+          </div>
         </div>
       </div>
 

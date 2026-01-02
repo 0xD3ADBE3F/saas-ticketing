@@ -72,6 +72,7 @@ export default async function SettingsPage() {
               organization={{
                 id: currentOrg.id,
                 name: currentOrg.name,
+                slug: currentOrg.slug,
                 email: currentOrg.email,
                 firstName: currentOrg.firstName,
                 lastName: currentOrg.lastName,

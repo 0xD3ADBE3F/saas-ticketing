@@ -14,18 +14,18 @@ export default async function EventsListPage() {
   const events = await eventRepo.findPublicEvents();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
       <div className="public-container py-12">
         {/* Page Header */}
         <div className="mb-12 text-center">
-          <h1 className="text-4xl sm:text-5xl font-bold text-public-foreground mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
+          <h1 className="text-4xl sm:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
             Aankomende Evenementen
           </h1>
-          <p className="text-lg sm:text-xl text-public-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
             Ontdek en boek tickets voor verschillende evenementen via Entro
           </p>
           {events.length > 0 && (
-            <p className="text-sm text-public-muted-foreground mt-3">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
               {events.length}{" "}
               {events.length === 1 ? "evenement" : "evenementen"} gevonden
             </p>
@@ -42,7 +42,7 @@ export default async function EventsListPage() {
         ) : (
           <div className="text-center py-24">
             <div className="max-w-md mx-auto">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                 <svg
                   className="w-10 h-10 text-blue-600 dark:text-blue-400"
                   fill="none"
@@ -57,10 +57,10 @@ export default async function EventsListPage() {
                   />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-public-foreground mb-3">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
                 Momenteel geen evenementen
               </h2>
-              <p className="text-public-muted-foreground leading-relaxed">
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                 Er zijn momenteel geen aankomende evenementen beschikbaar. Kom
                 binnenkort terug voor nieuwe evenementen!
               </p>

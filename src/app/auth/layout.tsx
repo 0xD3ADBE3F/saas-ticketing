@@ -1,3 +1,5 @@
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+
 export default function AuthLayout({
   children,
 }: {
@@ -5,6 +7,11 @@ export default function AuthLayout({
 }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/20 dark:from-gray-950 dark:via-blue-950/10 dark:to-purple-950/10 p-4 md:p-6 relative overflow-hidden">
+      {/* Theme Toggle - Top right corner */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+
       <div className="w-full max-w-md relative z-10">{children}</div>
 
       {/* Enhanced decorative elements */}

@@ -1,18 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Event, EventStatus, VatRate } from "@/generated/prisma";
 import { toDateTimeLocalValue } from "@/lib/date";
 import { VAT_RATE_LABELS } from "@/server/lib/vat";
+import { useDebounce } from "@/lib/hooks/useDebounce";
+import { Lock, Check, X, Loader2, Link2 } from "lucide-react";
+import { generateSlug } from "@/lib/slug";
 
 interface EventFormProps {
   event?: Event;
   mode: "create" | "edit";
+  organizationId: string;
+  organizationSlug: string;
 }
 
 interface FormData {
   title: string;
+  slug: string;
   description: string;
   location: string;
   startsAt: string;
@@ -22,10 +28,27 @@ interface FormData {
   passPaymentFeesToBuyer: boolean;
 }
 
-export function EventForm({ event, mode }: EventFormProps) {
+export function EventForm({
+  event,
+  mode,
+  organizationId,
+  organizationSlug,
+}: EventFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Slug state
+  const [slugAvailability, setSlugAvailability] = useState<{
+    checking: boolean;
+    available: boolean | null;
+    error: string | null;
+  }>({ checking: false, available: null, error: null });
+  const [canChangeSlug, setCanChangeSlug] = useState<{
+    allowed: boolean;
+    reason?: string;
+  }>({ allowed: true });
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
 
   // Default to tomorrow 20:00 - 23:00 for new events
   const getDefaultStartDate = () => {
@@ -44,6 +67,7 @@ export function EventForm({ event, mode }: EventFormProps) {
 
   const [formData, setFormData] = useState<FormData>({
     title: event?.title || "",
+    slug: event?.slug || "",
     description: event?.description || "",
     location: event?.location || "",
     startsAt: event?.startsAt
@@ -57,6 +81,69 @@ export function EventForm({ event, mode }: EventFormProps) {
     passPaymentFeesToBuyer: event?.passPaymentFeesToBuyer ?? false,
   });
 
+  const debouncedSlug = useDebounce(formData.slug, 500);
+
+  // Check slug changeability
+  useEffect(() => {
+    if (mode === "edit" && event) {
+      async function checkSlugChangeability() {
+        try {
+          const res = await fetch(
+            `/api/events/can-change-slug?eventId=${event.id}`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            setCanChangeSlug(data);
+          }
+        } catch (err) {
+          console.error("Failed to check slug changeability:", err);
+        }
+      }
+      checkSlugChangeability();
+    }
+  }, [mode, event]);
+
+  // Check slug availability
+  useEffect(() => {
+    if (mode === "create" && !formData.slug) {
+      setSlugAvailability({ checking: false, available: null, error: null });
+      return;
+    }
+    if (mode === "edit" && event && debouncedSlug === event.slug) {
+      setSlugAvailability({ checking: false, available: null, error: null });
+      return;
+    }
+    if (!debouncedSlug || debouncedSlug.length < 3) {
+      setSlugAvailability({ checking: false, available: null, error: null });
+      return;
+    }
+
+    async function checkAvailability() {
+      setSlugAvailability({ checking: true, available: null, error: null });
+      try {
+        const params = new URLSearchParams({
+          slug: debouncedSlug,
+          organizationId,
+        });
+        if (mode === "edit" && event) params.append("eventId", event.id);
+        const res = await fetch(`/api/events/check-slug?${params}`);
+        const data = await res.json();
+        setSlugAvailability({
+          checking: false,
+          available: data.available,
+          error: data.error || null,
+        });
+      } catch (err) {
+        setSlugAvailability({
+          checking: false,
+          available: null,
+          error: "Kon beschikbaarheid niet controleren",
+        });
+      }
+    }
+    checkAvailability();
+  }, [debouncedSlug, mode, event, organizationId]);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -65,7 +152,14 @@ export function EventForm({ event, mode }: EventFormProps) {
     if (type === "radio") {
       setFormData((prev) => ({ ...prev, [name]: value === "true" }));
     } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+      // Auto-populate slug from title
+      if (name === "title" && !slugManuallyEdited) {
+        const generatedSlug = generateSlug(value);
+        setFormData((prev) => ({ ...prev, title: value, slug: generatedSlug }));
+      } else {
+        setFormData((prev) => ({ ...prev, [name]: value }));
+        if (name === "slug") setSlugManuallyEdited(true);
+      }
     }
 
     setError(null);
@@ -86,6 +180,7 @@ export function EventForm({ event, mode }: EventFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: formData.title,
+          slug: formData.slug || undefined,
           description: formData.description || null,
           location: formData.location || null,
           startsAt: new Date(formData.startsAt).toISOString(),
@@ -170,6 +265,68 @@ export function EventForm({ event, mode }: EventFormProps) {
           placeholder="bijv. Zomerfeest 2025"
           className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
+      </div>
+
+      {/* Slug */}
+      <div>
+        <label
+          htmlFor="slug"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        >
+          Evenement URL *
+        </label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Link2 className="w-4 h-4 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            id="slug"
+            name="slug"
+            required
+            value={formData.slug}
+            onChange={handleChange}
+            disabled={mode === "edit" && !canChangeSlug.allowed}
+            pattern="[a-z0-9-]+"
+            minLength={3}
+            maxLength={50}
+            placeholder="bijv. zomerfeest-2025"
+            className="w-full pl-10 pr-10 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
+          />
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+            {mode === "edit" && !canChangeSlug.allowed ? (
+              <Lock className="w-4 h-4 text-gray-400" />
+            ) : slugAvailability.checking ? (
+              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+            ) : !formData.slug ? null : mode === "edit" &&
+              formData.slug ===
+                event?.slug ? null : slugAvailability.available ? (
+              <Check className="w-4 h-4 text-green-500" />
+            ) : slugAvailability.error ? (
+              <X className="w-4 h-4 text-red-500" />
+            ) : null}
+          </div>
+        </div>
+        {mode === "edit" && !canChangeSlug.allowed ? (
+          <p className="mt-1 text-sm text-orange-600 dark:text-orange-400 flex items-center gap-1">
+            <Lock className="w-3 h-3" />
+            {canChangeSlug.reason}
+          </p>
+        ) : (
+          <>
+            <p className="mt-1 text-sm text-gray-500">
+              Beschikbaar op: getentro.app/e/{organizationSlug}/
+              {formData.slug || "zomerfeest-2025"}
+            </p>
+            {slugAvailability.error &&
+              formData.slug &&
+              (mode === "create" || formData.slug !== event?.slug) && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {slugAvailability.error}
+                </p>
+              )}
+          </>
+        )}
       </div>
 
       {/* Description */}

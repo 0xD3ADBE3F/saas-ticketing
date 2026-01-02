@@ -9,9 +9,11 @@ interface PublicHeroProps {
 }
 
 const gradients = {
-  default: "from-blue-600 via-purple-600 to-indigo-600",
-  success: "from-emerald-500 via-teal-500 to-cyan-500",
-  warm: "from-orange-500 via-red-500 to-pink-500",
+  default:
+    "from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-500 dark:via-indigo-500 dark:to-purple-500",
+  success:
+    "from-emerald-600 via-teal-600 to-cyan-600 dark:from-emerald-500 dark:via-teal-500 dark:to-cyan-500",
+  warm: "from-orange-600 via-red-600 to-pink-600 dark:from-orange-500 dark:via-red-500 dark:to-pink-500",
 };
 
 export function PublicHero({
@@ -26,9 +28,9 @@ export function PublicHero({
       className={`relative overflow-hidden bg-gradient-to-br ${gradients[gradient]} text-white`}
     >
       {/* Decorative background elements */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1)_0%,transparent_60%)] pointer-events-none" />
-      <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
-      <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.12)_0%,transparent_60%)] pointer-events-none" />
+      <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/8 dark:bg-white/5 rounded-full blur-3xl" />
+      <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/8 dark:bg-white/5 rounded-full blur-3xl" />
 
       {/* Content */}
       <div

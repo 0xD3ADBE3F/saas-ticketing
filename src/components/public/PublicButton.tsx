@@ -39,19 +39,20 @@ export const PublicButton = forwardRef<HTMLButtonElement, PublicButtonProps>(
           // Variants
           {
             // Primary - main CTAs
-            "bg-public-primary text-public-primary-foreground hover:opacity-90 shadow-sm hover:shadow-md active:shadow-sm":
+            "bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 shadow-sm hover:shadow-md active:shadow-sm":
               variant === "primary",
 
             // Accent - secondary CTAs
-            "bg-public-accent text-public-accent-foreground hover:opacity-90 shadow-sm hover:shadow-md active:shadow-sm":
+            "bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 shadow-sm hover:shadow-md active:shadow-sm":
               variant === "accent",
 
             // Outline - tertiary actions
-            "border border-public-border bg-transparent hover:bg-public-muted text-public-foreground":
+            "border-2 border-gray-300 bg-transparent hover:bg-gray-50 text-gray-900 dark:border-gray-600 dark:hover:bg-gray-800 dark:text-white":
               variant === "outline",
 
             // Ghost - minimal actions
-            "hover:bg-public-muted text-public-foreground": variant === "ghost",
+            "hover:bg-gray-100 text-gray-900 dark:hover:bg-gray-800 dark:text-white":
+              variant === "ghost",
           },
 
           // Sizes - optimized for touch

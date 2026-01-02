@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { getUser } from "@/server/lib/supabase";
 import { getEvent } from "@/server/services/eventService";
+import { getOrganization } from "@/server/services/organizationService";
 import { EventForm } from "@/components/events/EventForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -25,6 +26,12 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
   }
 
   const event = result.data;
+
+  // Get organization for slug
+  const org = await getOrganization(event.organizationId, user.id);
+  if (!org) {
+    notFound();
+  }
 
   return (
     <div className="max-w-2xl">
@@ -71,7 +78,12 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
           </div>
         </div>
         <div className="p-6">
-          <EventForm event={event} mode="edit" />
+          <EventForm
+            event={event}
+            mode="edit"
+            organizationId={org.id}
+            organizationSlug={org.slug}
+          />
         </div>
       </div>
 

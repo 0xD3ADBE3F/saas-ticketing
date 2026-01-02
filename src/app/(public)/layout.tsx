@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Analytics } from "@vercel/analytics/next";
 import { Shield, Smartphone, Mail } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import "./public.css";
 
 /**

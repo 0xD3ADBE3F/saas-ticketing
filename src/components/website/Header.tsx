@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { clientEnv } from "@/lib/env";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function Header() {
   const isLive = clientEnv.NEXT_PUBLIC_IS_LIVE;
@@ -57,6 +58,7 @@ export function Header() {
                 </a>
               </div>
               <div className="flex items-center gap-4">
+                <ThemeToggle />
                 <Link
                   href="/auth/login"
                   className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -73,6 +75,7 @@ export function Header() {
             </>
           ) : (
             <div className="flex items-center gap-4">
+              <ThemeToggle />
               <span className="text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-full">
                 🚀 Binnenkort live
               </span>

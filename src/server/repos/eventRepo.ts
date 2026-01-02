@@ -85,13 +85,20 @@ export const eventRepo = {
   findById: async (
     id: string,
     userId: string
-  ): Promise<Event | null> => {
+  ): Promise<(Event & { organization: { slug: string } }) | null> => {
     return prisma.event.findFirst({
       where: {
         id,
         organization: {
           memberships: {
             some: { userId },
+          },
+        },
+      },
+      include: {
+        organization: {
+          select: {
+            slug: true,
           },
         },
       },
@@ -128,13 +135,59 @@ export const eventRepo = {
   },
 
   /**
-   * Find public event by slug (only LIVE events)
+   * Find public event by slug (only LIVE events) - DEPRECATED
+   * Use findPublicByBothSlugs instead
    */
   findPublicBySlug: async (slug: string): Promise<PublicEvent | null> => {
     return prisma.event.findFirst({
       where: {
         slug,
         status: "LIVE",
+      },
+      include: {
+        organization: {
+          select: {
+            name: true,
+            slug: true,
+            logoUrl: true,
+            websiteUrl: true,
+            showTicketAvailability: true,
+          },
+        },
+        ticketTypes: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            price: true,
+            capacity: true,
+            soldCount: true,
+            saleStart: true,
+            saleEnd: true,
+            sortOrder: true,
+          },
+          orderBy: {
+            sortOrder: "asc",
+          },
+        },
+      },
+    });
+  },
+
+  /**
+   * Find public event by organization slug and event slug (only LIVE events)
+   */
+  findPublicByBothSlugs: async (
+    orgSlug: string,
+    eventSlug: string
+  ): Promise<PublicEvent | null> => {
+    return prisma.event.findFirst({
+      where: {
+        slug: eventSlug,
+        status: "LIVE",
+        organization: {
+          slug: orgSlug,
+        },
       },
       include: {
         organization: {
@@ -196,8 +249,15 @@ export const eventRepo = {
           ],
         }),
       },
+      include: {
+        organization: {
+          select: {
+            slug: true,
+          },
+        },
+      },
       orderBy: { startsAt: "desc" },
-    });
+    }) as Promise<Event[]>;
   },
 
   /**
