@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Analytics } from "@vercel/analytics/next";
+import { Shield, Smartphone, Mail } from "lucide-react";
 import "./public.css";
 
 /**
@@ -13,8 +14,8 @@ import "./public.css";
  * Design principles:
  * - Consumer-friendly and welcoming
  * - High conversion optimization
- * - Mobile-first approach
- * - Accessibility-first
+ * - Mobile-first approach (48px+ touch targets)
+ * - Accessibility-first (WCAG 2.1 AA)
  */
 export default function PublicLayout({
   children,
@@ -23,119 +24,222 @@ export default function PublicLayout({
 }) {
   return (
     <div className="public-pages">
-      {/* Public Header - Consumer-friendly navigation */}
-      <header className="public-header px-4 sm:px-6 py-4 sticky top-0 z-50 backdrop-blur-sm bg-public-card/80">
-        <div className="public-container flex justify-between items-center">
+      {/* Public Header - Mobile-optimized navigation */}
+      <header className="public-header sticky top-0 z-50">
+        <div className="public-container flex justify-between items-center py-4">
           <Link
             href="/"
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity group"
+            aria-label="Ga naar homepage"
           >
             <Image
               src="/logo.svg"
-              alt="Entro"
-              width={32}
-              height={32}
+              alt=""
+              width={180}
+              height={36}
               className="dark:hidden"
             />
             <Image
               src="/logo-white.png"
-              alt="Entro"
-              width={32}
-              height={32}
+              alt=""
+              width={180}
+              height={36}
               className="hidden dark:block"
             />
-            <span className="text-xl font-bold text-public-foreground">
-              Entro
-            </span>
           </Link>
 
-          <nav className="flex gap-3 sm:gap-4 items-center">
+          <nav
+            className="flex gap-2 sm:gap-3 items-center"
+            aria-label="Hoofdnavigatie"
+          >
             <Link
               href="/events"
-              className="text-sm sm:text-base text-public-muted-foreground hover:text-public-foreground transition-colors"
+              className="public-btn public-btn-ghost public-btn-sm hidden sm:inline-flex"
             >
-              Evenementen
-            </Link>
-            <Link
-              href="/auth/login"
-              className="text-sm sm:text-base px-3 sm:px-4 py-2 bg-public-primary text-public-primary-foreground rounded-lg hover:bg-public-primary/90 transition-colors font-medium"
-            >
-              Inloggen
+              Alle evenementen
             </Link>
           </nav>
         </div>
       </header>
 
       {/* Main content area */}
-      <main className="min-h-[calc(100vh-73px)]">{children}</main>
+      <main className="min-h-[calc(100vh-theme(spacing.20))]">{children}</main>
 
-      {/* Footer - Trust signals and legal */}
-      <footer className="border-t border-public-border bg-public-muted/30 mt-16">
-        <div className="public-container py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-sm">
+      {/* Footer - Enhanced with trust signals */}
+      <footer className="border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 mt-16">
+        {/* Trust Signals Bar */}
+        <div className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+          <div className="public-container py-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center md:text-left">
+              <div className="flex flex-col md:flex-row items-center gap-3">
+                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
+                    Veilig Betalen
+                  </h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    SSL beveiligd met iDEAL
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col md:flex-row items-center gap-3">
+                <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Smartphone className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
+                    Direct Digitaal
+                  </h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    Tickets per email & app
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col md:flex-row items-center gap-3">
+                <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Mail className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
+                    24/7 Support
+                  </h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    Altijd bereikbaar
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Content */}
+        <div className="public-container py-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+            {/* About */}
             <div>
-              <h3 className="font-semibold text-public-foreground mb-3">
-                Entro
+              <h3 className="font-bold text-gray-900 dark:text-white mb-4">
+                Over Entro
               </h3>
-              <p className="text-public-muted-foreground">
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                 Het eerlijke ticketplatform voor Nederland. Simpel, transparant
-                en betrouwbaar.
+                en betrouwbaar ticketverkoop voor organisatoren.
               </p>
             </div>
 
+            {/* Quick Links */}
             <div>
-              <h3 className="font-semibold text-public-foreground mb-3">
-                Links
+              <h3 className="font-bold text-gray-900 dark:text-white mb-4">
+                Voor Bezoekers
               </h3>
-              <ul className="space-y-2 text-public-muted-foreground">
+              <ul className="space-y-3">
                 <li>
                   <Link
                     href="/events"
-                    className="hover:text-public-foreground transition-colors"
+                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                   >
                     Evenementen
                   </Link>
                 </li>
                 <li>
                   <Link
-                    href="/auth/login"
-                    className="hover:text-public-foreground transition-colors"
+                    href="/hoe-werkt-het"
+                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                   >
-                    Inloggen
+                    Hoe werkt het?
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/veelgestelde-vragen"
+                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    Veelgestelde vragen
                   </Link>
                 </li>
               </ul>
             </div>
 
+            {/* Organizers */}
             <div>
-              <h3 className="font-semibold text-public-foreground mb-3">
+              <h3 className="font-bold text-gray-900 dark:text-white mb-4">
+                Voor Organisatoren
+              </h3>
+              <ul className="space-y-3">
+                <li>
+                  <Link
+                    href="/auth/login"
+                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    Inloggen
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/prijzen"
+                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    Prijzen
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/contact"
+                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    Contact
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-4">
                 Juridisch
               </h3>
-              <ul className="space-y-2 text-public-muted-foreground">
+              <ul className="space-y-3">
                 <li>
                   <Link
                     href="/algemene-voorwaarden"
-                    className="hover:text-public-foreground transition-colors"
+                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                   >
-                    Algemene Voorwaarden
+                    Algemene voorwaarden
                   </Link>
                 </li>
                 <li>
                   <Link
                     href="/privacy"
-                    className="hover:text-public-foreground transition-colors"
+                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                   >
-                    Privacy
+                    Privacybeleid
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/cookies"
+                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    Cookiebeleid
                   </Link>
                 </li>
               </ul>
             </div>
           </div>
 
-          <div className="mt-8 pt-8 border-t border-public-border text-center text-public-muted-foreground text-sm">
-            <p>
-              © {new Date().getFullYear()} Entro. Alle rechten voorbehouden.
-            </p>
+          {/* Bottom Bar */}
+          <div className="pt-8 border-t border-gray-200 dark:border-gray-800">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                © {new Date().getFullYear()} Entro. Alle rechten voorbehouden.
+              </p>
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <span>Gemaakt met ❤️ in Nederland</span>
+              </div>
+            </div>
           </div>
         </div>
       </footer>

@@ -34,6 +34,9 @@ export type PublicEvent = Event & {
   organization: {
     name: string;
     slug: string;
+    logoUrl: string | null;
+    websiteUrl: string | null;
+    showTicketAvailability: boolean;
   };
   ticketTypes: {
     id: string;
@@ -139,7 +142,8 @@ export const eventRepo = {
             name: true,
             slug: true,
             logoUrl: true,
-            portalTheme: true,
+            websiteUrl: true,
+            showTicketAvailability: true,
           },
         },
         ticketTypes: {

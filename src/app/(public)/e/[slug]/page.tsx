@@ -4,7 +4,15 @@ import { getPublicEvent } from "@/server/services/eventService";
 import { formatDateTime, formatDateRange, isPast } from "@/lib/date";
 import { EventTickets } from "@/components/checkout";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin } from "lucide-react";
+import {
+  Calendar,
+  MapPin,
+  Clock,
+  Users,
+  Shield,
+  Ticket as TicketIcon,
+} from "lucide-react";
+import { PublicHero, PublicFeatureBadge } from "@/components/public";
 
 interface PublicEventPageProps {
   params: Promise<{ slug: string }>;
@@ -42,136 +50,273 @@ export default async function PublicEventPage({
   }
 
   const isEventPast = isPast(event.endsAt);
-  const isSameDay =
-    event.startsAt.toDateString() === event.endsAt.toDateString();
 
-  // Apply theme from organization settings
-  const themeClass = event.organization.portalTheme === 'DARK' ? 'dark' : '';
+  // Calculate total tickets sold
+  const totalTicketsSold = event.ticketTypes.reduce(
+    (sum, tt) => sum + tt.soldCount,
+    0
+  );
+  const totalCapacity = event.ticketTypes.reduce(
+    (sum, tt) => sum + (tt.capacity || 0),
+    0
+  );
 
   return (
-    <div className={`min-h-screen bg-gray-50 dark:bg-gray-950 ${themeClass}`}>
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          {event.organization.logoUrl ? (
-            <img
-              src={event.organization.logoUrl}
-              alt={event.organization.name}
-              className="h-10 w-auto object-contain"
-            />
-          ) : (
-            <Link
-              href="/"
-              className="text-lg font-semibold text-gray-900 dark:text-white"
-            >
-              {event.organization.name}
-            </Link>
+    <div className="public-pages">
+      {/* Hero Section */}
+      <PublicHero
+        title={event.title}
+        subtitle={event.description || undefined}
+        size="large"
+        gradient="default"
+      >
+        {/* Event Meta Info */}
+        <div className="flex flex-wrap gap-3 text-white/90">
+          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg">
+            <Calendar className="w-5 h-5" />
+            <span className="font-medium">
+              {formatDateRange(event.startsAt, event.endsAt)}
+            </span>
+          </div>
+
+          {event.location && (
+            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg">
+              <MapPin className="w-5 h-5" />
+              <span className="font-medium">{event.location}</span>
+            </div>
           )}
-        </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-          {/* Event Header */}
-          <div className="p-6 sm:p-8 border-b border-gray-200 dark:border-gray-800">
-            {isEventPast && (
-              <Badge variant="neutral" className="mb-4">
-                Dit evenement is afgelopen
-              </Badge>
-            )}
-
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              {event.title}
-            </h1>
-
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 text-gray-600 dark:text-gray-400">
-              {/* Date */}
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    {formatDateRange(event.startsAt, event.endsAt)}
-                  </p>
-                  {!isSameDay && (
-                    <p className="text-sm">
-                      {formatDateTime(event.startsAt)} -{" "}
-                      {formatDateTime(event.endsAt)}
-                    </p>
-                  )}
-                </div>
+          {totalCapacity > 0 &&
+            !isEventPast &&
+            event.organization.showTicketAvailability && (
+              <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg">
+                <Users className="w-5 h-5" />
+                <span className="font-medium">
+                  {totalCapacity - totalTicketsSold} tickets beschikbaar
+                </span>
               </div>
+            )}
+        </div>
+      </PublicHero>
+      {/* Main Content */}
+      <main className="public-container py-8 md:py-12">
+        {isEventPast && (
+          <div className="mb-8 p-6 bg-gray-100 dark:bg-gray-800 rounded-xl text-center animate-fade-in-up">
+            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+              Dit evenement is afgelopen
+            </p>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
+              Ticketverkoop is gesloten
+            </p>
+          </div>
+        )}
 
-              {/* Location */}
-              {event.location && (
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+        <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
+          {/* Left Column - Event Details */}
+          <div className="lg:col-span-2 space-y-6 lg:space-y-8">
+            {/* Organizer Badge */}
+            {event.organization.logoUrl && (
+              <section
+                className="bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 p-6 shadow-sm animate-fade-in-up"
+                style={{ animationDelay: "0.05s" }}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex-shrink-0 bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <img
+                      src={event.organization.logoUrl}
+                      alt={event.organization.name}
+                      className="h-12 w-auto max-w-[120px] object-contain"
+                    />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {event.location}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide mb-1">
+                      Georganiseerd door
                     </p>
+                    <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                      {event.organization.name}
+                    </p>
+                    {event.organization.websiteUrl && (
+                      <a
+                        href={event.organization.websiteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-block"
+                      >
+                        Bezoek website →
+                      </a>
+                    )}
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Description */}
-          {event.description && (
-            <div className="p-6 sm:p-8 border-b border-gray-200 dark:border-gray-800">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Over dit evenement
-              </h2>
-              <div className="prose prose-gray dark:prose-invert max-w-none">
-                <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
-                  {event.description}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Tickets Section */}
-          <div className="p-6 sm:p-8">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Tickets
-            </h2>
-
-            {isEventPast ? (
-              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                <p>Ticketverkoop voor dit evenement is gesloten.</p>
-              </div>
-            ) : (
-              <EventTickets
-                eventSlug={event.slug}
-                eventTitle={event.title}
-                ticketTypes={event.ticketTypes}
-              />
+              </section>
             )}
-          </div>
-        </div>
 
-        {/* Organization Info */}
-        <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-          <p>
-            Georganiseerd door{" "}
-            <span className="font-medium text-gray-700 dark:text-gray-300">
-              {event.organization.name}
-            </span>
-          </p>
+            {/* Event Details Card */}
+            <section
+              className="public-card animate-fade-in-up"
+              style={{ animationDelay: "0.1s" }}
+            >
+              <div className="p-6 md:p-8">
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                  Evenement Details
+                </h2>
+
+                <div className="space-y-6">
+                  {/* Date & Time */}
+                  <div className="flex gap-4">
+                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                        Datum & Tijd
+                      </h3>
+                      <p className="text-gray-700 dark:text-gray-300 font-medium">
+                        {formatDateRange(event.startsAt, event.endsAt)}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        {formatDateTime(event.startsAt)} -{" "}
+                        {formatDateTime(event.endsAt)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Location */}
+                  {event.location && (
+                    <div className="flex gap-4">
+                      <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <MapPin className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                          Locatie
+                        </h3>
+                        <p className="text-gray-700 dark:text-gray-300 font-medium break-words">
+                          {event.location}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Organizer */}
+                  <div className="flex gap-4">
+                    <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Users className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                        Organisator
+                      </h3>
+                      <div className="flex items-center gap-3">
+                        <p className="text-gray-700 dark:text-gray-300 font-medium truncate">
+                          {event.organization.name}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          {/* Right Column - Tickets */}
+          <div className="lg:col-span-1">
+            <div className="lg:sticky lg:top-24">
+              <section
+                className="public-card animate-fade-in-up"
+                style={{ animationDelay: "0.2s" }}
+              >
+                <div className="p-4 md:p-6 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
+                    Tickets
+                  </h2>
+                </div>
+
+                <div className="p-4 md:p-6">
+                  {isEventPast ? (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Clock className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-400 font-medium">
+                        Ticketverkoop is gesloten
+                      </p>
+                    </div>
+                  ) : (
+                    <EventTickets
+                      eventSlug={event.slug}
+                      eventTitle={event.title}
+                      ticketTypes={event.ticketTypes}
+                      showTicketAvailability={
+                        event.organization.showTicketAvailability
+                      }
+                    />
+                  )}
+                </div>
+              </section>
+            </div>
+          </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 dark:border-gray-800 mt-16">
-        <div className="max-w-4xl mx-auto px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-          <p>
-            © {new Date().getFullYear()} Entro (getentro.app). Alle rechten
-            voorbehouden.
-          </p>
+      <footer className="border-t border-gray-200 dark:border-gray-800 mt-12 md:mt-20 bg-gray-50 dark:bg-gray-900/50">
+        <div className="public-container py-8 md:py-12">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="text-center md:text-left">
+              {/* Organizer badge with card encapsulation */}
+              {event.organization.logoUrl && (
+                <div className="inline-flex items-center gap-3 mb-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-2.5 shadow-sm">
+                  <div className="flex-shrink-0 bg-gray-50 dark:bg-gray-900 rounded p-1.5 border border-gray-200 dark:border-gray-700">
+                    <img
+                      src={event.organization.logoUrl}
+                      alt={event.organization.name}
+                      className="h-6 w-auto max-w-[80px] object-contain"
+                    />
+                  </div>
+                  <div className="text-left">
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide block">
+                      Georganiseerd door
+                    </span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {event.organization.name}
+                    </span>
+                    {event.organization.websiteUrl && (
+                      <a
+                        href={event.organization.websiteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline block mt-0.5"
+                      >
+                        Bezoek website →
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+              {!event.organization.logoUrl && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                  Georganiseerd door {event.organization.name}
+                </p>
+              )}
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                © {new Date().getFullYear()} Entro. Alle rechten voorbehouden.
+              </p>
+            </div>
+            <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+              <a
+                href="#"
+                className="hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+              >
+                Algemene voorwaarden
+              </a>
+              <a
+                href="#"
+                className="hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+              >
+                Privacy
+              </a>
+            </div>
+          </div>
         </div>
       </footer>
     </div>

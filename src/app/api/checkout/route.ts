@@ -18,7 +18,7 @@ const cartItemSchema = z.object({
 
 const createOrderSchema = z.object({
   eventSlug: z.string().min(1),
-  buyerEmail: z.string().email("Ongeldig e-mailadres"),
+  buyerEmail: z.string().email("Ongeldig e-mailadres").optional(),
   buyerName: z.string().max(100).optional(),
   items: z.array(cartItemSchema).min(1, "Selecteer minimaal 1 ticket"),
 });

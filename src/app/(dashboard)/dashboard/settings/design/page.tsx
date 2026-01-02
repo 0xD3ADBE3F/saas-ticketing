@@ -1,25 +1,25 @@
-import { redirect } from 'next/navigation';
-import { getUser } from '@/server/lib/supabase';
-import { getUserOrganizations } from '@/server/services/organizationService';
-import { organizationRepo } from '@/server/repos/organizationRepo';
-import { DesignSettingsForm } from '@/components/dashboard/design-settings-form';
+import { redirect } from "next/navigation";
+import { getUser } from "@/server/lib/supabase";
+import { getUserOrganizations } from "@/server/services/organizationService";
+import { organizationRepo } from "@/server/repos/organizationRepo";
+import { DesignSettingsForm } from "@/components/dashboard/design-settings-form";
 
 export const metadata = {
-  title: 'Ontwerp - Instellingen',
-  description: 'Pas het uiterlijk van je ticketportaal aan',
+  title: "Ontwerp - Instellingen",
+  description: "Pas het uiterlijk van je ticketportaal aan",
 };
 
 export default async function DesignSettingsPage() {
   const user = await getUser();
 
   if (!user) {
-    redirect('/auth/login');
+    redirect("/auth/login");
   }
 
   const organizations = await getUserOrganizations(user.id);
 
   if (organizations.length === 0) {
-    redirect('/onboarding');
+    redirect("/onboarding");
   }
 
   const org = organizations[0];
@@ -35,9 +35,9 @@ export default async function DesignSettingsPage() {
       </div>
 
       <DesignSettingsForm
-        organizationId={org.id}
         initialLogoUrl={settings?.logoUrl ?? null}
-        initialTheme={settings?.portalTheme ?? 'LIGHT'}
+        initialWebsiteUrl={settings?.websiteUrl ?? null}
+        initialShowTicketAvailability={settings?.showTicketAvailability ?? true}
       />
     </div>
   );

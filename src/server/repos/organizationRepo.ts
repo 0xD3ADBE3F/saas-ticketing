@@ -1,5 +1,5 @@
 import { prisma } from "@/server/lib/prisma";
-import type { Organization, Membership, Role, PortalTheme } from "@/generated/prisma";
+import type { Organization, Membership, Role } from "@/generated/prisma";
 
 export type CreateOrganizationInput = {
   name: string;
@@ -128,16 +128,16 @@ export const organizationRepo = {
   },
 
   /**
-   * Update design settings (logo and/or theme)
+   * Update design settings (logo, website URL, and/or ticket availability)
    */
   updateDesignSettings: async (
     orgId: string,
-    data: { logoUrl?: string | null; portalTheme?: PortalTheme }
+    data: { logoUrl?: string | null; websiteUrl?: string | null; showTicketAvailability?: boolean }
   ) => {
     return prisma.organization.update({
       where: { id: orgId },
       data,
-      select: { id: true, logoUrl: true, portalTheme: true },
+      select: { id: true, logoUrl: true, websiteUrl: true, showTicketAvailability: true },
     });
   },
 
@@ -147,7 +147,7 @@ export const organizationRepo = {
   getDesignSettings: async (orgId: string) => {
     return prisma.organization.findUnique({
       where: { id: orgId },
-      select: { logoUrl: true, portalTheme: true },
+      select: { logoUrl: true, websiteUrl: true, showTicketAvailability: true },
     });
   },
 };

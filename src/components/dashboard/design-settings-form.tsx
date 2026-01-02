@@ -10,36 +10,36 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Upload, X, ImageIcon, Loader2 } from "lucide-react";
 import {
-  updateThemeAction,
+  updateWebsiteUrlAction,
+  updateTicketAvailabilityAction,
   deleteLogoAction,
 } from "@/app/(dashboard)/dashboard/settings/design/actions";
 import { toast } from "sonner";
-import type { PortalTheme } from "@/generated/prisma";
 
 type Props = {
-  organizationId: string;
   initialLogoUrl: string | null;
-  initialTheme: PortalTheme;
+  initialWebsiteUrl: string | null;
+  initialShowTicketAvailability: boolean;
 };
 
 export function DesignSettingsForm({
-  organizationId,
   initialLogoUrl,
-  initialTheme,
+  initialWebsiteUrl,
+  initialShowTicketAvailability,
 }: Props) {
   const [logoUrl, setLogoUrl] = useState(initialLogoUrl);
-  const [theme, setTheme] = useState(initialTheme);
+  const [websiteUrl, setWebsiteUrl] = useState(initialWebsiteUrl ?? "");
+  const [showTicketAvailability, setShowTicketAvailability] = useState(
+    initialShowTicketAvailability
+  );
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [savingUrl, setSavingUrl] = useState(false);
+  const [savingAvailability, setSavingAvailability] = useState(false);
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -90,7 +90,7 @@ export function DesignSettingsForm({
       toast.success("Logo verwijderd", {
         description: "Het standaard Entro logo wordt nu getoond",
       });
-    } catch (error) {
+    } catch {
       toast.error("Verwijderen mislukt", {
         description: "Probeer het opnieuw",
       });
@@ -99,23 +99,43 @@ export function DesignSettingsForm({
     }
   }
 
-  async function handleThemeChange(newTheme: PortalTheme) {
-    const oldTheme = theme;
-    setTheme(newTheme);
+  async function handleWebsiteUrlSave() {
+    setSavingUrl(true);
+    try {
+      await updateWebsiteUrlAction(websiteUrl);
+
+      toast.success("Website URL opgeslagen", {
+        description: "Je website link wordt nu getoond op je ticketportaal",
+      });
+    } catch {
+      toast.error("Opslaan mislukt", {
+        description: "Probeer het opnieuw",
+      });
+    } finally {
+      setSavingUrl(false);
+    }
+  }
+
+  async function handleTicketAvailabilityChange(checked: boolean) {
+    const oldValue = showTicketAvailability;
+    setShowTicketAvailability(checked);
+    setSavingAvailability(true);
 
     try {
-      await updateThemeAction(newTheme);
+      await updateTicketAvailabilityAction(checked);
 
-      toast.success("Thema bijgewerkt", {
-        description: `Je ticketportaal gebruikt nu het ${
-          newTheme === "LIGHT" ? "lichte" : "donkere"
-        } thema`,
+      toast.success("Instelling bijgewerkt", {
+        description: checked
+          ? "Ticketbeschikbaarheid wordt nu getoond"
+          : "Ticketbeschikbaarheid wordt niet meer getoond",
       });
-    } catch (error) {
+    } catch {
       toast.error("Update mislukt", {
         description: "Probeer het opnieuw",
       });
-      setTheme(oldTheme); // Revert on error
+      setShowTicketAvailability(oldValue); // Revert on error
+    } finally {
+      setSavingAvailability(false);
     }
   }
 
@@ -207,32 +227,61 @@ export function DesignSettingsForm({
         </CardContent>
       </Card>
 
-      {/* Theme Selector */}
+      {/* Website URL */}
       <Card>
         <CardHeader>
-          <CardTitle>Thema</CardTitle>
+          <CardTitle>Website URL</CardTitle>
           <CardDescription>
-            Kies het thema voor je ticketbestelportaal
+            Link naar je organisatie website (wordt getoond op ticketportaal)
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="theme">Thema voorkeur</Label>
-            <Select
-              value={theme}
-              onValueChange={(v) => handleThemeChange(v as PortalTheme)}
-            >
-              <SelectTrigger id="theme" className="w-full md:w-64">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="LIGHT">Licht</SelectItem>
-                <SelectItem value="DARK">Donker</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Input
+                type="url"
+                placeholder="https://jouworganisatie.nl"
+                value={websiteUrl}
+                onChange={(e) => setWebsiteUrl(e.target.value)}
+                className="flex-1"
+              />
+              <Button onClick={handleWebsiteUrlSave} disabled={savingUrl}>
+                {savingUrl ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : null}
+                Opslaan
+              </Button>
+            </div>
             <p className="text-sm text-muted-foreground">
-              Dit thema wordt toegepast op je publieke ticketpagina&apos;s
+              Een link naar je website wordt getoond op je publieke
+              ticketpagina&apos;s
             </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Ticket Availability Toggle */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Ticketbeschikbaarheid</CardTitle>
+          <CardDescription>
+            Toon hoeveel tickets er nog beschikbaar zijn
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="show-availability">Toon beschikbaarheid</Label>
+              <p className="text-sm text-muted-foreground">
+                Laat bezoekers zien hoeveel tickets er nog beschikbaar zijn
+              </p>
+            </div>
+            <Switch
+              id="show-availability"
+              checked={showTicketAvailability}
+              onCheckedChange={handleTicketAvailabilityChange}
+              disabled={savingAvailability}
+            />
           </div>
         </CardContent>
       </Card>

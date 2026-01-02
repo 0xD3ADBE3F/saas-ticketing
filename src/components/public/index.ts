@@ -15,3 +15,8 @@ export {
   PublicCardFooter,
   type PublicCardProps,
 } from "./PublicCard";
+export { PublicHero } from "./PublicHero";
+export { PublicTicketCard } from "./PublicTicketCard";
+export { PublicFeatureBadge } from "./PublicFeatureBadge";
+export { PublicCheckoutSummary } from "./PublicCheckoutSummary";
+export { PublicProgressSteps } from "./PublicProgressSteps";

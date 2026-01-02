@@ -1,6 +1,5 @@
 import { put, del } from '@vercel/blob';
 import { organizationRepo } from '@/server/repos/organizationRepo';
-import type { PortalTheme } from '@/generated/prisma';
 
 export const designService = {
   /**
@@ -65,11 +64,20 @@ export const designService = {
   },
 
   /**
-   * Update theme preference for an organization
+   * Update website URL for an organization
    */
-  updateTheme: async (orgId: string, theme: PortalTheme) => {
+  updateWebsiteUrl: async (orgId: string, websiteUrl: string | null) => {
     return organizationRepo.updateDesignSettings(orgId, {
-      portalTheme: theme,
+      websiteUrl,
+    });
+  },
+
+  /**
+   * Update ticket availability display setting
+   */
+  updateTicketAvailability: async (orgId: string, showTicketAvailability: boolean) => {
+    return organizationRepo.updateDesignSettings(orgId, {
+      showTicketAvailability,
     });
   },
 

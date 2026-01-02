@@ -43,6 +43,10 @@ export type OrderWithEvent = Order & {
     startsAt: Date;
     endsAt: Date;
     location: string | null;
+    organization: {
+      websiteUrl: string | null;
+      showTicketAvailability: boolean;
+    };
   };
   orderItems: (OrderItem & {
     ticketType: {
@@ -164,6 +168,12 @@ export const orderRepo = {
             startsAt: true,
             endsAt: true,
             location: true,
+            organization: {
+              select: {
+                websiteUrl: true,
+                showTicketAvailability: true,
+              },
+            },
           },
         },
         orderItems: {
@@ -338,6 +348,25 @@ export const orderRepo = {
       data: {
         status,
         ...additionalData,
+      },
+    });
+  },
+
+  /**
+   * Update buyer details (email and name)
+   */
+  updateBuyerDetails: async (
+    id: string,
+    data: {
+      buyerEmail: string;
+      buyerName?: string;
+    }
+  ): Promise<Order | null> => {
+    return prisma.order.update({
+      where: { id },
+      data: {
+        buyerEmail: data.buyerEmail.toLowerCase().trim(),
+        buyerName: data.buyerName?.trim() || null,
       },
     });
   },

@@ -108,12 +108,30 @@ export function CheckoutForm({
         return;
       }
 
-      // For free orders, redirect directly to complete page (skip payment)
+      // For free orders, redirect to complete page immediately
       if (data.isFree) {
         router.push(`/checkout/${data.orderId}/complete`);
-      } else {
-        // For paid orders, redirect to payment page
-        router.push(`/checkout/${data.orderId}`);
+        return;
+      }
+
+      // For paid orders, initiate payment immediately
+      const paymentResponse = await fetch(`/api/checkout/${data.orderId}/pay`, {
+        method: "POST",
+      });
+
+      const paymentData = await paymentResponse.json();
+
+      if (!paymentResponse.ok) {
+        setError(
+          paymentData.error ||
+            "Er ging iets mis bij het starten van de betaling"
+        );
+        return;
+      }
+
+      // Redirect to Mollie checkout
+      if (paymentData.checkoutUrl) {
+        window.location.href = paymentData.checkoutUrl;
       }
     } catch {
       setError("Er ging iets mis bij het plaatsen van je bestelling");
@@ -318,14 +336,12 @@ export function CheckoutForm({
                 />
               </svg>
               {displaySummary.totalAmount === 0
-                ? "Tickets ophalen..."
-                : "Bestelling plaatsen..."}
+                ? "Bevestigen..."
+                : "Betaling starten..."}
             </>
           ) : (
             <>
-              {displaySummary.totalAmount === 0
-                ? "Gratis tickets ophalen"
-                : "Bestelling plaatsen"}
+              {displaySummary.totalAmount === 0 ? "Bevestigen" : "Betalen"}
               {displaySummary.totalAmount > 0 && (
                 <span className="text-blue-200">
                   ({formatPrice(displaySummary.totalAmount)})
@@ -336,7 +352,8 @@ export function CheckoutForm({
         </button>
 
         <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-          Door te bestellen ga je akkoord met onze{" "}
+          Door te {displaySummary.totalAmount === 0 ? "bevestigen" : "betalen"}{" "}
+          ga je akkoord met onze{" "}
           <a
             href="/voorwaarden"
             className="underline hover:text-gray-700 dark:hover:text-gray-300"

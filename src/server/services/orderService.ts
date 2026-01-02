@@ -23,7 +23,7 @@ export type CartItem = {
 
 export type CreateOrderData = {
   eventSlug: string;
-  buyerEmail: string;
+  buyerEmail?: string;
   buyerName?: string;
   items: CartItem[];
 };
@@ -180,8 +180,8 @@ export async function calculateOrderSummary(
 export async function createOrder(
   data: CreateOrderData
 ): Promise<OrderServiceResult<Order>> {
-  // Validate email
-  if (!data.buyerEmail || !isValidEmail(data.buyerEmail)) {
+  // Validate email (optional - can be updated later)
+  if (data.buyerEmail && !isValidEmail(data.buyerEmail)) {
     return { success: false, error: "Ongeldig e-mailadres" };
   }
 
@@ -289,7 +289,7 @@ export async function createOrder(
         event.organization.id,
         {
           eventId: event.id,
-          buyerEmail: data.buyerEmail,
+          buyerEmail: data.buyerEmail || "pending@placeholder.local",
           buyerName: data.buyerName,
           ticketTotal,
           serviceFee,

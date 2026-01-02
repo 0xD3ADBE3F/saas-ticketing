@@ -50,8 +50,12 @@ model Organization {
   firstLoginCompleted Boolean @default(false) // Has user completed welcome screen
 
   // Design settings
-  logoUrl         String?      // Vercel Blob Storage URL
-  portalTheme     PortalTheme  @default(LIGHT) // Theme preference for public portal
+  logoUrl              String?  // Vercel Blob Storage URL
+  websiteUrl           String?  // Organization website URL
+  showTicketAvailability Boolean @default(true) // Show ticket availability on portal
+
+  // Payment settings
+  paymentTimeoutMinutes Int @default(10) // Time in minutes for payment reservation (5-30)
 
   // Relations
   memberships      Membership[]
@@ -72,11 +76,6 @@ enum MollieOnboardingStatus {
   NEEDS_DATA
   IN_REVIEW
   COMPLETED
-}
-
-enum PortalTheme {
-  LIGHT
-  DARK
 }
 
 model Membership {
@@ -256,6 +255,7 @@ model Order {
   @@index([eventId])
   @@index([buyerEmail])
   @@index([status])
+  @@index([status, expiresAt]) // For efficient background job queries
   @@map("orders")
 }
 
@@ -282,6 +282,7 @@ enum OrderStatus {
   FAILED
   CANCELLED
   REFUNDED
+  EXPIRED
 }
 
 // =============================================================================

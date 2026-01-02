@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { getOrderForCheckout } from "@/server/services/orderService";
+import { orderRepo } from "@/server/repos/orderRepo";
 
 interface RouteParams {
   params: Promise<{ orderId: string }>;
@@ -67,6 +69,61 @@ export async function GET(
     console.error("Get order error:", error);
     return NextResponse.json(
       { error: "Er ging iets mis bij het ophalen van je bestelling" },
+      { status: 500 }
+    );
+  }
+}
+
+// =============================================================================
+// PATCH /api/checkout/[orderId] - Update buyer details
+// =============================================================================
+
+const updateBuyerSchema = z.object({
+  buyerEmail: z.string().email("Ongeldig e-mailadres"),
+  buyerName: z.string().max(100).optional(),
+});
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: RouteParams
+) {
+  try {
+    const { orderId } = await params;
+    const body = await request.json();
+
+    // Validate request body
+    const validation = updateBuyerSchema.safeParse(body);
+    if (!validation.success) {
+      const errors = validation.error.issues.map((issue) => issue.message).join(", ");
+      return NextResponse.json(
+        { error: errors },
+        { status: 400 }
+      );
+    }
+
+    const { buyerEmail, buyerName } = validation.data;
+
+    // Update order with buyer details
+    const order = await orderRepo.updateBuyerDetails(orderId, {
+      buyerEmail,
+      buyerName,
+    });
+
+    if (!order) {
+      return NextResponse.json(
+        { error: "Bestelling niet gevonden" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      orderId: order.id,
+    });
+  } catch (error) {
+    console.error("Update buyer details error:", error);
+    return NextResponse.json(
+      { error: "Er ging iets mis bij het bijwerken van je gegevens" },
       { status: 500 }
     );
   }
