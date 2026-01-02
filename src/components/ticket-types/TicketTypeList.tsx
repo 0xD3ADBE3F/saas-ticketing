@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { TicketType } from "@/generated/prisma";
 import { formatPrice } from "@/lib/currency";
 import { formatDate } from "@/lib/date";
+import { Edit2, Trash2 } from "lucide-react";
 
 interface TicketTypeListProps {
   ticketTypes: TicketType[];
@@ -131,23 +132,23 @@ export function TicketTypeList({
         <table className="w-full">
           <thead className="bg-gray-50 dark:bg-gray-800/50">
             <tr>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400">
+              <th className="text-left px-6 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 w-[35%]">
                 Naam
               </th>
-              <th className="text-right px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400">
+              <th className="text-right px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 w-[12%]">
                 Prijs
               </th>
-              <th className="text-right px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400">
+              <th className="text-center px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 w-[15%]">
                 Verkocht
               </th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400">
+              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 w-[18%]">
                 Beschikbaarheid
               </th>
-              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400">
-                Verkoop status
+              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 w-[15%]">
+                Status
               </th>
               {canEdit && (
-                <th className="text-right px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400">
+                <th className="text-center px-6 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 w-[5%]">
                   Acties
                 </th>
               )}
@@ -163,34 +164,46 @@ export function TicketTypeList({
                   key={ticketType.id}
                   className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                 >
-                  <td className="px-4 py-4">
+                  <td className="px-6 py-4">
                     <div>
                       <div className="font-medium text-gray-900 dark:text-white">
                         {ticketType.name}
                       </div>
                       {ticketType.description && (
-                        <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+                        <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">
                           {ticketType.description}
                         </div>
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-right font-medium text-gray-900 dark:text-white">
+                  <td className="px-4 py-4 text-right font-semibold text-gray-900 dark:text-white">
                     {ticketType.price === 0
                       ? "Gratis"
                       : formatPrice(ticketType.price)}
                   </td>
-                  <td className="px-4 py-4 text-right text-sm text-gray-600 dark:text-gray-400">
-                    {ticketType.soldCount} / {ticketType.capacity}
+                  <td className="px-4 py-4 text-center">
+                    <div className="inline-flex flex-col items-center">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {ticketType.soldCount} / {ticketType.capacity}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {Math.round(
+                          (ticketType.soldCount / ticketType.capacity) * 100
+                        )}
+                        %
+                      </span>
+                    </div>
                   </td>
                   <td className="px-4 py-4">
-                    <span className={`text-sm ${availability.color}`}>
+                    <span
+                      className={`text-sm font-medium ${availability.color}`}
+                    >
                       {availability.label}
                     </span>
                   </td>
                   <td className="px-4 py-4">
                     <span
-                      className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                      className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${
                         saleStatus.isOnSale
                           ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
                           : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
@@ -200,13 +213,14 @@ export function TicketTypeList({
                     </span>
                   </td>
                   {canEdit && (
-                    <td className="px-4 py-4 text-right">
-                      <div className="flex justify-end gap-2">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-center gap-2">
                         <Link
                           href={`/dashboard/events/${eventId}/ticket-types/${ticketType.id}/edit`}
-                          className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                          className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          title="Bewerken"
                         >
-                          Bewerken
+                          <Edit2 className="w-4 h-4" />
                         </Link>
                         <button
                           onClick={() => handleDelete(ticketType)}
@@ -214,16 +228,16 @@ export function TicketTypeList({
                             deletingId === ticketType.id ||
                             ticketType.soldCount > 0
                           }
-                          className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-600 dark:disabled:hover:text-gray-400"
                           title={
                             ticketType.soldCount > 0
                               ? "Kan niet worden verwijderd: er zijn al tickets verkocht"
-                              : "Verwijderen"
+                              : deletingId === ticketType.id
+                                ? "Verwijderen..."
+                                : "Verwijderen"
                           }
                         >
-                          {deletingId === ticketType.id
-                            ? "Verwijderen..."
-                            : "Verwijderen"}
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
