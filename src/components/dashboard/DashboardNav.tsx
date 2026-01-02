@@ -78,7 +78,20 @@ export function DashboardNav({
       <nav className="hidden md:flex w-64 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-800/50 p-4 flex-col fixed inset-y-0 left-0 z-30">
         <div className="mb-8 pb-4 border-b border-gray-200/50 dark:border-gray-800/50">
           <Link href="/" className="flex items-center gap-3 group">
-            <Image src="/logo-white.png" alt="Entro" width={200} height={30} />
+            <Image
+              src="/logo.png"
+              alt="Entro"
+              width={120}
+              height={32}
+              className="dark:hidden"
+            />
+            <Image
+              src="/logo-white.png"
+              alt="Entro"
+              width={140}
+              height={32}
+              className="hidden dark:block"
+            />
           </Link>
         </div>
 
