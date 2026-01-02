@@ -70,6 +70,10 @@ export function verifyQRSignature(ticketId: string, providedSignature: string, s
 /**
  * Parse QR code data
  * Returns ticket ID and signature if valid format
+ * Supports multiple input formats:
+ * - Full URL: https://example.com/scan/{ticketId}:{signature}
+ * - Path: /scan/{ticketId}:{signature}
+ * - Direct format: {ticketId}:{signature}
  */
 export function parseQRData(qrData: string): { ticketId: string; signature: string } | null {
   // Extract path from URL if full URL provided
@@ -78,11 +82,17 @@ export function parseQRData(qrData: string): { ticketId: string; signature: stri
     const url = new URL(qrData);
     path = url.pathname;
   } catch {
-    // Not a URL, might be just the path
+    // Not a URL, might be just the path or direct format
   }
 
-  // Match pattern: /scan/{ticketId}:{signature}
-  const match = path.match(/\/scan\/([^:]+):([a-f0-9]+)/i);
+  // Try pattern: /scan/{ticketId}:{signature}
+  let match = path.match(/\/scan\/([^:]+):([a-f0-9]+)/i);
+
+  // If no match, try direct format: {ticketId}:{signature}
+  if (!match) {
+    match = path.match(/^([a-f0-9-]+):([a-f0-9]+)$/i);
+  }
+
   if (!match) return null;
 
   return {

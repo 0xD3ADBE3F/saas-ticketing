@@ -160,56 +160,31 @@ export function QRScanner({
     };
   }, [handleScan]); // Only handleScan which is stable
 
-  // Handle isActive changes - use pause/resume with fallback
+  // Handle isActive changes - stop/start camera stream
   useEffect(() => {
     const scanner = scannerRef.current;
     if (!scanner || hasPermission !== true) return;
 
     const handleActiveChange = async () => {
-      // Get scanner state - values: NOT_STARTED, SCANNING, PAUSED
       const state = scanner.getState();
       console.log("Scanner state:", state, "isActive:", isActive);
 
       if (!isActive) {
-        // Pause scanning if currently scanning
-        if (state === 2) {
-          // Html5QrcodeScannerState.SCANNING = 2
+        // Stop camera completely to turn off hardware
+        if (state === 2 || state === 3) {
+          // SCANNING or PAUSED
           try {
-            scanner.pause(true);
+            await scanner.stop();
             setIsScanning(false);
+            console.log("Camera stopped");
           } catch (e) {
-            console.error("Pause error:", e);
+            console.error("Stop error:", e);
           }
         }
       } else {
-        // Resume scanning
-        if (state === 3) {
-          // Html5QrcodeScannerState.PAUSED = 3
-          try {
-            scanner.resume();
-            setIsScanning(true);
-          } catch (e) {
-            console.error("Resume error:", e);
-            // Resume failed, try restarting the scanner
-            try {
-              await scanner.start(
-                { facingMode: "environment" },
-                {
-                  fps: 10,
-                  qrbox: { width: 250, height: 250 },
-                  aspectRatio: 1,
-                },
-                handleScan,
-                () => {}
-              );
-              setIsScanning(true);
-            } catch (startErr) {
-              console.error("Failed to restart scanner:", startErr);
-            }
-          }
-        } else if (state === 1) {
-          // Html5QrcodeScannerState.NOT_STARTED = 1
-          // Scanner was stopped, need to start it
+        // Start camera
+        if (state === 1) {
+          // NOT_STARTED
           try {
             await scanner.start(
               { facingMode: "environment" },
@@ -222,6 +197,7 @@ export function QRScanner({
               () => {}
             );
             setIsScanning(true);
+            console.log("Camera started");
           } catch (startErr) {
             console.error("Failed to start scanner:", startErr);
           }
@@ -304,17 +280,6 @@ export function QRScanner({
             <p className="text-gray-300 text-sm mt-1">Tik om te hervatten</p>
           </button>
         )}
-      </div>
-
-      {/* Status */}
-      <div className="text-center mt-4">
-        <p className="text-sm text-gray-400">
-          {isScanning
-            ? "Richt de camera op een QR code"
-            : hasPermission
-              ? "Scanner gepauzeerd"
-              : "Scanner opstarten..."}
-        </p>
       </div>
 
       {/* Animation styles */}

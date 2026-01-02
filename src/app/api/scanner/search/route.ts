@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const email = searchParams.get("email");
+    const eventId = searchParams.get("eventId");
 
     if (!email || email.trim().length < 3) {
       return NextResponse.json(
@@ -44,7 +45,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const tickets = await searchTicketsByEmail(email, organizationId);
+    const tickets = await searchTicketsByEmail(email, organizationId, eventId || undefined);
 
     return NextResponse.json({ tickets });
   } catch (error) {

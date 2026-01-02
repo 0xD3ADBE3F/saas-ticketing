@@ -27,8 +27,18 @@ export async function overrideTicketStatus(
 }> {
   const { ticketId, newStatus, reason, adminUserId, organizationId } = input;
 
-  // Get ticket with full context
-  const ticket = await ticketRepo.findByIdForScanning(ticketId);
+  // Try to find ticket by ID or code
+  let ticket = await ticketRepo.findByIdForScanning(ticketId);
+
+  // If not found by ID, try by code
+  if (!ticket) {
+    const ticketByCode = await ticketRepo.findByCode(ticketId.toUpperCase());
+    if (ticketByCode) {
+      // Get full scanning details for the found ticket
+      ticket = await ticketRepo.findByIdForScanning(ticketByCode.id);
+    }
+  }
+
   if (!ticket) {
     throw new Error("Ticket niet gevonden");
   }
@@ -113,7 +123,7 @@ export async function overrideTicketStatus(
  * Get ticket details for override UI
  */
 export async function getTicketForOverride(
-  ticketId: string,
+  ticketIdOrCode: string,
   organizationId: string
 ): Promise<{
   id: string;
@@ -126,9 +136,13 @@ export async function getTicketForOverride(
   scanCount: number;
   lastScanAt: Date | null;
 } | null> {
+  // Try to find by ID first, then by code
   const ticket = await prisma.ticket.findFirst({
     where: {
-      id: ticketId,
+      OR: [
+        { id: ticketIdOrCode },
+        { code: ticketIdOrCode.toUpperCase() },
+      ],
       event: {
         organizationId,
       },

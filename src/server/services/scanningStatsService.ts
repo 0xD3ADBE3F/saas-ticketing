@@ -172,7 +172,8 @@ export async function getRecentScans(
  */
 export async function searchTicketsByEmail(
   email: string,
-  organizationId: string
+  organizationId: string,
+  eventId?: string
 ): Promise<
   Array<{
     id: string;
@@ -194,6 +195,7 @@ export async function searchTicketsByEmail(
         },
         event: {
           organizationId,
+          ...(eventId && { id: eventId }),
         },
       },
     },

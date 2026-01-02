@@ -8,7 +8,7 @@ import {
 } from "@/server/services/ticketOverrideService";
 
 const overrideSchema = z.object({
-  ticketId: z.string().uuid("Ongeldig ticket ID"),
+  ticketId: z.string().min(1, "Ticket ID of code is verplicht"),
   newStatus: z.enum(["VALID", "USED"], {
     message: "Status moet VALID of USED zijn",
   }),

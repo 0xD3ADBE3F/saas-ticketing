@@ -94,6 +94,7 @@ export const ticketRepo = {
             startsAt: true,
             endsAt: true,
             location: true,
+            organizationId: true,
           },
         },
         order: {

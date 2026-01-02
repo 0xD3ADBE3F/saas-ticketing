@@ -14,9 +14,12 @@ interface ScanResult {
   ticket?: {
     id: string;
     code: string;
-    ticketType: { name: string };
-    order: { buyerEmail: string };
+    ticketTypeName: string;
+    eventTitle: string;
+    status: string;
+    usedAt: Date | null;
   };
+  firstScannedAt?: Date;
 }
 
 export function TicketScanner({ eventId, onScanComplete }: TicketScannerProps) {
@@ -43,8 +46,7 @@ export function TicketScanner({ eventId, onScanComplete }: TicketScannerProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ticketToken: ticketCode.trim(),
-          eventId,
+          qrData: ticketCode.trim(),
         }),
       });
 
@@ -183,15 +185,15 @@ export function TicketScanner({ eventId, onScanComplete }: TicketScannerProps) {
                       Type:
                     </span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {result.ticket.ticketType.name}
+                      {result.ticket.ticketTypeName}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">
-                      Email:
+                      Event:
                     </span>
                     <span className="font-medium text-gray-900 dark:text-white truncate ml-2">
-                      {result.ticket.order.buyerEmail}
+                      {result.ticket.eventTitle}
                     </span>
                   </div>
                   <div className="flex justify-between">

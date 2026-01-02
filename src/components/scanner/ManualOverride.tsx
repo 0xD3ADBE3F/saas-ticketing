@@ -10,12 +10,12 @@ interface TicketInfo {
   id: string;
   code: string;
   status: "VALID" | "USED" | "REFUNDED";
-  usedAt: string | null;
-  ticketType: { name: string };
-  order: {
-    buyerEmail: string;
-    buyerName: string | null;
-  };
+  usedAt: Date | null;
+  ticketTypeName: string;
+  buyerEmail: string;
+  eventTitle: string;
+  scanCount: number;
+  lastScanAt: Date | null;
 }
 
 export function ManualOverride({ onOverrideComplete }: ManualOverrideProps) {
@@ -52,7 +52,9 @@ export function ManualOverride({ onOverrideComplete }: ManualOverrideProps) {
 
       const data = await res.json();
       setTicketInfo(data.ticket);
-      setNewStatus(data.ticket.status === "USED" ? "VALID" : "USED");
+      // Set opposite status as default
+      const currentStatus = data.ticket.status as "VALID" | "USED" | "REFUNDED";
+      setNewStatus(currentStatus === "USED" ? "VALID" : "USED");
       setReason("");
     } catch (err) {
       setError(
@@ -202,16 +204,11 @@ export function ManualOverride({ onOverrideComplete }: ManualOverrideProps) {
             <div className="flex items-start justify-between">
               <div>
                 <div className="font-medium text-gray-900 dark:text-white mb-1">
-                  {ticketInfo.ticketType.name}
+                  {ticketInfo.ticketTypeName}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {ticketInfo.order.buyerEmail}
+                  {ticketInfo.buyerEmail}
                 </div>
-                {ticketInfo.order.buyerName && (
-                  <div className="text-sm text-gray-500 dark:text-gray-500">
-                    {ticketInfo.order.buyerName}
-                  </div>
-                )}
               </div>
               <span
                 className={`px-2 py-1 text-xs font-medium rounded ${getStatusColor(
@@ -277,6 +274,9 @@ export function ManualOverride({ onOverrideComplete }: ManualOverrideProps) {
                     USED - Ticket als gebruikt markeren
                   </option>
                 </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Huidig: {ticketInfo.status} → Nieuw: {newStatus}
+                </p>
               </div>
 
               <div>
@@ -318,8 +318,7 @@ export function ManualOverride({ onOverrideComplete }: ManualOverrideProps) {
                   type="submit"
                   disabled={
                     overriding ||
-                    !reason.trim() ||
-                    reason.length < 10 ||
+                    reason.trim().length < 10 ||
                     ticketInfo.status === newStatus
                   }
                   className="flex-1 px-6 py-3 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-orange-600"

@@ -52,23 +52,39 @@ export async function scanTicket(input: ScanTicketInput): Promise<ScanTicketResu
   const scannedAt = new Date();
 
   // =============================================================================
-  // Step 1: Parse QR code data
+  // Step 1: Parse QR code data or try ticket code lookup
   // =============================================================================
   const parsed = parseQRData(qrData);
-  if (!parsed) {
-    return {
-      success: false,
-      result: "INVALID",
-      message: "Invalid QR code format",
-    };
+
+  let ticket;
+  let signature: string | null = null;
+  let ticketId: string;
+
+  if (parsed) {
+    // QR code format with signature
+    ticketId = parsed.ticketId;
+    signature = parsed.signature;
+    ticket = await ticketRepo.findByIdForScanning(ticketId);
+  } else {
+    // Try as ticket code (e.g., "AVEE-A7ER")
+    ticket = await ticketRepo.findByCode(qrData.trim().toUpperCase());
+    if (ticket) {
+      ticketId = ticket.id;
+      // For ticket code lookup, we skip signature verification
+      // since the user is manually entering the code
+      signature = null;
+    } else {
+      return {
+        success: false,
+        result: "INVALID",
+        message: "Invalid QR code or ticket code",
+      };
+    }
   }
 
-  const { ticketId, signature } = parsed;
-
   // =============================================================================
-  // Step 2: Find ticket and verify ownership
+  // Step 2: Verify ticket was found and check ownership
   // =============================================================================
-  const ticket = await ticketRepo.findByIdForScanning(ticketId);
 
   // Ticket not found
   if (!ticket) {
@@ -109,34 +125,37 @@ export async function scanTicket(input: ScanTicketInput): Promise<ScanTicketResu
   }
 
   // =============================================================================
-  // Step 3: Verify QR signature
+  // Step 3: Verify QR signature (only if scanned via QR code)
   // =============================================================================
-  const isValidSignature = verifyQRSignature(ticket.id, signature, ticket.secretToken);
-  if (!isValidSignature) {
-    await scanRepo.create({
-      ticketId: ticket.id,
-      scannedBy,
-      deviceId,
-      result: "INVALID",
-      scannedAt,
-      offlineSync: false,
-    });
+  if (signature !== null) {
+    const isValidSignature = verifyQRSignature(ticket.id, signature, ticket.secretToken);
+    if (!isValidSignature) {
+      await scanRepo.create({
+        ticketId: ticket.id,
+        scannedBy,
+        deviceId,
+        result: "INVALID",
+        scannedAt,
+        offlineSync: false,
+      });
 
-    return {
-      success: false,
-      result: "INVALID",
-      message: "Invalid QR code signature",
-      ticket: {
-        id: ticket.id,
-        code: ticket.code,
-        eventId: ticket.event.id,
-        eventTitle: ticket.event.title,
-        ticketTypeName: ticket.ticketType.name,
-        status: ticket.status,
-        usedAt: ticket.usedAt,
-      },
-    };
+      return {
+        success: false,
+        result: "INVALID",
+        message: "Invalid QR code signature",
+        ticket: {
+          id: ticket.id,
+          code: ticket.code,
+          eventId: ticket.event.id,
+          eventTitle: ticket.event.title,
+          ticketTypeName: ticket.ticketType.name,
+          status: ticket.status,
+          usedAt: ticket.usedAt,
+        },
+      };
+    }
   }
+  // If signature is null, it means manual code entry - skip signature verification
 
   // =============================================================================
   // Step 4: Check ticket status
