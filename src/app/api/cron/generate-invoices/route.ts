@@ -16,24 +16,13 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    // 1. Verify authorization (cron secret)
-    const authHeader = request.headers.get("authorization");
-    const expectedAuth = `Bearer ${env.CRON_SECRET || process.env.CRON_SECRET}`;
+    // 1. Verify request is from Vercel Cron
+    // Vercel automatically adds the x-vercel-cron header with value "1"
+    const cronHeader = request.headers.get("x-vercel-cron");
 
-    if (!env.CRON_SECRET && !process.env.CRON_SECRET) {
-      mollieLogger.error({
-        message: "CRON_SECRET not configured",
-      });
-      return NextResponse.json(
-        { error: "Server configuration error" },
-        { status: 500 }
-      );
-    }
-
-    if (authHeader !== expectedAuth) {
+    if (cronHeader !== "1") {
       mollieLogger.warn({
-        message: "Unauthorized cron attempt",
-        authHeader: authHeader ? "provided" : "missing",
+        message: "Unauthorized cron attempt - missing x-vercel-cron header",
       });
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

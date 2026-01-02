@@ -2,17 +2,11 @@
   "crons": [
     {
       "path": "/api/cron/generate-invoices",
-      "schedule": "0 2 * * *",
-      "headers": {
-        "Authorization": "Bearer ${CRON_SECRET}"
-      }
+      "schedule": "0 2 * * *"
     },
     {
       "path": "/api/cron/expire-orders",
-      "schedule": "0 3 * * *",
-      "headers": {
-        "Authorization": "Bearer ${CRON_SECRET}"
-      }
+      "schedule": "0 3 * * *"
     }
   ]
 }

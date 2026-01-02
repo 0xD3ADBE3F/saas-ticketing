@@ -10,23 +10,15 @@ import { logger } from "@/server/lib/logger";
  */
 async function handleExpireOrders(req: NextRequest) {
   try {
-    // Verify cron secret for security
-    const authHeader = req.headers.get("authorization");
-    const cronSecret = process.env.CRON_SECRET;
+    // Verify request is from Vercel Cron
+    // Vercel automatically adds the x-vercel-cron header with value "1"
+    const cronHeader = req.headers.get("x-vercel-cron");
 
-    if (!cronSecret) {
-      logger.error("CRON_SECRET environment variable not set");
-      return NextResponse.json(
-        { error: "Server configuration error" },
-        { status: 500 }
-      );
-    }
-
-    if (authHeader !== `Bearer ${cronSecret}`) {
+    if (cronHeader !== "1") {
       logger.warn({
         service: "cronJob",
         ip: req.headers.get("x-forwarded-for") || "unknown",
-      }, "Unauthorized cron job attempt");
+      }, "Unauthorized cron job attempt - missing x-vercel-cron header");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
