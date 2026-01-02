@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   TicketSelector,
@@ -12,6 +12,10 @@ import { PaymentTimer } from "@/components/checkout/PaymentTimer";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Ticket, ArrowLeft } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
+import {
+  calculateServiceFeePreview,
+  calculatePaymentFeePreview,
+} from "@/lib/fees";
 
 interface EventTicketsProps {
   eventSlug: string;
@@ -45,7 +49,6 @@ export function EventTickets({
   const router = useRouter();
   const [step, setStep] = useState<CheckoutStep>("select");
   const [selections, setSelections] = useState<TicketSelection[]>([]);
-  const [summary, setSummary] = useState<OrderSummaryData | null>(null);
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
 
   // Checkout form state
@@ -61,51 +64,54 @@ export function EventTickets({
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
 
   const totalTickets = selections.reduce((sum, s) => sum + s.quantity, 0);
-  const isFreeOrder = summary?.totalAmount === 0;
 
-  // Fetch service fee from server when selections change
-  useEffect(() => {
-    if (totalTickets === 0) {
-      setSummary(null);
-      return;
+  // Calculate summary client-side (no API calls)
+  const summary = useMemo(() => {
+    if (totalTickets === 0) return null;
+
+    let ticketTotal = 0;
+    const items: {
+      ticketTypeId: string;
+      ticketTypeName: string;
+      quantity: number;
+      unitPrice: number;
+      totalPrice: number;
+    }[] = [];
+
+    for (const selection of selections) {
+      if (selection.quantity === 0) continue;
+
+      const ticketType = ticketTypes.find(
+        (tt) => tt.id === selection.ticketTypeId
+      );
+      if (!ticketType) continue;
+
+      const totalPrice = ticketType.price * selection.quantity;
+      ticketTotal += totalPrice;
+
+      items.push({
+        ticketTypeId: ticketType.id,
+        ticketTypeName: ticketType.name,
+        quantity: selection.quantity,
+        unitPrice: ticketType.price,
+        totalPrice,
+      });
     }
 
-    const fetchSummary = async () => {
-      setIsLoadingSummary(true);
-      try {
-        const items = selections
-          .filter((s) => s.quantity > 0)
-          .map((s) => ({
-            ticketTypeId: s.ticketTypeId,
-            quantity: s.quantity,
-          }));
+    const { serviceFeeInclVat } = calculateServiceFeePreview(ticketTotal);
+    const { paymentFeeInclVat } = calculatePaymentFeePreview();
+    const totalAmount = ticketTotal + serviceFeeInclVat + paymentFeeInclVat;
 
-        const params = new URLSearchParams({
-          eventSlug,
-          items: JSON.stringify(items),
-        });
-
-        const res = await fetch(`/api/checkout?${params}`);
-        const data = await res.json();
-
-        if (res.ok && data) {
-          setSummary({
-            serviceFee: data.serviceFee,
-            ticketTotal: data.ticketTotal,
-            totalAmount: data.totalAmount,
-            paymentFee: data.paymentFee,
-            items: data.items,
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch order summary:", error);
-      } finally {
-        setIsLoadingSummary(false);
-      }
+    return {
+      serviceFee: serviceFeeInclVat,
+      ticketTotal,
+      totalAmount,
+      paymentFee: paymentFeeInclVat,
+      items,
     };
+  }, [selections, totalTickets, ticketTypes]);
 
-    fetchSummary();
-  }, [selections, totalTickets, eventSlug]);
+  const isFreeOrder = summary?.totalAmount === 0;
 
   const handleProceedToCheckout = async () => {
     if (totalTickets === 0) return;
@@ -324,11 +330,14 @@ export function EventTickets({
 
           <button
             type="submit"
-            disabled={isSubmitting || isLoadingSummary}
-            className="public-btn public-btn-primary public-btn-xl w-full shadow-xl hover:shadow-2xl"
+            disabled={isSubmitting}
+            className="group relative public-btn public-btn-primary public-btn-xl w-full shadow-xl hover:shadow-2xl overflow-hidden"
           >
+            {/* Background animation */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
             {isSubmitting ? (
-              <span className="flex items-center justify-center gap-2">
+              <span className="relative flex items-center justify-center gap-2">
                 <svg
                   className="animate-spin h-5 w-5"
                   fill="none"
@@ -348,13 +357,30 @@ export function EventTickets({
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   />
                 </svg>
-                {isFreeOrder ? "Bevestigen..." : "Verwerken..."}
+                <span className="hidden sm:inline">
+                  {isFreeOrder ? "Bevestigen..." : "Verwerken..."}
+                </span>
+                <span className="sm:hidden">
+                  {isFreeOrder ? "Bevestigen..." : "Bezig..."}
+                </span>
               </span>
             ) : (
-              <span>
-                {isFreeOrder
-                  ? "Bevestigen"
-                  : `Betalen (${formatPrice(summary?.totalAmount ?? 0)})`}
+              <span className="relative flex items-center justify-center gap-2">
+                {isFreeOrder ? (
+                  <>
+                    <CheckCircle className="w-5 h-5" />
+                    <span>Bevestigen</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-bold hidden sm:inline">
+                      Betalen · {formatPrice(summary?.totalAmount ?? 0)}
+                    </span>
+                    <span className="font-bold sm:hidden">
+                      Betalen · {formatPrice(summary?.totalAmount ?? 0)}
+                    </span>
+                  </>
+                )}
               </span>
             )}
           </button>
@@ -396,16 +422,49 @@ export function EventTickets({
           <button
             type="button"
             onClick={handleProceedToCheckout}
-            disabled={isLoadingSummary || isCreatingOrder}
-            className="public-btn public-btn-primary public-btn-xl w-full shadow-xl hover:shadow-2xl"
+            disabled={isCreatingOrder}
+            className="group relative public-btn public-btn-primary public-btn-xl w-full shadow-xl hover:shadow-2xl overflow-hidden"
           >
-            {isCreatingOrder
-              ? "Bestelling aanmaken..."
-              : isLoadingSummary
-                ? "Berekenen..."
-                : isFreeOrder
-                  ? "Doorgaan naar bevestigen →"
-                  : `Doorgaan naar afrekenen →`}
+            {/* Background animation */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+            {isCreatingOrder ? (
+              <span className="relative flex items-center justify-center gap-2">
+                <svg
+                  className="animate-spin h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                <span className="hidden sm:inline">Bestelling aanmaken...</span>
+                <span className="sm:hidden">Bezig...</span>
+              </span>
+            ) : (
+              <span className="relative flex items-center justify-center gap-2">
+                <span className="hidden sm:inline">
+                  {isFreeOrder
+                    ? "Doorgaan naar bevestigen"
+                    : "Doorgaan naar afrekenen"}
+                </span>
+                <span className="sm:hidden">
+                  {isFreeOrder ? "Bevestigen" : "Afrekenen"}
+                </span>
+                <span className="text-xl">→</span>
+              </span>
+            )}
           </button>
 
           <p className="text-xs text-center text-gray-500 dark:text-gray-400">

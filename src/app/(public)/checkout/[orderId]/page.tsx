@@ -327,33 +327,6 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
           )}
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-gray-200 dark:border-gray-800 mt-12 md:mt-20 bg-gray-50 dark:bg-gray-900/50">
-        <div className="public-container py-8 md:py-12">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="text-center md:text-left">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                © {new Date().getFullYear()} Entro. Alle rechten voorbehouden.
-              </p>
-            </div>
-            <div className="flex flex-wrap justify-center gap-4 md:gap-6 text-sm">
-              <Link
-                href="/algemene-voorwaarden"
-                className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                Algemene voorwaarden
-              </Link>
-              <Link
-                href="/privacy"
-                className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                Privacy
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

@@ -320,23 +320,6 @@ export default async function PublicEventPage({
                   Georganiseerd door {event.organization.name}
                 </p>
               )}
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                © {new Date().getFullYear()} Entro. Alle rechten voorbehouden.
-              </p>
-            </div>
-            <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
-              <a
-                href="#"
-                className="hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
-              >
-                Algemene voorwaarden
-              </a>
-              <a
-                href="#"
-                className="hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
-              >
-                Privacy
-              </a>
             </div>
           </div>
         </div>

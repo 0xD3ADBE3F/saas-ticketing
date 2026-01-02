@@ -8,35 +8,22 @@
  * Payment fee has exact incl VAT constant to avoid rounding (€0.32 * 1.21 = €0.3872).
  */
 
-// =============================================================================
-// CONSTANTS
-// =============================================================================
+import {
+  MOLLIE_FEE_EXCL_VAT,
+  MOLLIE_FEE_INCL_VAT,
+  PLATFORM_FIXED_FEE_EXCL_VAT,
+  PLATFORM_VARIABLE_FEE_PERCENTAGE,
+  VAT_RATE,
+} from "@/lib/fee-constants";
 
-/**
- * Mollie payment processing fee (charged by Mollie to organizer)
- *
- * IMPORTANT: Exact amount incl VAT is €0.3872 (not rounded to €0.39)
- * - Excl VAT: €0.32 = 32 cents
- * - VAT (21%): €0.0672 = 6.72 cents
- * - Incl VAT: €0.3872 = 38.72 cents (EXACT, no rounding)
- */
-export const MOLLIE_FEE_EXCL_VAT = 32; // €0.32 excl. VAT
-export const MOLLIE_FEE_INCL_VAT = 38.72; // €0.3872 incl. VAT (EXACT)
-
-/**
- * Platform fixed fee per order (Entro revenue)
- */
-export const PLATFORM_FIXED_FEE_EXCL_VAT = 35; // €0.35 excl. VAT
-
-/**
- * Platform variable fee percentage (Entro revenue)
- */
-export const PLATFORM_VARIABLE_FEE_PERCENTAGE = 0.02; // 2%
-
-/**
- * Dutch standard VAT rate
- */
-export const VAT_RATE = 0.21; // 21%
+// Re-export constants for backward compatibility
+export {
+  MOLLIE_FEE_EXCL_VAT,
+  MOLLIE_FEE_INCL_VAT,
+  PLATFORM_FIXED_FEE_EXCL_VAT,
+  PLATFORM_VARIABLE_FEE_PERCENTAGE,
+  VAT_RATE,
+};
 
 // =============================================================================
 // TYPES

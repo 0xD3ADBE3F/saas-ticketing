@@ -135,171 +135,169 @@ export function TicketSelector({
             )}
 
             <div className="p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                {/* Ticket Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start gap-3 mb-3">
-                    {/* Icon based on ticket type */}
-                    <div
-                      className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center ${
-                        !isAvailable
-                          ? "bg-gray-100 dark:bg-gray-800"
-                          : isLowStock
-                            ? "bg-orange-100 dark:bg-orange-900/30"
-                            : "bg-blue-100 dark:bg-blue-900/30"
-                      }`}
-                    >
-                      {!isAvailable ? (
-                        <AlertCircle
-                          className={`w-6 h-6 ${
-                            saleStatus.status === "not-started"
-                              ? "text-gray-500 dark:text-gray-400"
-                              : "text-gray-400 dark:text-gray-500"
-                          }`}
-                        />
-                      ) : isLowStock ? (
-                        <Zap className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-                      ) : (
-                        <CheckCircle className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                      )}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                        {ticketType.name}
-                      </h3>
-
-                      {ticketType.description && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                          {ticketType.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Price */}
-                  <div className="mb-3">
-                    <span className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                      {ticketType.price === 0
-                        ? "Gratis"
-                        : formatPrice(ticketType.price)}
-                    </span>
-                    {ticketType.price > 0 && (
-                      <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
-                        per ticket
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Status badges */}
-                  <div className="flex flex-wrap gap-2">
+              {/* Ticket Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 mb-3">
+                  {/* Icon based on ticket type */}
+                  <div
+                    className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center ${
+                      !isAvailable
+                        ? "bg-gray-100 dark:bg-gray-800"
+                        : isLowStock
+                          ? "bg-orange-100 dark:bg-orange-900/30"
+                          : "bg-blue-100 dark:bg-blue-900/30"
+                    }`}
+                  >
                     {!isAvailable ? (
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full ${
+                      <AlertCircle
+                        className={`w-6 h-6 ${
                           saleStatus.status === "not-started"
-                            ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
-                            : saleStatus.status === "ended"
-                              ? "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400"
-                              : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                            ? "text-gray-500 dark:text-gray-400"
+                            : "text-gray-400 dark:text-gray-500"
                         }`}
-                      >
-                        {saleStatus.status === "not-started" && (
-                          <Clock className="w-3.5 h-3.5" />
-                        )}
-                        {saleStatus.status === "sold-out" && (
-                          <AlertCircle className="w-3.5 h-3.5" />
-                        )}
-                        {saleStatus.message}
-                      </span>
+                      />
+                    ) : isLowStock ? (
+                      <Zap className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                     ) : (
-                      <>
-                        {showTicketAvailability && (
-                          <>
-                            {isLowStock ? (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 animate-pulse">
-                                <Zap className="w-3.5 h-3.5" />
-                                Laatste {available} beschikbaar!
-                              </span>
-                            ) : (
-                              <span className="text-sm text-gray-600 dark:text-gray-400">
-                                {available} beschikbaar
-                              </span>
-                            )}
-                          </>
-                        )}
-                      </>
+                      <CheckCircle className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     )}
                   </div>
 
-                  {/* Availability bar */}
-                  {showTicketAvailability &&
-                    isAvailable &&
-                    ticketType.capacity > 0 && (
-                      <div className="mt-3">
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-500 ${
-                              isLowStock
-                                ? "bg-gradient-to-r from-orange-500 to-red-500"
-                                : "bg-gradient-to-r from-blue-500 to-purple-500"
-                            }`}
-                            style={{
-                              width: `${Math.max(5, availabilityPercent)}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {ticketType.name}
+                    </h3>
+                  </div>
                 </div>
 
-                {/* Quantity Selector */}
-                {isAvailable && (
-                  <div className="flex flex-col items-center gap-3 sm:min-w-[140px]">
-                    {quantity > 0 && (
-                      <div className="text-center">
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                          Subtotaal
-                        </p>
-                        <p className="text-lg font-bold text-gray-900 dark:text-white">
-                          {formatPrice(ticketType.price * quantity)}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handleDecrement(ticketType.id)}
-                        disabled={disabled || quantity === 0}
-                        className="w-12 h-12 flex items-center justify-center rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-blue-500 dark:hover:border-blue-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 active:scale-95"
-                        aria-label="Verlaag aantal"
-                      >
-                        <Minus className="w-5 h-5" />
-                      </button>
-
-                      <span className="min-w-[3rem] text-center text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
-                        {quantity}
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={() => handleIncrement(ticketType)}
-                        disabled={disabled || quantity >= maxQuantity}
-                        className="w-12 h-12 flex items-center justify-center rounded-xl border-2 border-blue-500 dark:border-blue-500 bg-blue-600 text-white hover:bg-blue-700 hover:border-blue-600 disabled:opacity-30 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:border-gray-300 dark:disabled:bg-gray-700 dark:disabled:border-gray-700 transition-all duration-200 active:scale-95 shadow-lg shadow-blue-500/25"
-                        aria-label="Verhoog aantal"
-                      >
-                        <Plus className="w-5 h-5" />
-                      </button>
-                    </div>
-
-                    {quantity >= maxQuantity && maxQuantity < available && (
-                      <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-                        Max. {maxPerType} per bestelling
-                      </p>
-                    )}
-                  </div>
+                {ticketType.description && (
+                  <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
+                    {ticketType.description}
+                  </p>
                 )}
+
+                {/* Price */}
+                <div className="mb-3">
+                  <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {ticketType.price === 0
+                      ? "Gratis"
+                      : formatPrice(ticketType.price)}
+                  </span>
+                  {ticketType.price > 0 && (
+                    <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
+                      per ticket
+                    </span>
+                  )}
+                </div>
+
+                {/* Status badges */}
+                <div className="flex flex-wrap gap-2">
+                  {!isAvailable ? (
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full ${
+                        saleStatus.status === "not-started"
+                          ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                          : saleStatus.status === "ended"
+                            ? "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400"
+                            : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                      }`}
+                    >
+                      {saleStatus.status === "not-started" && (
+                        <Clock className="w-3.5 h-3.5" />
+                      )}
+                      {saleStatus.status === "sold-out" && (
+                        <AlertCircle className="w-3.5 h-3.5" />
+                      )}
+                      {saleStatus.message}
+                    </span>
+                  ) : (
+                    <>
+                      {showTicketAvailability && (
+                        <>
+                          {isLowStock ? (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 animate-pulse">
+                              <Zap className="w-3.5 h-3.5" />
+                              Laatste {available} beschikbaar!
+                            </span>
+                          ) : (
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              {available} beschikbaar
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Availability bar */}
+                {showTicketAvailability &&
+                  isAvailable &&
+                  ticketType.capacity > 0 && (
+                    <div className="mt-3">
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            isLowStock
+                              ? "bg-gradient-to-r from-orange-500 to-red-500"
+                              : "bg-gradient-to-r from-blue-500 to-purple-500"
+                          }`}
+                          style={{
+                            width: `${Math.max(5, availabilityPercent)}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
               </div>
+
+              {/* Quantity Selector */}
+              {isAvailable && (
+                <div className="mt-6 flex flex-col items-center gap-3">
+                  {quantity > 0 && (
+                    <div className="text-center">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        Subtotaal
+                      </p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">
+                        {formatPrice(ticketType.price * quantity)}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleDecrement(ticketType.id)}
+                      disabled={disabled || quantity === 0}
+                      className="w-12 h-12 flex items-center justify-center rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-blue-500 dark:hover:border-blue-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 active:scale-95"
+                      aria-label="Verlaag aantal"
+                    >
+                      <Minus className="w-5 h-5" />
+                    </button>
+
+                    <span className="min-w-[3rem] text-center text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
+                      {quantity}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => handleIncrement(ticketType)}
+                      disabled={disabled || quantity >= maxQuantity}
+                      className="w-12 h-12 flex items-center justify-center rounded-xl border-2 border-blue-500 dark:border-blue-500 bg-blue-600 text-white hover:bg-blue-700 hover:border-blue-600 disabled:opacity-30 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:border-gray-300 dark:disabled:bg-gray-700 dark:disabled:border-gray-700 transition-all duration-200 active:scale-95 shadow-lg shadow-blue-500/25"
+                      aria-label="Verhoog aantal"
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {quantity >= maxQuantity && maxQuantity < available && (
+                    <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                      Max. {maxPerType} per bestelling
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         );
