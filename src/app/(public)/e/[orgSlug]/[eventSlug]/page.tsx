@@ -1,20 +1,11 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
+import Image from "next/image";
 import { getPublicEventByBothSlugs } from "@/server/services/eventService";
 import { formatDateTime, formatDateRange, isPast } from "@/lib/date";
 import { EventTickets } from "@/components/checkout";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Calendar,
-  MapPin,
-  Clock,
-  Users,
-  Shield,
-  Ticket as TicketIcon,
-  AlertCircle,
-} from "lucide-react";
-import { PublicHero, PublicFeatureBadge } from "@/components/public";
+import { Calendar, MapPin, Clock, Users, AlertCircle } from "lucide-react";
+import { PublicHero } from "@/components/public";
 
 interface PublicEventPageProps {
   params: Promise<{ orgSlug: string; eventSlug: string }>;
@@ -103,6 +94,21 @@ export default async function PublicEventPage({
             )}
         </div>
       </PublicHero>
+
+      {/* Hero Image */}
+      {event.heroImageUrl && (
+        <div className="public-container -mt-8 mb-8">
+          <div className="relative w-full h-64 md:h-96 rounded-xl overflow-hidden border-4 border-white dark:border-gray-900 shadow-2xl animate-fade-in-up">
+            <Image
+              src={event.heroImageUrl}
+              alt={event.title}
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="public-container py-8 md:py-12">
@@ -212,9 +218,28 @@ export default async function PublicEventPage({
                         <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
                           Locatie
                         </h3>
+                        {event.locationDescription && (
+                          <p className="text-gray-900 dark:text-white font-semibold mb-1">
+                            {event.locationDescription}
+                          </p>
+                        )}
                         <p className="text-gray-700 dark:text-gray-300 font-medium break-words">
                           {event.location}
                         </p>
+                        {event.latitude &&
+                          event.longitude &&
+                          process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && (
+                            <div className="mt-4 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700">
+                              <iframe
+                                width="100%"
+                                height="250"
+                                style={{ border: 0 }}
+                                loading="lazy"
+                                src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${event.latitude},${event.longitude}&zoom=14`}
+                                allowFullScreen
+                              />
+                            </div>
+                          )}
                       </div>
                     </div>
                   )}

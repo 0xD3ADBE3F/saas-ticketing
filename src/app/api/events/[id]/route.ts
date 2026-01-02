@@ -12,6 +12,9 @@ const updateEventSchema = z.object({
   title: z.string().min(1, "Titel is verplicht").max(100, "Titel mag maximaal 100 karakters zijn").optional(),
   description: z.string().max(2000, "Beschrijving mag maximaal 2000 karakters zijn").nullable().optional(),
   location: z.string().max(200, "Locatie mag maximaal 200 karakters zijn").nullable().optional(),
+  locationDescription: z.string().max(200, "Locatie omschrijving mag maximaal 200 karakters zijn").nullable().optional(),
+  latitude: z.number().min(-90).max(90).nullable().optional(),
+  longitude: z.number().min(-180).max(180).nullable().optional(),
   startsAt: z.string().datetime("Ongeldige startdatum").optional(),
   endsAt: z.string().datetime("Ongeldige einddatum").optional(),
   status: z.enum(["DRAFT", "LIVE", "ENDED", "CANCELLED"]).optional(),
@@ -94,6 +97,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     title?: string;
     description?: string | null;
     location?: string | null;
+    locationDescription?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
     startsAt?: Date;
     endsAt?: Date;
     isPaid?: boolean;
@@ -104,6 +110,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (updateData.title !== undefined) updatePayload.title = updateData.title;
   if (updateData.description !== undefined) updatePayload.description = updateData.description;
   if (updateData.location !== undefined) updatePayload.location = updateData.location;
+  if (updateData.locationDescription !== undefined) updatePayload.locationDescription = updateData.locationDescription;
+  if (updateData.latitude !== undefined) updatePayload.latitude = updateData.latitude;
+  if (updateData.longitude !== undefined) updatePayload.longitude = updateData.longitude;
   if (updateData.startsAt !== undefined) updatePayload.startsAt = new Date(updateData.startsAt);
   if (updateData.endsAt !== undefined) updatePayload.endsAt = new Date(updateData.endsAt);
   if (updateData.isPaid !== undefined) updatePayload.isPaid = updateData.isPaid;

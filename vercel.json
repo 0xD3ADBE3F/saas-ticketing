@@ -1,0 +1,18 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/generate-invoices",
+      "schedule": "0 2 * * *",
+      "headers": {
+        "Authorization": "Bearer ${CRON_SECRET}"
+      }
+    },
+    {
+      "path": "/api/cron/expire-orders",
+      "schedule": "*/30 * * * *",
+      "headers": {
+        "Authorization": "Bearer ${CRON_SECRET}"
+      }
+    }
+  ]
+}

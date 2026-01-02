@@ -113,6 +113,10 @@ model Event {
   slug           String
   description    String?
   location       String?
+  locationDescription String? // Venue name or description (e.g., "De Oosterpoort")
+  latitude       Float?      // Geographic coordinate for map display
+  longitude      Float?      // Geographic coordinate for map display
+  heroImageUrl   String?     // Vercel Blob Storage URL for event hero image
   startsAt       DateTime
   endsAt         DateTime
   status         EventStatus @default(DRAFT)

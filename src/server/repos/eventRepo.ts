@@ -6,6 +6,9 @@ export type CreateEventInput = {
   slug: string;
   description?: string;
   location?: string;
+  locationDescription?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   startsAt: Date;
   endsAt: Date;
   status?: EventStatus;
@@ -18,6 +21,9 @@ export type UpdateEventInput = {
   slug?: string;
   description?: string | null;
   location?: string | null;
+  locationDescription?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   startsAt?: Date;
   endsAt?: Date;
   status?: EventStatus;
@@ -36,6 +42,10 @@ export type PublicEvent = {
   slug: string;
   description: string | null;
   location: string | null;
+  locationDescription: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  heroImageUrl: string | null;
   startsAt: Date;
   endsAt: Date;
   isPaid: boolean;
@@ -203,6 +213,10 @@ export const eventRepo = {
         slug: true,
         description: true,
         location: true,
+        locationDescription: true,
+        latitude: true,
+        longitude: true,
+        heroImageUrl: true,
         startsAt: true,
         endsAt: true,
         isPaid: true, // Add isPaid field to determine if event is free

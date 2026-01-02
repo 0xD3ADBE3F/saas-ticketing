@@ -8,7 +8,7 @@ import { logger } from "@/server/lib/logger";
  *
  * Authorization: Bearer token from env variable
  */
-export async function GET(req: NextRequest) {
+async function handleExpireOrders(req: NextRequest) {
   try {
     // Verify cron secret for security
     const authHeader = req.headers.get("authorization");
@@ -58,6 +58,15 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Support both GET (for manual testing) and POST (for Vercel cron)
+export async function GET(req: NextRequest) {
+  return handleExpireOrders(req);
+}
+
+export async function POST(req: NextRequest) {
+  return handleExpireOrders(req);
 }
 
 // Allow GET requests only
