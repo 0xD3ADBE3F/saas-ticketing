@@ -4,6 +4,7 @@ import { getPublicEvent } from "@/server/services/eventService";
 import { formatDateTime, formatDateRange, isPast } from "@/lib/date";
 import { EventTickets } from "@/components/checkout";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Calendar,
   MapPin,
@@ -11,11 +12,13 @@ import {
   Users,
   Shield,
   Ticket as TicketIcon,
+  AlertCircle,
 } from "lucide-react";
 import { PublicHero, PublicFeatureBadge } from "@/components/public";
 
 interface PublicEventPageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ error?: string }>;
 }
 
 export async function generateMetadata({ params }: PublicEventPageProps) {
@@ -41,8 +44,10 @@ export async function generateMetadata({ params }: PublicEventPageProps) {
 
 export default async function PublicEventPage({
   params,
+  searchParams,
 }: PublicEventPageProps) {
   const { slug } = await params;
+  const { error } = await searchParams;
   const event = await getPublicEvent(slug);
 
   if (!event) {
@@ -98,8 +103,25 @@ export default async function PublicEventPage({
             )}
         </div>
       </PublicHero>
+
       {/* Main Content */}
       <main className="public-container py-8 md:py-12">
+        {/* Show error banner if payment expired */}
+        {error === "payment-expired" && (
+          <Alert variant="destructive" className="mb-6 animate-fade-in-up">
+            <AlertCircle className="h-5 w-5" />
+            <AlertDescription>
+              <span className="font-semibold block mb-1">
+                Reservering verlopen
+              </span>
+              <p className="text-sm">
+                Je betaalvenster is verlopen en de tickets zijn weer
+                vrijgegeven. Je kunt opnieuw tickets bestellen.
+              </p>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {isEventPast && (
           <div className="mb-8 p-6 bg-gray-100 dark:bg-gray-800 rounded-xl text-center animate-fade-in-up">
             <p className="text-lg font-semibold text-gray-900 dark:text-white">

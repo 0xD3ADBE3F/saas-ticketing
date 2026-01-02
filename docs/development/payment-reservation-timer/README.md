@@ -96,6 +96,7 @@ Implement a configurable payment reservation timer that displays a countdown to 
 ### A) Database Schema
 
 **Existing Schema (no changes):**
+
 ```prisma
 model Order {
   expiresAt DateTime?   // Already exists - used for timer
@@ -115,33 +116,35 @@ enum OrderStatus {
 ```
 
 **New Schema:**
+
 ```prisma
 model Organization {
   id                       String   @id @default(uuid())
   name                     String
   // ... existing fields ...
-  
+
   // NEW: Payment timeout configuration
   paymentTimeoutMinutes    Int      @default(10) // Time in minutes for payment reservation
-  
+
   // ... rest of fields
 }
 ```
 
 **Migration:**
+
 ```sql
 -- Migration: add_payment_timeout_config
 -- Add payment timeout configuration to organizations
 
-ALTER TABLE organizations 
+ALTER TABLE organizations
   ADD COLUMN "paymentTimeoutMinutes" INTEGER NOT NULL DEFAULT 10;
 
 -- Add EXPIRED status to OrderStatus enum
 ALTER TYPE "OrderStatus" ADD VALUE 'EXPIRED';
 
 -- Add index for efficient background job queries
-CREATE INDEX "idx_orders_pending_expired" 
-  ON "orders"("status", "expiresAt") 
+CREATE INDEX "idx_orders_pending_expired"
+  ON "orders"("status", "expiresAt")
   WHERE "status" = 'PENDING' AND "expiresAt" IS NOT NULL;
 ```
 
@@ -163,7 +166,7 @@ export const orderExpirationService = {
    */
   async expireOldOrders(): Promise<number> {
     const now = new Date();
-    
+
     // Find all PENDING orders that have expired
     const expiredOrders = await prisma.order.findMany({
       where: {
@@ -206,7 +209,9 @@ export const orderExpirationService = {
             where: { orderId: order.id },
           });
 
-          logger.info(`Expired order ${order.orderNumber} and released ${order.tickets.length} tickets`);
+          logger.info(
+            `Expired order ${order.orderNumber} and released ${order.tickets.length} tickets`
+          );
         });
 
         successCount++;
@@ -215,7 +220,9 @@ export const orderExpirationService = {
       }
     }
 
-    logger.info(`Successfully expired ${successCount}/${expiredOrders.length} orders`);
+    logger.info(
+      `Successfully expired ${successCount}/${expiredOrders.length} orders`
+    );
     return successCount;
   },
 
@@ -282,7 +289,7 @@ import { logger } from "@/server/lib/logger";
 /**
  * Cron job endpoint to expire old orders
  * Should be called every minute by a cron service (Vercel Cron, etc.)
- * 
+ *
  * Authorization: Bearer token from env variable
  */
 export async function GET(req: NextRequest) {
@@ -293,10 +300,7 @@ export async function GET(req: NextRequest) {
 
     if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
       logger.warn("Unauthorized cron job attempt");
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     logger.info("Starting order expiration cron job");
@@ -430,7 +434,7 @@ export function PaymentTimer({ expiresAt, orderNumber, eventSlug }: PaymentTimer
   const isUrgent = timeRemaining < 2 * 60 * 1000; // Less than 2 minutes
 
   return (
-    <Alert 
+    <Alert
       variant={isUrgent ? "destructive" : "default"}
       className={isUrgent ? "animate-pulse" : ""}
     >
@@ -443,8 +447,8 @@ export function PaymentTimer({ expiresAt, orderNumber, eventSlug }: PaymentTimer
           {formatTime(timeRemaining)}
         </p>
         <p className="text-sm mt-2">
-          {isUrgent 
-            ? "⚠️ Betaal snel om je tickets te behouden!" 
+          {isUrgent
+            ? "⚠️ Betaal snel om je tickets te behouden!"
             : "Rond je betaling af binnen deze tijd om je reservering te behouden."}
         </p>
       </AlertDescription>
@@ -458,15 +462,15 @@ export function PaymentTimer({ expiresAt, orderNumber, eventSlug }: PaymentTimer
 ```typescript
 // Add to existing event page
 
-export default async function EventPage({ 
+export default async function EventPage({
   params,
-  searchParams 
+  searchParams
 }: {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
   // ... existing code ...
-  
+
   const { error } = await searchParams;
 
   return (
@@ -480,7 +484,7 @@ export default async function EventPage({
               Reservering verlopen
             </span>
             <p className="text-sm">
-              Je betaalvenster is verlopen en de tickets zijn weer vrijgegeven. 
+              Je betaalvenster is verlopen en de tickets zijn weer vrijgegeven.
               Je kunt opnieuw tickets bestellen.
             </p>
           </AlertDescription>
@@ -508,7 +512,7 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
       {/* Add timer above payment section for pending orders */}
       {isPending && order.expiresAt && (
         <div className="mb-6">
-          <PaymentTimer 
+          <PaymentTimer
             expiresAt={order.expiresAt}
             orderNumber={order.orderNumber}
             eventSlug={event.slug}
@@ -535,7 +539,7 @@ export default function DesignSettingsPage() {
   return (
     <div>
       {/* Existing design settings */}
-      
+
       {/* Add Payment Settings Section */}
       <div className="space-y-6">
         <div>
@@ -553,7 +557,7 @@ export default function DesignSettingsPage() {
             <p className="text-sm text-muted-foreground mb-2">
               Hoe lang blijven tickets gereserveerd voordat ze worden vrijgegeven? (5-30 minuten)
             </p>
-            <input 
+            <input
               type="number"
               min="5"
               max="30"
@@ -562,7 +566,7 @@ export default function DesignSettingsPage() {
               className="w-32"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Standaard: 10 minuten. Langere tijden geven kopers meer tijd, 
+              Standaard: 10 minuten. Langere tijden geven kopers meer tijd,
               maar kunnen leiden tot geblokkeerde voorraad.
             </p>
           </div>
@@ -578,6 +582,7 @@ export default function DesignSettingsPage() {
 ## Implementation Checklist
 
 ### Phase 1: Database & Configuration
+
 - [ ] Add `paymentTimeoutMinutes` field to Organization model
 - [ ] Add `EXPIRED` status to OrderStatus enum
 - [ ] Create and run migration
@@ -585,18 +590,21 @@ export default function DesignSettingsPage() {
 - [ ] Update organization settings page UI
 
 ### Phase 2: Services
+
 - [ ] Create orderExpirationService with expireOldOrders()
 - [ ] Add calculateExpirationTime() helper
 - [ ] Update orderService.createOrder() to use dynamic timeout
 - [ ] Add tests for expiration logic
 
 ### Phase 3: Cron Job
+
 - [ ] Create /api/cron/expire-orders route
 - [ ] Add CRON_SECRET to environment variables
 - [ ] Configure vercel.json for cron schedule
 - [ ] Test manual cron execution
 
 ### Phase 4: UI Components
+
 - [ ] Create PaymentTimer component with countdown
 - [ ] Add timer to checkout page (pending orders only)
 - [ ] Implement client-side expiration redirect
@@ -604,6 +612,7 @@ export default function DesignSettingsPage() {
 - [ ] Style timer with urgency states (normal vs urgent)
 
 ### Phase 5: Testing
+
 - [ ] Test timer counts down correctly
 - [ ] Test expiration redirects to event page with error
 - [ ] Test background job expires orders
@@ -625,17 +634,20 @@ CRON_SECRET=your-secret-token-here  # Generate with: openssl rand -base64 32
 ## Testing Scenarios
 
 ### 1. Timer Display
+
 - Create order → Go to checkout → Timer shows correct countdown
 - Refresh page → Timer recalculates from server time
 - Multiple tabs → All timers sync (server-driven)
 
 ### 2. Client Expiration
+
 - Create order → Wait for timer to reach 0:00
 - Verify expired message shows
 - Verify redirect to event page after 3 seconds
 - Verify error banner on event page
 
 ### 3. Background Expiration
+
 - Create order → Close tab immediately
 - Wait 10 minutes
 - Run cron job (or wait for automatic run)
@@ -643,12 +655,14 @@ CRON_SECRET=your-secret-token-here  # Generate with: openssl rand -base64 32
 - Verify tickets released (can be ordered again)
 
 ### 4. Configuration
+
 - Admin sets timeout to 15 minutes
 - Create new order
 - Verify order.expiresAt = createdAt + 15 minutes
 - Verify timer shows 15:00 countdown
 
 ### 5. Edge Cases
+
 - Order with 1 second left → Payment succeeds → Order becomes PAID
 - Multiple concurrent orders for last ticket → First to pay wins
 - Expired order → Buyer tries to pay → Payment fails (order expired)

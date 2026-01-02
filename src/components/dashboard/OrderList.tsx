@@ -51,6 +51,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   FAILED: "Mislukt",
   CANCELLED: "Geannuleerd",
   REFUNDED: "Terugbetaald",
+  EXPIRED: "Verlopen",
 };
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
@@ -60,6 +61,7 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
   FAILED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   CANCELLED: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
   REFUNDED: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  EXPIRED: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
 };
 
 export function OrderList({ organizationId }: OrderListProps) {
@@ -184,6 +186,7 @@ export function OrderList({ organizationId }: OrderListProps) {
                 <option value="FAILED">Mislukt</option>
                 <option value="CANCELLED">Geannuleerd</option>
                 <option value="REFUNDED">Terugbetaald</option>
+                <option value="EXPIRED">Verlopen</option>
               </select>
             </div>
           </div>

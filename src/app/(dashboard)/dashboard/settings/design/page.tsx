@@ -38,6 +38,7 @@ export default async function DesignSettingsPage() {
         initialLogoUrl={settings?.logoUrl ?? null}
         initialWebsiteUrl={settings?.websiteUrl ?? null}
         initialShowTicketAvailability={settings?.showTicketAvailability ?? true}
+        initialPaymentTimeoutMinutes={settings?.paymentTimeoutMinutes ?? 10}
       />
     </div>
   );

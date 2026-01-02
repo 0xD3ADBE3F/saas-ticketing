@@ -82,6 +82,15 @@ export const designService = {
   },
 
   /**
+   * Update payment timeout in minutes for payment reservations
+   */
+  updatePaymentTimeout: async (orgId: string, paymentTimeoutMinutes: number) => {
+    return organizationRepo.updateDesignSettings(orgId, {
+      paymentTimeoutMinutes,
+    });
+  },
+
+  /**
    * Get design settings for an organization
    */
   getDesignSettings: async (orgId: string) => {

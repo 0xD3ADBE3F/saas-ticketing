@@ -128,16 +128,27 @@ export const organizationRepo = {
   },
 
   /**
-   * Update design settings (logo, website URL, and/or ticket availability)
+   * Update design settings (logo, website URL, ticket availability, and/or payment timeout)
    */
   updateDesignSettings: async (
     orgId: string,
-    data: { logoUrl?: string | null; websiteUrl?: string | null; showTicketAvailability?: boolean }
+    data: {
+      logoUrl?: string | null;
+      websiteUrl?: string | null;
+      showTicketAvailability?: boolean;
+      paymentTimeoutMinutes?: number;
+    }
   ) => {
     return prisma.organization.update({
       where: { id: orgId },
       data,
-      select: { id: true, logoUrl: true, websiteUrl: true, showTicketAvailability: true },
+      select: {
+        id: true,
+        logoUrl: true,
+        websiteUrl: true,
+        showTicketAvailability: true,
+        paymentTimeoutMinutes: true,
+      },
     });
   },
 
@@ -147,7 +158,12 @@ export const organizationRepo = {
   getDesignSettings: async (orgId: string) => {
     return prisma.organization.findUnique({
       where: { id: orgId },
-      select: { logoUrl: true, websiteUrl: true, showTicketAvailability: true },
+      select: {
+        logoUrl: true,
+        websiteUrl: true,
+        showTicketAvailability: true,
+        paymentTimeoutMinutes: true,
+      },
     });
   },
 };

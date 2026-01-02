@@ -3,6 +3,7 @@ import { orderRepo, OrderItemInput } from "@/server/repos/orderRepo";
 import type { Order, TicketType } from "@/generated/prisma";
 import { Prisma } from "@/generated/prisma";
 import { calculateOrderFees } from "@/server/services/feeService";
+import { orderExpirationService } from "@/server/services/orderExpirationService";
 
 // =============================================================================
 // Fee Calculation (delegates to feeService)
@@ -281,8 +282,10 @@ export async function createOrder(
       // Total amount (round to cents for storage)
       const totalAmount = Math.round(feeBreakdown.totalAmount);
 
-      // Order expires in 30 minutes if not paid
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+      // Calculate order expiration based on organization settings
+      const expiresAt = await orderExpirationService.calculateExpirationTime(
+        event.organization.id
+      );
 
       // Create the order
       const order = await orderRepo.create(

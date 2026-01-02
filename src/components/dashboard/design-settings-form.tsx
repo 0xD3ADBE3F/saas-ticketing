@@ -16,6 +16,7 @@ import { Upload, X, ImageIcon, Loader2 } from "lucide-react";
 import {
   updateWebsiteUrlAction,
   updateTicketAvailabilityAction,
+  updatePaymentTimeoutAction,
   deleteLogoAction,
 } from "@/app/(dashboard)/dashboard/settings/design/actions";
 import { toast } from "sonner";
@@ -24,22 +25,28 @@ type Props = {
   initialLogoUrl: string | null;
   initialWebsiteUrl: string | null;
   initialShowTicketAvailability: boolean;
+  initialPaymentTimeoutMinutes: number;
 };
 
 export function DesignSettingsForm({
   initialLogoUrl,
   initialWebsiteUrl,
   initialShowTicketAvailability,
+  initialPaymentTimeoutMinutes,
 }: Props) {
   const [logoUrl, setLogoUrl] = useState(initialLogoUrl);
   const [websiteUrl, setWebsiteUrl] = useState(initialWebsiteUrl ?? "");
   const [showTicketAvailability, setShowTicketAvailability] = useState(
     initialShowTicketAvailability
   );
+  const [paymentTimeoutMinutes, setPaymentTimeoutMinutes] = useState(
+    initialPaymentTimeoutMinutes
+  );
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [savingUrl, setSavingUrl] = useState(false);
   const [savingAvailability, setSavingAvailability] = useState(false);
+  const [savingTimeout, setSavingTimeout] = useState(false);
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -136,6 +143,31 @@ export function DesignSettingsForm({
       setShowTicketAvailability(oldValue); // Revert on error
     } finally {
       setSavingAvailability(false);
+    }
+  }
+
+  async function handlePaymentTimeoutSave() {
+    // Validate range
+    if (paymentTimeoutMinutes < 5 || paymentTimeoutMinutes > 30) {
+      toast.error("Ongeldige waarde", {
+        description: "Kies een waarde tussen 5 en 30 minuten",
+      });
+      return;
+    }
+
+    setSavingTimeout(true);
+    try {
+      await updatePaymentTimeoutAction(paymentTimeoutMinutes);
+
+      toast.success("Reserveringstijd opgeslagen", {
+        description: `Nieuwe bestellingen hebben ${paymentTimeoutMinutes} minuten betaaltijd`,
+      });
+    } catch {
+      toast.error("Opslaan mislukt", {
+        description: "Probeer het opnieuw",
+      });
+    } finally {
+      setSavingTimeout(false);
     }
   }
 
@@ -282,6 +314,52 @@ export function DesignSettingsForm({
               onCheckedChange={handleTicketAvailabilityChange}
               disabled={savingAvailability}
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Payment Timeout Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Betaalreservering</CardTitle>
+          <CardDescription>
+            Hoe lang blijven tickets gereserveerd tijdens het afrekenproces?
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="payment-timeout">
+                Reserveringstijd (minuten)
+              </Label>
+              <div className="flex gap-2 mt-2">
+                <Input
+                  id="payment-timeout"
+                  type="number"
+                  min={5}
+                  max={30}
+                  value={paymentTimeoutMinutes}
+                  onChange={(e) =>
+                    setPaymentTimeoutMinutes(parseInt(e.target.value) || 10)
+                  }
+                  className="w-32"
+                />
+                <Button
+                  onClick={handlePaymentTimeoutSave}
+                  disabled={savingTimeout}
+                >
+                  {savingTimeout ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : null}
+                  Opslaan
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                Standaard: 10 minuten. Kies een waarde tussen 5 en 30 minuten.
+                Langere tijden geven kopers meer tijd, maar kunnen leiden tot
+                geblokkeerde voorraad bij drukke evenementen.
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

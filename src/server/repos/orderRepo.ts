@@ -524,6 +524,11 @@ export const orderRepo = {
 
     if (filters?.status) {
       where.status = filters.status;
+    } else {
+      // By default, exclude EXPIRED orders from the list
+      where.status = {
+        not: "EXPIRED",
+      };
     }
 
     if (filters?.eventId) {

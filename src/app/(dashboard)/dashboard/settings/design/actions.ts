@@ -47,6 +47,31 @@ export async function updateTicketAvailabilityAction(showTicketAvailability: boo
   return { success: true };
 }
 
+export async function updatePaymentTimeoutAction(paymentTimeoutMinutes: number) {
+  const user = await getUser();
+  if (!user) {
+    throw new Error('Unauthorized');
+  }
+
+  const organizations = await getUserOrganizations(user.id);
+  if (organizations.length === 0) {
+    throw new Error('No organization found');
+  }
+
+  const org = organizations[0];
+
+  // Validate range
+  if (paymentTimeoutMinutes < 5 || paymentTimeoutMinutes > 30) {
+    throw new Error('Payment timeout must be between 5 and 30 minutes');
+  }
+
+  await designService.updatePaymentTimeout(org.id, paymentTimeoutMinutes);
+
+  revalidatePath('/dashboard/settings/design');
+
+  return { success: true };
+}
+
 export async function deleteLogoAction(logoUrl: string) {
   const user = await getUser();
   if (!user) {

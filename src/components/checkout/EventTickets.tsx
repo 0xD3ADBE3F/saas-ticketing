@@ -8,6 +8,7 @@ import {
   type TicketTypeForSelection,
   type TicketSelection,
 } from "@/components/checkout";
+import { PaymentTimer } from "@/components/checkout/PaymentTimer";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Ticket, ArrowLeft } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
@@ -56,6 +57,7 @@ export function EventTickets({
   // Order state (created on step 2)
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
 
   const totalTickets = selections.reduce((sum, s) => sum + s.quantity, 0);
@@ -140,6 +142,7 @@ export function EventTickets({
       // Store order info
       setCreatedOrderId(data.orderId);
       setOrderNumber(data.orderNumber);
+      setExpiresAt(data.expiresAt ? new Date(data.expiresAt) : null);
       setStep("checkout");
     } catch {
       setError("Er ging iets mis bij het aanmaken van je bestelling");
@@ -241,6 +244,13 @@ export function EventTickets({
           <ArrowLeft className="w-4 h-4" />
           Terug naar ticketselectie
         </button>
+
+        {/* Payment Timer */}
+        {expiresAt && (
+          <div className="animate-fade-in-up">
+            <PaymentTimer expiresAt={expiresAt} eventSlug={eventSlug} />
+          </div>
+        )}
 
         {/* Order Summary */}
         {orderNumber && (
