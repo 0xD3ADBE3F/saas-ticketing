@@ -19,6 +19,9 @@ export function FreeEventLimitInfo({
   showUnlockButton = true,
   context = "event",
 }: FreeEventLimitInfoProps) {
+  // Calculate unlock fee including VAT (21%)
+  const unlockFeeInclVat = Math.round(unlockFee * 1.21);
+
   const contextText = {
     event: {
       title: isUnlocked
@@ -26,7 +29,7 @@ export function FreeEventLimitInfo({
         : "Ticketlimiet voor gratis evenement",
       description: isUnlocked
         ? "Je kunt tot 2.500 tickets (systeemmaximum) verkopen voor dit evenement."
-        : `Voor gratis evenementen geldt een standaardlimiet van ${freeEventLimit} tickets. Betaal eenmalig €${(unlockFee / 100).toFixed(2)} om tot 2.500 tickets te kunnen verkopen.`,
+        : `Voor gratis evenementen geldt een standaardlimiet van ${freeEventLimit} tickets. Betaal eenmalig €${(unlockFeeInclVat / 100).toFixed(2)} om tot 2.500 tickets te kunnen verkopen.`,
       buttonText: "Ontgrendel meer tickets",
     },
     ticketType: {

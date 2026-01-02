@@ -349,6 +349,7 @@ export function EventForm({
         body: JSON.stringify({
           description: formData.description,
           eventTitle: formData.title || undefined,
+          maxLength: 1500,
         }),
       });
 

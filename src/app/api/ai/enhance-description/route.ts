@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { description, eventTitle } = await request.json();
+    const { description, eventTitle, maxLength } = await request.json();
 
     if (!description || typeof description !== "string") {
       return NextResponse.json(
@@ -49,12 +49,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // Use provided maxLength or default to 2000
+    const maxDescriptionLength = maxLength && typeof maxLength === "number" && maxLength > 0
+      ? Math.min(maxLength, 2000) // Cap at 1000 for safety
+      : 2000;
+
     const systemPrompt = `Je bent een professionele event marketeer die helpt met het schrijven van aantrekkelijke evenementenbeschrijvingen in het Nederlands.
 
 Regels:
 - Schrijf in het Nederlands
 - Maak de tekst aantrekkelijker en professioneler, maar behoud de kernboodschap
-- Gebruik maximaal 2000 karakters
+- Gebruik maximaal ${maxDescriptionLength} karakters
 - Voeg geen informatie toe die niet in de originele tekst staat
 - Behoud een vriendelijke, uitnodigende toon
 - Vermijd overdreven marketing-taal
@@ -68,8 +73,8 @@ Regels:
 
     // Ensure the response isn't too long
     const trimmedDescription =
-      enhancedDescription.length > 2000
-        ? enhancedDescription.substring(0, 2000)
+      enhancedDescription.length > maxDescriptionLength
+        ? enhancedDescription.substring(0, maxDescriptionLength)
         : enhancedDescription;
 
     return NextResponse.json({

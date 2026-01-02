@@ -7,6 +7,7 @@ import { toDateTimeLocalValue } from "@/lib/date";
 import { centsToEuros } from "@/lib/currency";
 import { FreeEventLimitInfo } from "@/components/events/FreeEventLimitInfo";
 import { UnlockTicketsModal } from "@/components/events/UnlockTicketsModal";
+import { Sparkles, Loader2 } from "lucide-react";
 
 interface TicketTypeFormProps {
   ticketType?: TicketType;
@@ -34,6 +35,8 @@ export function TicketTypeForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
+  const [enhancementError, setEnhancementError] = useState<string | null>(null);
   const [unlockInfo, setUnlockInfo] = useState<{
     freeEventLimit: number;
     unlockFee: number;
@@ -220,6 +223,46 @@ export function TicketTypeForm({
     }
   };
 
+  const handleEnhanceDescription = async () => {
+    if (!formData.description || formData.description.length < 10) {
+      setEnhancementError(
+        "Voer eerst een beschrijving in (minimaal 10 karakters)"
+      );
+      return;
+    }
+
+    setIsEnhancing(true);
+    setEnhancementError(null);
+
+    try {
+      const response = await fetch("/api/ai/enhance-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: formData.description,
+          eventTitle: formData.name || undefined,
+          maxLength: 300,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setEnhancementError(data.error || "Kon beschrijving niet verbeteren");
+        return;
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        description: data.enhancedDescription,
+      }));
+    } catch {
+      setEnhancementError("Er is iets misgegaan. Probeer het opnieuw.");
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
@@ -251,12 +294,36 @@ export function TicketTypeForm({
 
       {/* Description */}
       <div>
-        <label
-          htmlFor="description"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-        >
-          Beschrijving
-        </label>
+        <div className="flex items-center justify-between mb-1">
+          <label
+            htmlFor="description"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Beschrijving
+          </label>
+          <button
+            type="button"
+            onClick={handleEnhanceDescription}
+            disabled={
+              isEnhancing ||
+              !formData.description ||
+              formData.description.length < 10
+            }
+            className="flex items-center gap-1.5 px-3 py-1 text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isEnhancing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Aan het verbeteren...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Verbeter met AI
+              </>
+            )}
+          </button>
+        </div>
         <textarea
           id="description"
           name="description"
@@ -267,9 +334,18 @@ export function TicketTypeForm({
           placeholder="Wat is er inbegrepen bij dit ticket?"
           className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
         />
-        <p className="mt-1 text-sm text-gray-500">
-          {formData.description.length}/500 karakters
-        </p>
+        <div className="mt-1 flex items-center justify-between">
+          <div>
+            {enhancementError && (
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {enhancementError}
+              </p>
+            )}
+          </div>
+          <p className="text-sm text-gray-500">
+            {formData.description.length}/500 karakters
+          </p>
+        </div>
       </div>
 
       {/* Price and Capacity Row */}
