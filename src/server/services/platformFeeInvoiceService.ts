@@ -9,29 +9,13 @@ import { invoiceRepo } from "@/server/repos/invoiceRepo";
 import { invoiceEmailService } from "@/server/services/invoiceEmailService";
 import { mollieLogger } from "@/server/lib/logger";
 import type { Invoice } from "@/generated/prisma";
-import { env } from "@/server/lib/env";
+import {
+  createMollieSalesInvoice,
+  formatAmount,
+  calculateVATFromInclusive,
+} from "@/server/services/mollieInvoiceService";
 
-const MOLLIE_API_URL = "https://api.mollie.com/v2";
 const VAT_RATE = 21; // 21% VAT on platform fees
-
-/**
- * Format amount in cents to EUR string (e.g., 5500 → "55.00")
- */
-function formatAmount(cents: number): string {
-  return (cents / 100).toFixed(2);
-}
-
-/**
- * Calculate VAT amount from total (inclusive)
- */
-function calculateVATFromInclusive(totalInclVAT: number, vatRate = VAT_RATE): {
-  amountExclVAT: number;
-  vatAmount: number;
-} {
-  const amountExclVAT = Math.round((totalInclVAT * 100) / (100 + vatRate));
-  const vatAmount = totalInclVAT - amountExclVAT;
-  return { amountExclVAT, vatAmount };
-}
 
 /**
  * Generate platform fee invoice for a completed event
@@ -165,107 +149,57 @@ export async function generateEventInvoice(eventId: string): Promise<Invoice | n
 
     const description = `Platform fees - ${event.title} (${eventDate})`;
 
-    // 7. Create Sales Invoice via Mollie API
-    const mollieResponse = await fetch(`${MOLLIE_API_URL}/sales-invoices`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.MOLLIE_API_KEY}`,
-        "Content-Type": "application/json",
+    // 7. Determine recipient type based on VAT/registration number
+    const isBusinessRecipient = !!(org.vatNumber || org.registrationNumber);
+
+    // 8. Create Sales Invoice via Mollie API
+    const mollieInvoice = await createMollieSalesInvoice({
+      recipientIdentifier: event.organizationId,
+      recipient: isBusinessRecipient
+        ? {
+            type: "business",
+            organizationName: org.name,
+            ...(org.vatNumber && { vatNumber: org.vatNumber }),
+            ...(org.registrationNumber && { organizationNumber: org.registrationNumber }),
+            email: billingEmail,
+            streetAndNumber: org.streetAndNumber!,
+            postalCode: org.postalCode!,
+            city: org.city!,
+            country: org.country || "NL",
+            locale: "nl_NL",
+          }
+        : {
+            type: "consumer",
+            givenName: org.firstName || org.name.split(" ")[0],
+            familyName: org.lastName || org.name.split(" ").slice(1).join(" ") || "",
+            email: billingEmail,
+            streetAndNumber: org.streetAndNumber!,
+            postalCode: org.postalCode!,
+            city: org.city!,
+            country: org.country || "NL",
+            locale: "nl_NL",
+          },
+      lines: [
+        {
+          description: `Platform service fees for ${event.title}`,
+          quantity: 1,
+          vatRate: "21.00",
+          unitPrice: {
+            currency: "EUR",
+            value: formatAmount(amountExclVAT),
+          },
+        },
+      ],
+      memo: `Event: ${event.title}\nDate: ${eventDate}\nTickets sold: ${breakdown.ticketsSold}\nGross revenue: €${formatAmount(breakdown.grossRevenue)}`,
+      emailDetails: {
+        subject: `Invoice for ${event.title} - Entro Platform Fees`,
+        body: `Dear ${org.name},\n\nThank you for using Entro for your event "${event.title}"!\n\nPlease find your invoice for the platform service fees attached. The invoice covers ${breakdown.ticketsSold} tickets sold, with a total gross revenue of €${formatAmount(breakdown.grossRevenue)}.\n\nPayment is due within 30 days from the invoice date.\n\nIf you have any questions about this invoice, please don't hesitate to contact our support team.\n\nBest regards,\nThe Entro Team`,
       },
-      body: JSON.stringify({
-        status: "issued", // Issue first, then mark as paid
-        paymentTerm: "1 days", // 1 day (minimum allowed)
-        vatScheme: "standard",
-        vatMode: "exclusive", // Apply VAT on top of amount
-        recipientIdentifier: event.organizationId,
-        recipient: {
-          type: "business",
-          organizationName: org.name,
-          ...(org.vatNumber && { vatNumber: org.vatNumber }),
-          email: billingEmail,
-          streetAndNumber: org.streetAndNumber,
-          postalCode: org.postalCode,
-          city: org.city,
-          country: org.country || "NL",
-          locale: "nl_NL",
-        },
-        lines: [
-          {
-            description: `Platform service fees for ${event.title}`,
-            quantity: 1,
-            vatRate: "21.00",
-            unitPrice: {
-              currency: "EUR",
-              value: formatAmount(amountExclVAT),
-            },
-          },
-        ],
-        memo: `Event: ${event.title}\nDate: ${eventDate}\nTickets sold: ${breakdown.ticketsSold}\nGross revenue: €${formatAmount(breakdown.grossRevenue)}`,
-        emailDetails: {
-          subject: `Invoice for ${event.title} - Entro Platform Fees`,
-          body: `Dear ${org.name},\n\nThank you for using Entro for your event "${event.title}"!\n\nPlease find your invoice for the platform service fees attached. The invoice covers ${breakdown.ticketsSold} tickets sold, with a total gross revenue of €${formatAmount(breakdown.grossRevenue)}.\n\nPayment is due within 30 days from the invoice date.\n\nIf you have any questions about this invoice, please don't hesitate to contact our support team.\n\nBest regards,\nThe Entro Team`,
-        },
-      }),
+      paymentTerm: "1 days",
+      markAsPaid: true, // Mark as paid since fees are already collected
     });
 
-    if (!mollieResponse.ok) {
-      const errorData = await mollieResponse.json().catch(() => ({}));
-      mollieLogger.error({
-        message: "Mollie API error when creating sales invoice",
-        status: mollieResponse.status,
-        statusText: mollieResponse.statusText,
-        error: errorData,
-        eventId,
-      });
-      throw new Error(
-        `Mollie API error: ${mollieResponse.status} ${mollieResponse.statusText} - ${JSON.stringify(errorData)}`
-      );
-    }
-
-    const mollieInvoice = await mollieResponse.json();
-
-    mollieLogger.info({
-      message: "Mollie sales invoice created successfully",
-      mollieInvoiceId: mollieInvoice.id,
-      invoiceNumber: mollieInvoice.invoiceNumber,
-      eventId,
-    });
-
-    // 7.5. Mark invoice as paid in Mollie (separate PATCH request)
-    const updateResponse = await fetch(
-      `${MOLLIE_API_URL}/sales-invoices/${mollieInvoice.id}`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${env.MOLLIE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status: "paid",
-          paymentDetails: {
-            source: "manual",
-          },
-        }),
-      }
-    );
-
-    if (!updateResponse.ok) {
-      const errorData = await updateResponse.json().catch(() => ({}));
-      mollieLogger.error({
-        message: "Failed to mark Mollie invoice as paid",
-        status: updateResponse.status,
-        error: errorData,
-        invoiceId: mollieInvoice.id,
-      });
-      // Don't throw - continue with issued status
-    } else {
-      mollieLogger.info({
-        message: "Mollie invoice marked as paid",
-        invoiceId: mollieInvoice.id,
-      });
-    }
-
-    // 8. Store invoice in database
+    // 9. Store invoice in database
     const invoice = await invoiceRepo.create({
       organizationId: event.organizationId,
       eventId,

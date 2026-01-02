@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { TicketType } from "@/generated/prisma";
 import { toDateTimeLocalValue } from "@/lib/date";
 import { centsToEuros } from "@/lib/currency";
+import { FreeEventLimitInfo } from "@/components/events/FreeEventLimitInfo";
+import { UnlockTicketsModal } from "@/components/events/UnlockTicketsModal";
 
 interface TicketTypeFormProps {
   ticketType?: TicketType;
@@ -31,6 +33,12 @@ export function TicketTypeForm({
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [unlockInfo, setUnlockInfo] = useState<{
+    freeEventLimit: number;
+    unlockFee: number;
+    isUnlocked: boolean;
+  } | null>(null);
 
   const [formData, setFormData] = useState<FormData>({
     name: ticketType?.name || "",
@@ -48,6 +56,28 @@ export function TicketTypeForm({
       ? toDateTimeLocalValue(ticketType.saleEnd)
       : "",
   });
+
+  // Fetch unlock info for free events
+  useEffect(() => {
+    if (!eventIsPaid) {
+      async function fetchUnlockInfo() {
+        try {
+          const res = await fetch(`/api/events/${eventId}/check-limit`);
+          if (res.ok) {
+            const data = await res.json();
+            setUnlockInfo({
+              freeEventLimit: data.freeEventLimit,
+              unlockFee: data.unlockFee,
+              isUnlocked: data.isUnlocked,
+            });
+          }
+        } catch (err) {
+          console.error("Failed to fetch unlock info:", err);
+        }
+      }
+      fetchUnlockInfo();
+    }
+  }, [eventId, eventIsPaid]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -83,6 +113,31 @@ export function TicketTypeForm({
       setError("Voer een geldige capaciteit in (minimaal 1)");
       setIsSubmitting(false);
       return;
+    }
+
+    // For free events, check capacity against limit
+    if (!eventIsPaid && unlockInfo && !unlockInfo.isUnlocked) {
+      // Check against API to validate total capacity
+      try {
+        const checkResponse = await fetch(
+          `/api/events/${eventId}/check-limit`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ newCapacity: capacity }),
+          }
+        );
+        const checkData = await checkResponse.json();
+        if (!checkData.allowed) {
+          setError(
+            `De totale capaciteit mag niet meer zijn dan ${unlockInfo.freeEventLimit} tickets voor gratis evenementen. Ontgrendel onbeperkte tickets om meer toe te voegen.`
+          );
+          setIsSubmitting(false);
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to check capacity:", err);
+      }
     }
 
     try {
@@ -267,7 +322,11 @@ export function TicketTypeForm({
             name="capacity"
             required
             min={ticketType?.soldCount || 1}
-            max="100000"
+            max={
+              !eventIsPaid && unlockInfo && !unlockInfo.isUnlocked
+                ? unlockInfo.freeEventLimit
+                : 100000
+            }
             value={formData.capacity}
             onChange={handleChange}
             className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -277,8 +336,35 @@ export function TicketTypeForm({
               {ticketType.soldCount} al verkocht (minimale capaciteit)
             </p>
           )}
+          {!eventIsPaid && unlockInfo && !unlockInfo.isUnlocked && (
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              Maximale capaciteit: {unlockInfo.freeEventLimit} tickets (totaal
+              voor alle ticket types)
+            </p>
+          )}
         </div>
       </div>
+
+      {/* Free Event Limit Info */}
+      {!eventIsPaid && unlockInfo && (
+        <>
+          <FreeEventLimitInfo
+            freeEventLimit={unlockInfo.freeEventLimit}
+            unlockFee={unlockInfo.unlockFee}
+            isUnlocked={unlockInfo.isUnlocked}
+            onUnlock={() => setShowUnlockModal(true)}
+            showUnlockButton={true}
+            context="ticketType"
+          />
+          <UnlockTicketsModal
+            eventId={eventId}
+            open={showUnlockModal}
+            onOpenChange={setShowUnlockModal}
+            unlockFeeAmount={unlockInfo.unlockFee}
+            currentLimit={unlockInfo.freeEventLimit}
+          />
+        </>
+      )}
 
       {/* Sale Window */}
       <div className="space-y-4">

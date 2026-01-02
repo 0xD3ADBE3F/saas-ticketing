@@ -30,7 +30,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 interface EventDetailPageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ payment?: string }>;
+  searchParams: Promise<{ payment?: string; unlocked?: string }>;
 }
 
 const statusLabels = {
@@ -57,8 +57,9 @@ export default async function EventDetailPage({
   }
 
   const { id } = await params;
-  const { payment } = await searchParams;
+  const { payment, unlocked } = await searchParams;
   const paymentSuccess = payment === "success";
+  const unlockSuccess = unlocked === "success";
 
   const result = await getEvent(id, user.id);
 
@@ -87,6 +88,25 @@ export default async function EventDetailPage({
             <p className="font-semibold text-green-900 dark:text-green-100">
               Betaling geslaagd! Je evenement is nu live.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Unlock Success Message */}
+      {unlockSuccess && (
+        <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 backdrop-blur-xl border-2 border-blue-200/50 dark:border-blue-800/50 rounded-2xl p-5 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-xl">
+              <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <p className="font-semibold text-blue-900 dark:text-blue-100">
+                Onbeperkte tickets ontgrendeld!
+              </p>
+              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                Je kunt nu tot 2.500 tickets verkopen voor dit gratis evenement.
+              </p>
+            </div>
           </div>
         </div>
       )}

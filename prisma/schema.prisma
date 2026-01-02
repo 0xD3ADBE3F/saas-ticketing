@@ -129,6 +129,11 @@ model Event {
   serviceFeeMinimum    Int?    // Minimum fee in cents
   serviceFeeMaximum    Int?    // Maximum fee in cents
 
+  // Free event unlock feature
+  unlimitedTicketsEnabled   Boolean  @default(false) // Has organizer paid to lift ticket limit?
+  unlimitedTicketsPaymentId String?  @unique // Mollie payment ID for unlock fee
+  unlimitedTicketsPaidAt    DateTime? // When unlock was purchased
+
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
@@ -144,6 +149,7 @@ model Event {
   @@index([organizationId])
   @@index([status])
   @@index([isPaid])
+  @@index([unlimitedTicketsEnabled])
   @@map("events")
 }
 
@@ -382,6 +388,7 @@ model AuditLog {
 
 enum InvoiceType {
   PLATFORM_FEE  // Post-event platform fee invoice
+  UNLOCK_FEE    // Unlock unlimited tickets fee
 }
 
 enum InvoiceStatus {
@@ -497,6 +504,18 @@ model IdempotencyKey {
 // =============================================================================
 // PLATFORM ADMIN
 // =============================================================================
+
+model PlatformSettings {
+  id          String   @id @default(uuid())
+  key         String   @unique // e.g., "FREE_EVENT_TICKET_LIMIT", "FREE_EVENT_UNLOCK_FEE"
+  value       String // JSON-encoded value for flexibility
+  description String? // Human-readable description
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+  @@map("platform_settings")
+}
 
 model SuperAdmin {
   id        String   @id @default(uuid())

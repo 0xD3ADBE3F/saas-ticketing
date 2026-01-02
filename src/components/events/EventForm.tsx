@@ -6,8 +6,18 @@ import { Event, EventStatus, VatRate } from "@/generated/prisma";
 import { toDateTimeLocalValue } from "@/lib/date";
 import { VAT_RATE_LABELS } from "@/server/lib/vat";
 import { useDebounce } from "@/lib/hooks/useDebounce";
-import { Lock, Check, X, Loader2, Link2 } from "lucide-react";
+import {
+  Lock,
+  Check,
+  X,
+  Loader2,
+  Link2,
+  Unlock,
+  AlertCircle,
+} from "lucide-react";
 import { generateSlug } from "@/lib/slug";
+import { UnlockTicketsModal } from "./UnlockTicketsModal";
+import { FreeEventLimitInfo } from "./FreeEventLimitInfo";
 
 interface EventFormProps {
   event?: Event;
@@ -37,6 +47,14 @@ export function EventForm({
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Unlock modal state
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [unlockInfo, setUnlockInfo] = useState<{
+    freeEventLimit: number;
+    unlockFee: number;
+    isUnlocked: boolean;
+  } | null>(null);
 
   // Slug state
   const [slugAvailability, setSlugAvailability] = useState<{
@@ -82,6 +100,57 @@ export function EventForm({
   });
 
   const debouncedSlug = useDebounce(formData.slug, 500);
+
+  // Fetch unlock info for free events (both create and edit modes)
+  useEffect(() => {
+    // For create mode, fetch default settings
+    // For edit mode, fetch event-specific settings
+    if (!formData.isPaid) {
+      async function fetchUnlockInfo() {
+        try {
+          let res;
+          if (mode === "edit" && event) {
+            res = await fetch(`/api/events/${event.id}/check-limit`);
+          } else {
+            // For create mode, fetch platform settings
+            res = await fetch("/api/platform/settings");
+          }
+
+          if (res.ok) {
+            const data = await res.json();
+            if (mode === "create") {
+              // Extract settings from platform settings array
+              const limitSetting = data.find(
+                (s: any) => s.key === "FREE_EVENT_TICKET_LIMIT"
+              );
+              const feeSetting = data.find(
+                (s: any) => s.key === "FREE_EVENT_UNLOCK_FEE"
+              );
+              setUnlockInfo({
+                freeEventLimit: limitSetting
+                  ? parseInt(limitSetting.value)
+                  : 100,
+                unlockFee: feeSetting ? parseInt(feeSetting.value) : 2500,
+                isUnlocked: false,
+              });
+            } else {
+              setUnlockInfo({
+                freeEventLimit: data.freeEventLimit,
+                unlockFee: data.unlockFee,
+                isUnlocked: data.isUnlocked,
+              });
+            }
+          }
+        } catch (err) {
+          console.error("Failed to fetch unlock info:", err);
+        }
+      }
+      fetchUnlockInfo();
+    } else {
+      // Clear unlock info when switching to paid event
+      setUnlockInfo(null);
+    }
+  }, [mode, event, formData.isPaid]);
 
   // Check slug changeability
   useEffect(() => {
@@ -238,7 +307,7 @@ export function EventForm({
       setIsSubmitting(false);
     }
   };
-
+  console.log({ unlockInfo });
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
@@ -452,6 +521,29 @@ export function EventForm({
             : "Bij gratis evenementen kunnen tickets zonder prijs worden aangemaakt."}
         </p>
       </div>
+
+      {/* Free Event Unlock Info (for both create and edit modes) */}
+      {!formData.isPaid && unlockInfo && (
+        <FreeEventLimitInfo
+          freeEventLimit={unlockInfo.freeEventLimit}
+          unlockFee={unlockInfo.unlockFee}
+          isUnlocked={unlockInfo.isUnlocked}
+          onUnlock={() => setShowUnlockModal(true)}
+          showUnlockButton={mode === "edit"}
+          context="event"
+        />
+      )}
+
+      {/* Unlock Modal */}
+      {mode === "edit" && event && !event.isPaid && unlockInfo && (
+        <UnlockTicketsModal
+          eventId={event.id}
+          open={showUnlockModal}
+          onOpenChange={setShowUnlockModal}
+          unlockFeeAmount={unlockInfo.unlockFee}
+          currentLimit={unlockInfo.freeEventLimit}
+        />
+      )}
 
       {/* VAT Rate (only for paid events) */}
       {formData.isPaid && (

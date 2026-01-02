@@ -15,7 +15,7 @@ export const metadata = {
 };
 
 async function getInvoices(organizationId: string) {
-  return prisma.invoice.findMany({
+  const invoices = await prisma.invoice.findMany({
     where: {
       organizationId,
     },
@@ -31,6 +31,12 @@ async function getInvoices(organizationId: string) {
       invoiceDate: "desc",
     },
   });
+
+  // Convert Decimal to number for client components
+  return invoices.map((invoice) => ({
+    ...invoice,
+    vatRate: Number(invoice.vatRate),
+  }));
 }
 
 export default async function InvoicesPage() {
