@@ -11,7 +11,7 @@ import { Info, Lightbulb, ChevronLeft, Calendar } from "lucide-react";
 export default async function NewEventPage({
   searchParams,
 }: {
-  searchParams: { onboarding?: string };
+  searchParams: Promise<{ onboarding?: string }>;
 }) {
   const user = await getUser();
   if (!user) {
@@ -23,7 +23,8 @@ export default async function NewEventPage({
     redirect("/onboarding");
   }
 
-  const isOnboarding = searchParams.onboarding === "true";
+  const params = await searchParams;
+  const isOnboarding = params.onboarding === "true";
 
   return (
     <div className="max-w-2xl">
