@@ -405,11 +405,12 @@ export function EventForm({
           htmlFor="description"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
         >
-          Beschrijving
+          Beschrijving *
         </label>
         <textarea
           id="description"
           name="description"
+          required
           rows={4}
           maxLength={2000}
           value={formData.description}
@@ -428,12 +429,13 @@ export function EventForm({
           htmlFor="location"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
         >
-          Locatie
+          Locatie *
         </label>
         <input
           type="text"
           id="location"
           name="location"
+          required
           maxLength={200}
           value={formData.location}
           onChange={handleChange}
@@ -572,7 +574,8 @@ export function EventForm({
           </select>
           <p className="mt-2 text-sm text-gray-500">
             Dit tarief wordt toegepast op alle tickets voor dit evenement. De
-            ticketprijs blijft inclusief BTW zoals je deze invoert.
+            ticketprijs blijft inclusief BTW zoals je deze invoert. Deze
+            instelling is alleen voor rapportage in de administratie.
           </p>
         </div>
       )}
