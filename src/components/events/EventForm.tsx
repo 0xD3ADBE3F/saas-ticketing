@@ -87,6 +87,7 @@ export function EventForm({
   useEffect(() => {
     if (mode === "edit" && event) {
       async function checkSlugChangeability() {
+        if (!event) return; // Type guard for async function
         try {
           const res = await fetch(
             `/api/events/can-change-slug?eventId=${event.id}`

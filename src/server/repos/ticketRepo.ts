@@ -14,6 +14,7 @@ export type TicketWithDetails = Ticket & {
     startsAt: Date;
     endsAt: Date;
     location: string | null;
+    organizationId: string;
   };
   order: {
     id: string;
@@ -58,6 +59,7 @@ export const ticketRepo = {
             startsAt: true,
             endsAt: true,
             location: true,
+            organizationId: true,
           },
         },
         order: {
@@ -179,6 +181,7 @@ export const ticketRepo = {
             startsAt: true,
             endsAt: true,
             location: true,
+            organizationId: true,
           },
         },
         order: {
@@ -242,6 +245,7 @@ export const ticketRepo = {
             startsAt: true,
             endsAt: true,
             location: true,
+            organizationId: true,
           },
         },
         order: {

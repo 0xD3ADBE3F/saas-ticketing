@@ -584,6 +584,7 @@ export const orderRepo = {
               organization: {
                 select: {
                   name: true,
+                  slug: true,
                   logoUrl: true,
                   websiteUrl: true,
                   showTicketAvailability: true,

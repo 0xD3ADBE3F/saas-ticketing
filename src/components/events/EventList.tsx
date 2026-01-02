@@ -16,6 +16,7 @@ import {
 
 interface EventListProps {
   events: Event[];
+  organizationSlug: string;
 }
 
 const statusLabels: Record<EventStatus, string> = {
@@ -32,7 +33,7 @@ const statusColors: Record<EventStatus, string> = {
   CANCELLED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
-export function EventList({ events }: EventListProps) {
+export function EventList({ events, organizationSlug }: EventListProps) {
   return (
     <div className="space-y-4">
       {/* Desktop Table View */}
@@ -109,7 +110,7 @@ export function EventList({ events }: EventListProps) {
                     </Link>
                     {event.status === "LIVE" && (
                       <Link
-                        href={`/e/${event.organization.slug}/${event.slug}`}
+                        href={`/e/${organizationSlug}/${event.slug}`}
                         target="_blank"
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
                       >

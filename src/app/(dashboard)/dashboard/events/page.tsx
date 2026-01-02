@@ -25,7 +25,8 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
     redirect("/onboarding");
   }
 
-  const organizationId = organizations[0].id;
+  const organization = organizations[0];
+  const organizationId = organization.id;
   const params = await searchParams;
   const status = params.status as EventStatus | undefined;
   const search = params.search;
@@ -87,7 +88,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
           )}
         </div>
       ) : (
-        <EventList events={events} />
+        <EventList events={events} organizationSlug={organization.slug} />
       )}
     </div>
   );

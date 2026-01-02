@@ -48,6 +48,7 @@ export async function POST(
             startsAt: true,
             endsAt: true,
             location: true,
+            organizationId: true,
           },
         },
         ticketType: {
