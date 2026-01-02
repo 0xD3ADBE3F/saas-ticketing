@@ -40,7 +40,7 @@ export async function sendInvoiceCreatedEmail(
 
   try {
     const { data, error } = await resend.emails.send({
-      from: "Entro <billing@getentro.app>",
+      from: process.env.EMAIL_FROM || "Entro <noreply@email.stormzaak.nl>",
       to: organizationEmail,
       subject: `New Invoice - ${invoice.invoiceNumber}`,
       html: `
@@ -165,7 +165,7 @@ export async function sendInvoicePaidEmail(
 
   try {
     const { data, error } = await resend.emails.send({
-      from: "Entro <billing@getentro.app>",
+      from: process.env.EMAIL_FROM || "Entro <noreply@email.stormzaak.nl>",
       to: organizationEmail,
       subject: `Payment Received - ${invoice.invoiceNumber}`,
       html: `
