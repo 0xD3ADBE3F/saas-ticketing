@@ -1,13 +1,72 @@
-export default function EventsListPage() {
-  return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
-      <h1 className="text-3xl font-bold mb-8">Aankomende Evenementen</h1>
+import { eventRepo } from "@/server/repos/eventRepo";
+import { PublicEventCard } from "@/components/public";
+import type { Metadata } from "next";
 
-      <div className="text-center py-16 text-gray-500 dark:text-gray-400">
-        <p>Momenteel geen evenementen beschikbaar.</p>
-        <p className="text-sm mt-2">
-          Kom binnenkort terug voor nieuwe evenementen!
-        </p>
+export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Aankomende Evenementen - Entro",
+  description:
+    "Ontdek en boek tickets voor verschillende evenementen via Entro. Veilig betalen en direct je tickets ontvangen.",
+};
+
+export default async function EventsListPage() {
+  const events = await eventRepo.findPublicEvents();
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
+      <div className="public-container py-12">
+        {/* Page Header */}
+        <div className="mb-12 text-center">
+          <h1 className="text-4xl sm:text-5xl font-bold text-public-foreground mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
+            Aankomende Evenementen
+          </h1>
+          <p className="text-lg sm:text-xl text-public-muted-foreground max-w-2xl mx-auto">
+            Ontdek en boek tickets voor verschillende evenementen via Entro
+          </p>
+          {events.length > 0 && (
+            <p className="text-sm text-public-muted-foreground mt-3">
+              {events.length}{" "}
+              {events.length === 1 ? "evenement" : "evenementen"} gevonden
+            </p>
+          )}
+        </div>
+
+        {/* Events List */}
+        {events.length > 0 ? (
+          <div className="space-y-8">
+            {events.map((event) => (
+              <PublicEventCard key={event.id} event={event} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-24">
+            <div className="max-w-md mx-auto">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <svg
+                  className="w-10 h-10 text-blue-600 dark:text-blue-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-public-foreground mb-3">
+                Momenteel geen evenementen
+              </h2>
+              <p className="text-public-muted-foreground leading-relaxed">
+                Er zijn momenteel geen aankomende evenementen beschikbaar. Kom
+                binnenkort terug voor nieuwe evenementen!
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

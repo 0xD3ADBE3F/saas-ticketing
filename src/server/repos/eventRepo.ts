@@ -384,4 +384,54 @@ export const eventRepo = {
       totalSold: event.ticketTypes.reduce((sum, tt) => sum + tt.soldCount, 0),
     };
   },
+
+  /**
+   * List all public events (no auth required)
+   * Only shows LIVE events from organizations with showOnPublicEventsPage = true
+   */
+  findPublicEvents: async (): Promise<PublicEvent[]> => {
+    const events = await prisma.event.findMany({
+      where: {
+        status: "LIVE",
+        startsAt: {
+          gte: new Date(), // Only future events
+        },
+        organization: {
+          showOnPublicEventsPage: true,
+        },
+      },
+      include: {
+        organization: {
+          select: {
+            name: true,
+            slug: true,
+            logoUrl: true,
+            websiteUrl: true,
+            showTicketAvailability: true,
+          },
+        },
+        ticketTypes: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            price: true,
+            capacity: true,
+            soldCount: true,
+            saleStart: true,
+            saleEnd: true,
+            sortOrder: true,
+          },
+          orderBy: {
+            sortOrder: "asc",
+          },
+        },
+      },
+      orderBy: {
+        startsAt: "asc", // Upcoming events first
+      },
+    });
+
+    return events;
+  },
 };

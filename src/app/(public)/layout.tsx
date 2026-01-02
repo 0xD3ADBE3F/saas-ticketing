@@ -204,7 +204,7 @@ export default function PublicLayout({
               <ul className="space-y-3">
                 <li>
                   <Link
-                    href="/algemene-voorwaarden"
+                    href="/terms"
                     className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                   >
                     Algemene voorwaarden
@@ -237,7 +237,17 @@ export default function PublicLayout({
                 © {new Date().getFullYear()} Entro. Alle rechten voorbehouden.
               </p>
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <span>Gemaakt met ❤️ in Nederland</span>
+                <span>
+                  Gemaakt met ❤️ door{" "}
+                  <a
+                    href="https://www.stormzaak.nl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    Stormzaak
+                  </a>
+                </span>
               </div>
             </div>
           </div>

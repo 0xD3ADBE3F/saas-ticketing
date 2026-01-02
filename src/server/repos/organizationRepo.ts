@@ -137,6 +137,7 @@ export const organizationRepo = {
       websiteUrl?: string | null;
       showTicketAvailability?: boolean;
       paymentTimeoutMinutes?: number;
+      showOnPublicEventsPage?: boolean;
     }
   ) => {
     return prisma.organization.update({
@@ -148,6 +149,7 @@ export const organizationRepo = {
         websiteUrl: true,
         showTicketAvailability: true,
         paymentTimeoutMinutes: true,
+        showOnPublicEventsPage: true,
       },
     });
   },
@@ -163,6 +165,7 @@ export const organizationRepo = {
         websiteUrl: true,
         showTicketAvailability: true,
         paymentTimeoutMinutes: true,
+        showOnPublicEventsPage: true,
       },
     });
   },

@@ -18,7 +18,8 @@ import {
   updateTicketAvailabilityAction,
   updatePaymentTimeoutAction,
   deleteLogoAction,
-} from "@/app/(dashboard)/dashboard/settings/design/actions";
+  updateShowOnPublicEventsPageAction,
+} from "@/app/(dashboard)/dashboard/settings/ticket-portal/actions";
 import { toast } from "sonner";
 
 type Props = {
@@ -26,6 +27,7 @@ type Props = {
   initialWebsiteUrl: string | null;
   initialShowTicketAvailability: boolean;
   initialPaymentTimeoutMinutes: number;
+  initialShowOnPublicEventsPage: boolean;
 };
 
 export function DesignSettingsForm({
@@ -33,6 +35,7 @@ export function DesignSettingsForm({
   initialWebsiteUrl,
   initialShowTicketAvailability,
   initialPaymentTimeoutMinutes,
+  initialShowOnPublicEventsPage,
 }: Props) {
   const [logoUrl, setLogoUrl] = useState(initialLogoUrl);
   const [websiteUrl, setWebsiteUrl] = useState(initialWebsiteUrl ?? "");
@@ -42,11 +45,15 @@ export function DesignSettingsForm({
   const [paymentTimeoutMinutes, setPaymentTimeoutMinutes] = useState(
     initialPaymentTimeoutMinutes
   );
+  const [showOnPublicEventsPage, setShowOnPublicEventsPage] = useState(
+    initialShowOnPublicEventsPage
+  );
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [savingUrl, setSavingUrl] = useState(false);
   const [savingAvailability, setSavingAvailability] = useState(false);
   const [savingTimeout, setSavingTimeout] = useState(false);
+  const [savingPublicEvents, setSavingPublicEvents] = useState(false);
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -168,6 +175,29 @@ export function DesignSettingsForm({
       });
     } finally {
       setSavingTimeout(false);
+    }
+  }
+
+  async function handleShowOnPublicEventsPageChange(checked: boolean) {
+    const oldValue = showOnPublicEventsPage;
+    setShowOnPublicEventsPage(checked);
+    setSavingPublicEvents(true);
+
+    try {
+      await updateShowOnPublicEventsPageAction(checked);
+
+      toast.success("Instelling bijgewerkt", {
+        description: checked
+          ? "Je events worden getoond op de publieke evenementenpagina"
+          : "Je events zijn verborgen op de publieke evenementenpagina",
+      });
+    } catch {
+      toast.error("Update mislukt", {
+        description: "Probeer het opnieuw",
+      });
+      setShowOnPublicEventsPage(oldValue); // Revert on error
+    } finally {
+      setSavingPublicEvents(false);
     }
   }
 
@@ -313,6 +343,35 @@ export function DesignSettingsForm({
               checked={showTicketAvailability}
               onCheckedChange={handleTicketAvailabilityChange}
               disabled={savingAvailability}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Public Events Page Toggle */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Publieke Evenementenpagina</CardTitle>
+          <CardDescription>
+            Gratis advertentie voor je organisatie
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="show-on-public-events">
+                Toon op evenementenpagina
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Toon je events op de publieke evenementenpagina voor extra
+                zichtbaarheid
+              </p>
+            </div>
+            <Switch
+              id="show-on-public-events"
+              checked={showOnPublicEventsPage}
+              onCheckedChange={handleShowOnPublicEventsPageChange}
+              disabled={savingPublicEvents}
             />
           </div>
         </CardContent>

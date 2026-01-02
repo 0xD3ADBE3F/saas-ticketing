@@ -10,7 +10,7 @@ import {
 } from "@/components/checkout";
 import { PaymentTimer } from "@/components/checkout/PaymentTimer";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Ticket, ArrowLeft } from "lucide-react";
+import { Ticket, ArrowLeft, CheckCircle } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
 import {
   calculateServiceFeePreview,

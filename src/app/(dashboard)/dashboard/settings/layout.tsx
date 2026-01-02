@@ -6,8 +6,8 @@ import { usePathname } from "next/navigation";
 const settingsNav = [
   { href: "/dashboard/settings", label: "Algemeen", icon: "⚙️", exact: true },
   {
-    href: "/dashboard/settings/design",
-    label: "Ontwerp",
+    href: "/dashboard/settings/ticket-portal",
+    label: "Ticket Portaal",
     icon: "🎨",
     exact: false,
   },

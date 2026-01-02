@@ -20,7 +20,7 @@ export async function updateWebsiteUrlAction(websiteUrl: string) {
 
   await designService.updateWebsiteUrl(org.id, websiteUrl || null);
 
-  revalidatePath('/dashboard/settings/design');
+  revalidatePath('/dashboard/settings/ticket-portal');
   revalidatePath('/e/[slug]', 'page'); // Revalidate public pages
 
   return { success: true };
@@ -41,7 +41,7 @@ export async function updateTicketAvailabilityAction(showTicketAvailability: boo
 
   await designService.updateTicketAvailability(org.id, showTicketAvailability);
 
-  revalidatePath('/dashboard/settings/design');
+  revalidatePath('/dashboard/settings/ticket-portal');
   revalidatePath('/e/[slug]', 'page');
 
   return { success: true };
@@ -67,7 +67,7 @@ export async function updatePaymentTimeoutAction(paymentTimeoutMinutes: number) 
 
   await designService.updatePaymentTimeout(org.id, paymentTimeoutMinutes);
 
-  revalidatePath('/dashboard/settings/design');
+  revalidatePath('/dashboard/settings/ticket-portal');
 
   return { success: true };
 }
@@ -87,8 +87,29 @@ export async function deleteLogoAction(logoUrl: string) {
 
   await designService.deleteLogo(org.id, logoUrl);
 
-  revalidatePath('/dashboard/settings/design');
+  revalidatePath('/dashboard/settings/ticket-portal');
   revalidatePath('/e/[slug]', 'page');
+
+  return { success: true };
+}
+
+export async function updateShowOnPublicEventsPageAction(showOnPublicEventsPage: boolean) {
+  const user = await getUser();
+  if (!user) {
+    throw new Error('Unauthorized');
+  }
+
+  const organizations = await getUserOrganizations(user.id);
+  if (organizations.length === 0) {
+    throw new Error('No organization found');
+  }
+
+  const org = organizations[0];
+
+  await designService.updateShowOnPublicEventsPage(org.id, showOnPublicEventsPage);
+
+  revalidatePath('/dashboard/settings/ticket-portal');
+  revalidatePath('/events', 'page'); // Revalidate public events page
 
   return { success: true };
 }

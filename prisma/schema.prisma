@@ -53,6 +53,7 @@ model Organization {
   logoUrl              String?  // Vercel Blob Storage URL
   websiteUrl           String?  // Organization website URL
   showTicketAvailability Boolean @default(true) // Show ticket availability on portal
+  showOnPublicEventsPage Boolean @default(true) // Show events on public events page (free advertisement)
 
   // Payment settings
   paymentTimeoutMinutes Int @default(10) // Time in minutes for payment reservation (5-30)

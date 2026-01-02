@@ -91,6 +91,15 @@ export const designService = {
   },
 
   /**
+   * Update whether events should be shown on public events page
+   */
+  updateShowOnPublicEventsPage: async (orgId: string, showOnPublicEventsPage: boolean) => {
+    return organizationRepo.updateDesignSettings(orgId, {
+      showOnPublicEventsPage,
+    });
+  },
+
+  /**
    * Get design settings for an organization
    */
   getDesignSettings: async (orgId: string) => {
