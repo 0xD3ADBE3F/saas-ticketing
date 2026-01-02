@@ -268,6 +268,7 @@ export default async function PublicEventPage({
                       eventSlug={event.slug}
                       eventTitle={event.title}
                       ticketTypes={event.ticketTypes}
+                      isPaid={event.isPaid}
                       showTicketAvailability={
                         event.organization.showTicketAvailability
                       }

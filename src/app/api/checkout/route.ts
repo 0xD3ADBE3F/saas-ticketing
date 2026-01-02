@@ -65,33 +65,13 @@ export async function POST(request: NextRequest) {
 
     const order = result.data;
 
-    // For free orders (totalAmount = 0), auto-complete immediately
-    if (order.totalAmount === 0) {
-      const completeResult = await completeFreeOrder(order.id);
-
-      if (!completeResult.success) {
-        return NextResponse.json(
-          { error: completeResult.error },
-          { status: 500 }
-        );
-      }
-
-      // Return with isFree flag so frontend redirects directly to confirmation
-      return NextResponse.json({
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        totalAmount: order.totalAmount,
-        isFree: true,
-      });
-    }
-
-    // Return order details for payment flow (paid events)
+    // Return order details (both free and paid orders need confirmation)
     return NextResponse.json({
       orderId: order.id,
       orderNumber: order.orderNumber,
       totalAmount: order.totalAmount,
       expiresAt: order.expiresAt,
-      isFree: false,
+      isFree: order.totalAmount === 0,
     });
   } catch (error) {
     console.error("Checkout error:", error);

@@ -30,7 +30,15 @@ export type EventFilters = {
   search?: string;
 };
 
-export type PublicEvent = Event & {
+export type PublicEvent = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  location: string | null;
+  startsAt: Date;
+  endsAt: Date;
+  isPaid: boolean;
   organization: {
     name: string;
     slug: string;
@@ -189,7 +197,15 @@ export const eventRepo = {
           slug: orgSlug,
         },
       },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        location: true,
+        startsAt: true,
+        endsAt: true,
+        isPaid: true, // Add isPaid field to determine if event is free
         organization: {
           select: {
             name: true,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   TicketSelector,
@@ -21,6 +21,7 @@ interface EventTicketsProps {
   eventSlug: string;
   eventTitle: string;
   ticketTypes: TicketTypeForSelection[];
+  isPaid: boolean; // Whether this event requires payment
   showTicketAvailability?: boolean;
 }
 
@@ -44,9 +45,11 @@ export function EventTickets({
   eventSlug,
   eventTitle,
   ticketTypes,
+  isPaid,
   showTicketAvailability = true,
 }: EventTicketsProps) {
   const router = useRouter();
+  const containerRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState<CheckoutStep>("select");
   const [selections, setSelections] = useState<TicketSelection[]>([]);
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
@@ -112,6 +115,17 @@ export function EventTickets({
   }, [selections, totalTickets, ticketTypes]);
 
   const isFreeOrder = summary?.totalAmount === 0;
+
+  // Scroll to top of tickets section on mobile when moving to checkout
+  useEffect(() => {
+    if (step === "checkout" && containerRef.current) {
+      // Smooth scroll to the container
+      containerRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, [step]);
 
   const handleProceedToCheckout = async () => {
     if (totalTickets === 0) return;
@@ -192,8 +206,8 @@ export function EventTickets({
         return;
       }
 
-      // For free orders, redirect to checkout page (it handles both free and paid)
-      if (isFreeOrder) {
+      // For free events/orders, redirect to checkout page (it handles both free and paid)
+      if (!isPaid || isFreeOrder) {
         router.push(`/checkout/${createdOrderId}`);
         return;
       }
@@ -240,7 +254,7 @@ export function EventTickets({
   // Checkout step: Show summary + form
   if (step === "checkout") {
     return (
-      <div className="space-y-6 animate-fade-in-up">
+      <div ref={containerRef} className="space-y-6 animate-fade-in-up">
         {/* Back button */}
         <button
           type="button"
@@ -254,7 +268,11 @@ export function EventTickets({
         {/* Payment Timer */}
         {expiresAt && (
           <div className="animate-fade-in-up">
-            <PaymentTimer expiresAt={expiresAt} eventSlug={eventSlug} />
+            <PaymentTimer
+              expiresAt={expiresAt}
+              eventSlug={eventSlug}
+              isPaid={isPaid}
+            />
           </div>
         )}
 
@@ -272,12 +290,15 @@ export function EventTickets({
           </div>
         )}
 
-        <OrderSummary
-          selections={selections}
-          ticketTypes={ticketTypes}
-          paymentFee={summary?.paymentFee}
-          serviceFee={summary?.serviceFee}
-        />
+        {/* Only show cost summary for paid events */}
+        {isPaid && (
+          <OrderSummary
+            selections={selections}
+            ticketTypes={ticketTypes}
+            paymentFee={summary?.paymentFee}
+            serviceFee={summary?.serviceFee}
+          />
+        )}
 
         {/* Checkout Form */}
         <form onSubmit={handleSubmitOrder} className="space-y-4">
@@ -358,15 +379,15 @@ export function EventTickets({
                   />
                 </svg>
                 <span className="hidden sm:inline">
-                  {isFreeOrder ? "Bevestigen..." : "Verwerken..."}
+                  {!isPaid ? "Bevestigen..." : "Verwerken..."}
                 </span>
                 <span className="sm:hidden">
-                  {isFreeOrder ? "Bevestigen..." : "Bezig..."}
+                  {!isPaid ? "Bevestigen..." : "Bezig..."}
                 </span>
               </span>
             ) : (
               <span className="relative flex items-center justify-center gap-2">
-                {isFreeOrder ? (
+                {!isPaid ? (
                   <>
                     <CheckCircle className="w-5 h-5" />
                     <span>Bevestigen</span>
@@ -386,8 +407,7 @@ export function EventTickets({
           </button>
 
           <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-            Door te {isFreeOrder ? "bevestigen" : "betalen"} ga je akkoord met
-            onze{" "}
+            Door te {!isPaid ? "bevestigen" : "betalen"} ga je akkoord met onze{" "}
             <a
               href="/voorwaarden"
               className="underline hover:text-gray-700 dark:hover:text-gray-300"
@@ -402,7 +422,7 @@ export function EventTickets({
 
   // Selection step: Show ticket selector
   return (
-    <div className="space-y-6">
+    <div ref={containerRef} className="space-y-6">
       <TicketSelector
         ticketTypes={ticketTypes}
         selections={selections}
@@ -412,12 +432,15 @@ export function EventTickets({
 
       {totalTickets > 0 && (
         <div className="space-y-4 animate-fade-in-up">
-          <OrderSummary
-            selections={selections}
-            ticketTypes={ticketTypes}
-            paymentFee={summary?.paymentFee}
-            serviceFee={summary?.serviceFee}
-          />
+          {/* Only show cost summary for paid events */}
+          {isPaid && (
+            <OrderSummary
+              selections={selections}
+              ticketTypes={ticketTypes}
+              paymentFee={summary?.paymentFee}
+              serviceFee={summary?.serviceFee}
+            />
+          )}
 
           <button
             type="button"
@@ -455,12 +478,12 @@ export function EventTickets({
             ) : (
               <span className="relative flex items-center justify-center gap-2">
                 <span className="hidden sm:inline">
-                  {isFreeOrder
+                  {!isPaid
                     ? "Doorgaan naar bevestigen"
                     : "Doorgaan naar afrekenen"}
                 </span>
                 <span className="sm:hidden">
-                  {isFreeOrder ? "Bevestigen" : "Afrekenen"}
+                  {!isPaid ? "Bevestigen" : "Afrekenen"}
                 </span>
                 <span className="text-xl">→</span>
               </span>
@@ -468,7 +491,7 @@ export function EventTickets({
           </button>
 
           <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-            {isFreeOrder
+            {!isPaid
               ? "Bevestig je gratis tickets"
               : "Je wordt doorgestuurd naar een beveiligde betaalpagina"}
           </p>

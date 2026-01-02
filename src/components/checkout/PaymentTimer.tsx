@@ -8,9 +8,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 interface PaymentTimerProps {
   expiresAt: Date | string;
   eventSlug: string;
+  isPaid?: boolean; // Whether this is a paid event (default true for backward compatibility)
 }
 
-export function PaymentTimer({ expiresAt, eventSlug }: PaymentTimerProps) {
+export function PaymentTimer({
+  expiresAt,
+  eventSlug,
+  isPaid = true,
+}: PaymentTimerProps) {
   const router = useRouter();
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [isExpired, setIsExpired] = useState(false);
@@ -99,8 +104,12 @@ export function PaymentTimer({ expiresAt, eventSlug }: PaymentTimerProps) {
         </p>
         <p className="text-sm mt-2">
           {isUrgent
-            ? "⚠️ Betaal snel om je tickets te behouden!"
-            : "Rond je betaling af binnen deze tijd om je reservering te behouden."}
+            ? isPaid
+              ? "⚠️ Betaal snel om je tickets te behouden!"
+              : "⚠️ Bevestig snel om je tickets te behouden!"
+            : isPaid
+              ? "Rond je betaling af binnen deze tijd om je reservering te behouden."
+              : "Bevestig je bestelling binnen deze tijd om je reservering te behouden."}
         </p>
       </AlertDescription>
     </Alert>
