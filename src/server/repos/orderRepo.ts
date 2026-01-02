@@ -44,6 +44,8 @@ export type OrderWithEvent = Order & {
     endsAt: Date;
     location: string | null;
     organization: {
+      name: string;
+      logoUrl: string | null;
       websiteUrl: string | null;
       showTicketAvailability: boolean;
     };
@@ -170,6 +172,8 @@ export const orderRepo = {
             location: true,
             organization: {
               select: {
+                name: true,
+                logoUrl: true,
                 websiteUrl: true,
                 showTicketAvailability: true,
               },
@@ -577,6 +581,8 @@ export const orderRepo = {
               location: true,
               organization: {
                 select: {
+                  name: true,
+                  logoUrl: true,
                   websiteUrl: true,
                   showTicketAvailability: true,
                 },

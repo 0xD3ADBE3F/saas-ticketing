@@ -108,9 +108,9 @@ export function CheckoutForm({
         return;
       }
 
-      // For free orders, redirect to complete page immediately
+      // For free orders, redirect to checkout page (it handles both free and paid)
       if (data.isFree) {
-        router.push(`/checkout/${data.orderId}/complete`);
+        router.push(`/checkout/${data.orderId}`);
         return;
       }
 

@@ -192,9 +192,9 @@ export function EventTickets({
         return;
       }
 
-      // For free orders, redirect to complete page immediately
+      // For free orders, redirect to checkout page (it handles both free and paid)
       if (isFreeOrder) {
-        router.push(`/checkout/${createdOrderId}/complete`);
+        router.push(`/checkout/${createdOrderId}`);
         return;
       }
 

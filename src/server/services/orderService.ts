@@ -337,6 +337,12 @@ export async function getOrderForCheckout(
     startsAt: Date;
     endsAt: Date;
     location: string | null;
+    organization: {
+      name: string;
+      logoUrl: string | null;
+      websiteUrl: string | null;
+      showTicketAvailability: boolean;
+    };
   };
   items: {
     ticketTypeName: string;
@@ -349,11 +355,6 @@ export async function getOrderForCheckout(
 
   if (!order) {
     return { success: false, error: "Bestelling niet gevonden" };
-  }
-
-  // Check if order has expired
-  if (order.status === "PENDING" && order.expiresAt && order.expiresAt < new Date()) {
-    return { success: false, error: "Bestelling is verlopen" };
   }
 
   return {
