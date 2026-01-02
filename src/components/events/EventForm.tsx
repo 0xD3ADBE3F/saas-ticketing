@@ -735,7 +735,9 @@ export function EventForm({
                           <Upload className="w-12 h-12 text-gray-400 mb-3" />
                         )}
                         <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                          <span className="font-semibold">Klik om te uploaden</span>{" "}
+                          <span className="font-semibold">
+                            Klik om te uploaden
+                          </span>{" "}
                           of sleep
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -858,8 +860,8 @@ export function EventForm({
                 />
                 {mode === "create" && (
                   <p className="mt-1 text-sm text-gray-500">
-                    Je kunt de locatie op een kaart selecteren na het aanmaken van het
-                    evenement.
+                    Je kunt de locatie op een kaart selecteren na het aanmaken
+                    van het evenement.
                   </p>
                 )}
               </div>
@@ -1049,14 +1051,16 @@ export function EventForm({
                   }
                   className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="STANDARD_21">{VAT_RATE_LABELS.STANDARD_21}</option>
+                  <option value="STANDARD_21">
+                    {VAT_RATE_LABELS.STANDARD_21}
+                  </option>
                   <option value="REDUCED_9">{VAT_RATE_LABELS.REDUCED_9}</option>
                   <option value="EXEMPT">{VAT_RATE_LABELS.EXEMPT}</option>
                 </select>
                 <p className="mt-2 text-sm text-gray-500">
-                  Dit tarief wordt toegepast op alle tickets voor dit evenement. De
-                  ticketprijs blijft inclusief BTW zoals je deze invoert. Deze
-                  instelling is alleen voor rapportage in de administratie.
+                  Dit tarief wordt toegepast op alle tickets voor dit evenement.
+                  De ticketprijs blijft inclusief BTW zoals je deze invoert.
+                  Deze instelling is alleen voor rapportage in de administratie.
                 </p>
               </div>
             )}
@@ -1082,15 +1086,16 @@ export function EventForm({
                       Betaalkosten doorberekenen aan koper
                     </span>
                     <p className="mt-1 text-sm text-gray-500">
-                      Toon betalingskosten als aparte regel in de checkout. Dit bedrag
-                      is een schatting; de daadwerkelijke kosten worden door Mollie
-                      aan jou gefactureerd.
+                      Toon betalingskosten als aparte regel in de checkout. Dit
+                      bedrag is een schatting; de daadwerkelijke kosten worden
+                      door Mollie aan jou gefactureerd.
                     </p>
                     {formData.passPaymentFeesToBuyer && (
                       <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-sm text-blue-700 dark:text-blue-300">
                         <strong>Let op:</strong> Kopers zien een extra regel
-                        "Betaalkosten" (geschat €0,39 voor iDEAL) in hun winkelwagen.
-                        De werkelijke kosten variëren per betaalmethode.
+                        "Betaalkosten" (geschat €0,39 voor iDEAL) in hun
+                        winkelwagen. De werkelijke kosten variëren per
+                        betaalmethode.
                       </div>
                     )}
                   </div>
