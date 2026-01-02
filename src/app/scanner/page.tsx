@@ -148,7 +148,7 @@ export default function ScannerLoginPage() {
                     autoCapitalize="characters"
                     spellCheck={false}
                     disabled={loading || success}
-                    className="text-center text-3xl sm:text-4xl tracking-[0.5em] py-6 sm:py-8 placeholder:tracking-[0.25em] bg-gray-950/50 border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono"
+                    className="text-center text-3xl sm:text-4xl tracking-[0.5em] py-6 sm:py-8 placeholder:tracking-[0.25em] bg-gray-950/50 border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-white placeholder:text-gray-600"
                   />
                   {success && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">

@@ -85,8 +85,8 @@ Preview:
 
 - Client ID: `app_xxxxx`
 - Client Secret: `********` (masked)
-- Redirect URI: `https://app.entro.nl/api/mollie/callback`
-- Webhook URL: `https://app.entro.nl/api/webhooks/mollie`
+- Redirect URI: `https://app.getentro.app/api/mollie/callback`
+- Webhook URL: `https://app.getentro.app/api/webhooks/mollie`
 - Status: Connected / Not Connected
 
 **Actions:**
@@ -107,7 +107,7 @@ Preview:
 
 - Provider: Resend
 - API Key: `re_xxxxxxx` (masked)
-- From Address: `noreply@entro.nl`
+- From Address: `noreply@getentro.app`
 - From Name: `Entro`
 - Status: Active / Inactive
 

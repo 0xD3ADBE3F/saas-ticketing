@@ -547,7 +547,7 @@ async function sendInvoiceCreatedEmail(invoice: Invoice): Promise<void> {
     : null;
 
   await resend.emails.send({
-    from: "Entro <billing@entro.nl>",
+    from: "Entro <billing@getentro.app>",
     to: org!.billingEmail!,
     subject: `Nieuwe factuur - ${invoice.invoiceNumber}`,
     html: renderInvoiceEmail({
@@ -557,7 +557,7 @@ async function sendInvoiceCreatedEmail(invoice: Invoice): Promise<void> {
       totalAmount: formatCurrency(invoice.amount + invoice.vatAmount),
       dueDate: formatDate(invoice.dueDate!),
       pdfUrl: invoice.pdfUrl!,
-      paymentUrl: `https://app.entro.nl/dashboard/instellingen/facturatie/${invoice.id}/pay`,
+      paymentUrl: `https://app.getentro.app/dashboard/instellingen/facturatie/${invoice.id}/pay`,
     }),
   });
 }
@@ -572,7 +572,7 @@ async function sendInvoicePaidEmail(invoice: Invoice): Promise<void> {
   });
 
   await resend.emails.send({
-    from: "Entro <billing@entro.nl>",
+    from: "Entro <billing@getentro.app>",
     to: org!.billingEmail!,
     subject: `Betaling ontvangen - ${invoice.invoiceNumber}`,
     html: `

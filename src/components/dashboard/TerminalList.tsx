@@ -155,7 +155,7 @@ export function TerminalList({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-5">
       {/* Create Button / Form */}
       {isAdmin && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -261,8 +261,8 @@ export function TerminalList({
           <li>Maak een terminal aan met een herkenbare naam</li>
           <li>Deel de 6-cijferige code met je deur-personeel</li>
           <li>
-            Zij openen <strong>scan.entro.nl</strong> op hun mobiel en voeren de
-            code in
+            Zij openen <strong>scan.getentro.app</strong> op hun mobiel en
+            voeren de code in
           </li>
           <li>De scanner gebruikt de camera om QR codes te scannen</li>
         </ol>

@@ -40,7 +40,7 @@ export async function sendInvoiceCreatedEmail(
 
   try {
     const { data, error } = await resend.emails.send({
-      from: "Entro <billing@entro.nl>",
+      from: "Entro <billing@getentro.app>",
       to: organizationEmail,
       subject: `New Invoice - ${invoice.invoiceNumber}`,
       html: `
@@ -121,7 +121,7 @@ export async function sendInvoiceCreatedEmail(
 
   <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; font-size: 13px; color: #6b7280; text-align: center;">
     <p style="margin: 0;">
-      Questions about this invoice? Contact us at <a href="mailto:support@entro.nl" style="color: #4f46e5; text-decoration: none;">support@entro.nl</a>
+      Questions about this invoice? Contact us at <a href="mailto:support@getentro.app" style="color: #4f46e5; text-decoration: none;">support@getentro.app</a>
     </p>
     <p style="margin: 10px 0 0 0;">
       © ${new Date().getFullYear()} Entro. All rights reserved.
@@ -165,7 +165,7 @@ export async function sendInvoicePaidEmail(
 
   try {
     const { data, error } = await resend.emails.send({
-      from: "Entro <billing@entro.nl>",
+      from: "Entro <billing@getentro.app>",
       to: organizationEmail,
       subject: `Payment Received - ${invoice.invoiceNumber}`,
       html: `
@@ -225,7 +225,7 @@ export async function sendInvoicePaidEmail(
 
   <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; font-size: 13px; color: #6b7280; text-align: center;">
     <p style="margin: 0;">
-      Questions? Contact us at <a href="mailto:support@entro.nl" style="color: #4f46e5; text-decoration: none;">support@entro.nl</a>
+      Questions? Contact us at <a href="mailto:support@getentro.app" style="color: #4f46e5; text-decoration: none;">support@getentro.app</a>
     </p>
     <p style="margin: 10px 0 0 0;">
       © ${new Date().getFullYear()} Entro. All rights reserved.

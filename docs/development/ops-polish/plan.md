@@ -358,7 +358,7 @@ export const dataRetentionService = {
         buyerEmail: { not: null },
       },
       data: {
-        buyerEmail: "anonymized@entro.nl",
+        buyerEmail: "anonymized@getentro.app",
         buyerName: "Anonymized",
       },
     });
@@ -527,7 +527,7 @@ export default function TicketDeliveryEmail({
             ))}
 
             <Button
-              href={`https://app.entro.nl/orders/${tickets[0].id}`}
+              href={`https://app.getentro.app/orders/${tickets[0].id}`}
               style={{
                 backgroundColor: "#007bff",
                 color: "#ffffff",
@@ -545,7 +545,7 @@ export default function TicketDeliveryEmail({
               style={{ fontSize: "14px", color: "#888", marginTop: "40px" }}
             >
               Zie je je tickets niet? Check je spam folder of{" "}
-              <a href="https://app.entro.nl/support">neem contact op</a>.
+              <a href="https://app.getentro.app/support">neem contact op</a>.
             </Text>
           </Section>
 
@@ -557,8 +557,8 @@ export default function TicketDeliveryEmail({
               marginTop: "20px",
             }}
           >
-            © 2026 Entro • <a href="https://entro.nl/privacy">Privacy</a> •{" "}
-            <a href="https://entro.nl/terms">Voorwaarden</a>
+            © 2026 Entro • <a href="https://getentro.app/privacy">Privacy</a> •{" "}
+            <a href="https://getentro.app/terms">Voorwaarden</a>
           </Text>
         </Container>
       </Body>

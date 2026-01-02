@@ -15,6 +15,7 @@ import {
   ScanLine,
   AlertCircle,
   ChevronRight,
+  Smartphone,
 } from "lucide-react";
 
 export default async function ScanningPage() {
@@ -86,6 +87,32 @@ export default async function ScanningPage() {
           {publishedEvents.length === 1 ? "evenement" : "evenementen"}{" "}
           beschikbaar voor scanning
         </p>
+      </div>
+
+      {/* Mobile Scanner CTA Banner */}
+      <div className="mb-8 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-900/20 dark:via-emerald-900/20 dark:to-teal-900/20 backdrop-blur-xl border-2 border-green-200/50 dark:border-green-800/50 rounded-2xl p-6 shadow-lg">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+          <div className="p-3 bg-green-100 dark:bg-green-900/40 rounded-2xl shrink-0">
+            <Smartphone className="w-8 h-8 text-green-600 dark:text-green-400" />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-bold text-xl text-green-900 dark:text-green-300 mb-2">
+              Mobiele Scanner App
+            </h2>
+            <p className="text-sm text-green-800 dark:text-green-400 leading-relaxed">
+              Gebruik je mobiel om tickets te scannen bij de ingang. Perfect
+              voor deurpersoneel - geen login nodig, alleen een terminal code.
+            </p>
+          </div>
+          <Link
+            href="/scanner"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all text-sm font-bold shadow-lg shadow-green-500/25 hover:shadow-xl hover:shadow-green-500/30 hover:-translate-y-0.5 active:scale-95 touch-manipulation whitespace-nowrap"
+          >
+            <Smartphone className="w-4 h-4" />
+            Open Scanner App
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

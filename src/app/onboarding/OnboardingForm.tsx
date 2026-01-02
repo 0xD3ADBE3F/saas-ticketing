@@ -126,7 +126,7 @@ export function OnboardingForm({ defaultEmail }: OnboardingFormProps) {
           </label>
           <div className="flex items-center gap-2 border-2 border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 sm:py-2.5 bg-white dark:bg-gray-950 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all">
             <span className="text-gray-400 dark:text-gray-500 text-sm shrink-0">
-              entro.nl/
+              getentro.app/
             </span>
             <input
               id="slug"
