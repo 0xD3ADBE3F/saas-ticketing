@@ -128,6 +128,9 @@ MOLLIE_API_KEY=test_...
 TICKET_SIGNING_SECRET=your-secret-key
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 CRON_SECRET=your-random-secret-token  # For securing cron endpoints
+
+# OpenAI
+OPENAI_API_KEY=sk-...  # For AI-powered features
 ```
 
 ### Cron Jobs

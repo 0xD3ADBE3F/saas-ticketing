@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toDateTimeLocalValue } from "@/lib/date";
+import { getRandomEventPlaceholder } from "@/lib/placeholders";
 
 /**
  * Simplified event creation form for onboarding
@@ -15,6 +16,18 @@ export function OnboardingEventForm() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [titlePlaceholder, setTitlePlaceholder] = useState(() =>
+    getRandomEventPlaceholder()
+  );
+
+  // Rotate placeholder every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTitlePlaceholder(getRandomEventPlaceholder());
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Default to tomorrow 20:00 - 23:00
   const getDefaultStartDate = () => {
@@ -117,7 +130,7 @@ export function OnboardingEventForm() {
           maxLength={100}
           value={formData.title}
           onChange={handleChange}
-          placeholder="bijv. Zomerfeest 2025"
+          placeholder={`bijv. ${titlePlaceholder}`}
           className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
         />
       </div>

@@ -14,10 +14,12 @@ import {
   Link2,
   Unlock,
   AlertCircle,
+  Sparkles,
 } from "lucide-react";
 import { generateSlug } from "@/lib/slug";
 import { UnlockTicketsModal } from "./UnlockTicketsModal";
 import { FreeEventLimitInfo } from "./FreeEventLimitInfo";
+import { getRandomEventPlaceholder } from "@/lib/placeholders";
 
 interface EventFormProps {
   event?: Event;
@@ -48,6 +50,10 @@ export function EventForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // AI enhancement state
+  const [isEnhancing, setIsEnhancing] = useState(false);
+  const [enhancementError, setEnhancementError] = useState<string | null>(null);
+
   // Unlock modal state
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [unlockInfo, setUnlockInfo] = useState<{
@@ -67,6 +73,23 @@ export function EventForm({
     reason?: string;
   }>({ allowed: true });
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  const [titlePlaceholder, setTitlePlaceholder] = useState(() =>
+    getRandomEventPlaceholder()
+  );
+  const [slugPlaceholder, setSlugPlaceholder] = useState(() =>
+    generateSlug(getRandomEventPlaceholder())
+  );
+
+  // Rotate placeholder every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const newPlaceholder = getRandomEventPlaceholder();
+      setTitlePlaceholder(newPlaceholder);
+      setSlugPlaceholder(generateSlug(newPlaceholder));
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Default to tomorrow 20:00 - 23:00 for new events
   const getDefaultStartDate = () => {
@@ -307,6 +330,45 @@ export function EventForm({
       setIsSubmitting(false);
     }
   };
+
+  const handleEnhanceDescription = async () => {
+    if (!formData.description || formData.description.length < 10) {
+      setEnhancementError(
+        "Voer eerst een beschrijving in (minimaal 10 karakters)"
+      );
+      return;
+    }
+
+    setIsEnhancing(true);
+    setEnhancementError(null);
+
+    try {
+      const response = await fetch("/api/ai/enhance-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: formData.description,
+          eventTitle: formData.title || undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setEnhancementError(data.error || "Kon beschrijving niet verbeteren");
+        return;
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        description: data.enhancedDescription,
+      }));
+    } catch {
+      setEnhancementError("Er is iets misgegaan. Probeer het opnieuw.");
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
   console.log({ unlockInfo });
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -332,7 +394,7 @@ export function EventForm({
           maxLength={100}
           value={formData.title}
           onChange={handleChange}
-          placeholder="bijv. Zomerfeest 2025"
+          placeholder={`bijv. ${titlePlaceholder}`}
           className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
@@ -360,7 +422,7 @@ export function EventForm({
             pattern="[a-z0-9-]+"
             minLength={3}
             maxLength={50}
-            placeholder="bijv. zomerfeest-2025"
+            placeholder={`bijv. ${slugPlaceholder}`}
             className="w-full pl-10 pr-10 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
           />
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -386,7 +448,7 @@ export function EventForm({
           <>
             <p className="mt-1 text-sm text-gray-500">
               Beschikbaar op: getentro.app/e/{organizationSlug}/
-              {formData.slug || "zomerfeest-2025"}
+              {formData.slug || slugPlaceholder}
             </p>
             {slugAvailability.error &&
               formData.slug &&
@@ -401,12 +463,36 @@ export function EventForm({
 
       {/* Description */}
       <div>
-        <label
-          htmlFor="description"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-        >
-          Beschrijving *
-        </label>
+        <div className="flex items-center justify-between mb-1">
+          <label
+            htmlFor="description"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Beschrijving *
+          </label>
+          <button
+            type="button"
+            onClick={handleEnhanceDescription}
+            disabled={
+              isEnhancing ||
+              !formData.description ||
+              formData.description.length < 10
+            }
+            className="flex items-center gap-1.5 px-3 py-1 text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isEnhancing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Aan het verbeteren...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Verbeter met AI
+              </>
+            )}
+          </button>
+        </div>
         <textarea
           id="description"
           name="description"
@@ -418,9 +504,18 @@ export function EventForm({
           placeholder="Vertel bezoekers meer over het evenement..."
           className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
         />
-        <p className="mt-1 text-sm text-gray-500">
-          {formData.description.length}/2000 karakters
-        </p>
+        <div className="mt-1 flex items-center justify-between">
+          <div>
+            {enhancementError && (
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {enhancementError}
+              </p>
+            )}
+          </div>
+          <p className="text-sm text-gray-500">
+            {formData.description.length}/2000 karakters
+          </p>
+        </div>
       </div>
 
       {/* Location */}
