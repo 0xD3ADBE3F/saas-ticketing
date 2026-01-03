@@ -115,12 +115,20 @@ describe("Currency utilities", () => {
 describe("Ticket type service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock event access for all tests
+    mockPrisma.event.findFirst.mockResolvedValue({
+      id: "event-1",
+      organizationId: "org-1",
+      isPaid: true,
+      vatRate: "VAT_21" as const,
+    });
   });
 
   describe("Validation rules", () => {
     it("should require name to be at least 1 character", async () => {
       const result = await createTicketType("event-1", "user-1", {
         name: "",
+        description: "Test description",
         price: 10,
         capacity: 100,
       });
@@ -132,6 +140,7 @@ describe("Ticket type service", () => {
     it("should reject negative prices", async () => {
       const result = await createTicketType("event-1", "user-1", {
         name: "Test Ticket",
+        description: "Test description",
         price: -5,
         capacity: 100,
       });
@@ -143,6 +152,7 @@ describe("Ticket type service", () => {
     it("should reject zero capacity", async () => {
       const result = await createTicketType("event-1", "user-1", {
         name: "Test Ticket",
+        description: "Test description",
         price: 10,
         capacity: 0,
       });
@@ -154,6 +164,7 @@ describe("Ticket type service", () => {
     it("should reject invalid sale window (end before start)", async () => {
       const result = await createTicketType("event-1", "user-1", {
         name: "Test Ticket",
+        description: "Test description",
         price: 10,
         capacity: 100,
         saleStart: new Date("2025-12-31"),
@@ -172,6 +183,7 @@ describe("Ticket type service", () => {
         id: "tt-1",
         eventId: "event-1",
         name: "Test",
+        description: "Test description",
         price: 1000,
         capacity: 100,
         soldCount: 50, // 50 already sold
@@ -193,6 +205,7 @@ describe("Ticket type service", () => {
         id: "tt-1",
         eventId: "event-1",
         name: "Test",
+        description: "Test description",
         price: 1000,
         capacity: 100,
         soldCount: 10, // 10 sold

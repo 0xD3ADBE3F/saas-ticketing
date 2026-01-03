@@ -254,17 +254,6 @@ export function TicketSelector({
               {/* Quantity Selector */}
               {isAvailable && (
                 <div className="mt-6 flex flex-col items-center gap-3">
-                  {quantity > 0 && (
-                    <div className="text-center">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                        Subtotaal
-                      </p>
-                      <p className="text-lg font-bold text-gray-900 dark:text-white">
-                        {formatPrice(ticketType.price * quantity)}
-                      </p>
-                    </div>
-                  )}
-
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
@@ -290,6 +279,17 @@ export function TicketSelector({
                       <Plus className="w-5 h-5" />
                     </button>
                   </div>
+
+                  {quantity > 0 && (
+                    <div className="text-center">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        Subtotaal
+                      </p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">
+                        {formatPrice(ticketType.price * quantity)}
+                      </p>
+                    </div>
+                  )}
 
                   {quantity >= maxQuantity && maxQuantity < available && (
                     <p className="text-xs text-center text-gray-500 dark:text-gray-400">

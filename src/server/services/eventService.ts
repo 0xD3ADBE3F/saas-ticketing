@@ -124,6 +124,9 @@ export type CreateEventData = {
   slug?: string; // Custom slug (optional, auto-generated from title if not provided)
   description?: string;
   location?: string;
+  locationDescription?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   startsAt: Date;
   endsAt: Date;
   isPaid?: boolean; // Whether event has paid tickets (requires Mollie)
@@ -136,6 +139,9 @@ export type UpdateEventData = {
   slug?: string; // Custom slug (optional, validates if provided)
   description?: string | null;
   location?: string | null;
+  locationDescription?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   startsAt?: Date;
   endsAt?: Date;
   isPaid?: boolean;

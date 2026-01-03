@@ -9,7 +9,7 @@ import {
 
 const updateTicketTypeSchema = z.object({
   name: z.string().min(1, "Naam is verplicht").max(100, "Naam mag maximaal 100 karakters zijn").optional(),
-  description: z.string().max(500, "Beschrijving mag maximaal 500 karakters zijn").nullable().optional(),
+  description: z.string().min(1, "Beschrijving is verplicht").max(500, "Beschrijving mag maximaal 500 karakters zijn").optional(),
   price: z.number().min(0, "Prijs mag niet negatief zijn").max(10000, "Prijs mag maximaal €10.000 zijn").optional(),
   capacity: z.number().int().min(1, "Capaciteit moet minimaal 1 zijn").max(100000, "Capaciteit mag maximaal 100.000 zijn").optional(),
   saleStart: z.string().datetime("Ongeldige startdatum verkoop").nullable().optional(),

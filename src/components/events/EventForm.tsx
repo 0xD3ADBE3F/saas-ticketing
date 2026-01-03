@@ -62,6 +62,15 @@ export function EventForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Accordion state - keep sections open
+  const [openSections, setOpenSections] = useState<string[]>([
+    "basic",
+    "media",
+    "location",
+    "datetime",
+    "pricing",
+  ]);
+
   // AI enhancement state
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhancementError, setEnhancementError] = useState<string | null>(null);
@@ -141,6 +150,7 @@ export function EventForm({
   // Hero image upload state
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
 
   const debouncedSlug = useDebounce(formData.slug, 500);
 
@@ -314,6 +324,28 @@ export function EventForm({
         return;
       }
 
+      // If in create mode and there's a pending image, upload it
+      if (mode === "create" && pendingImageFile && data.event?.id) {
+        try {
+          const imageFormData = new FormData();
+          imageFormData.append("file", pendingImageFile);
+
+          const imageResponse = await fetch(
+            `/api/events/${data.event.id}/hero-image`,
+            {
+              method: "POST",
+              body: imageFormData,
+            }
+          );
+
+          if (!imageResponse.ok) {
+            console.error("Failed to upload hero image after event creation");
+          }
+        } catch (error) {
+          console.error("Error uploading hero image:", error);
+        }
+      }
+
       router.push(`/dashboard/events/${data.event.id}`);
       router.refresh();
     } catch {
@@ -399,10 +431,42 @@ export function EventForm({
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = e.target.files?.[0];
-    if (!file || !event) return;
+    if (!file) return;
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError("Bestand is te groot (max 5MB)");
+      return;
+    }
+
+    // Validate file type
+    if (
+      !["image/png", "image/jpeg", "image/jpg", "image/webp"].includes(
+        file.type
+      )
+    ) {
+      setImageError("Alleen PNG, JPG en WEBP bestanden zijn toegestaan");
+      return;
+    }
+
+    setImageError(null);
+
+    // In create mode, store the file for later upload
+    if (mode === "create") {
+      setPendingImageFile(file);
+      // Create a local preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setFormData((prev) => ({
+        ...prev,
+        heroImageUrl: previewUrl,
+      }));
+      return;
+    }
+
+    // In edit mode, upload immediately
+    if (!event) return;
 
     setIsUploadingImage(true);
-    setImageError(null);
 
     try {
       const formData = new FormData();
@@ -432,12 +496,28 @@ export function EventForm({
   };
 
   const handleHeroImageDelete = async () => {
-    if (!event || !formData.heroImageUrl) return;
+    if (!formData.heroImageUrl) return;
 
     const confirmed = window.confirm(
       "Weet je zeker dat je deze afbeelding wilt verwijderen?"
     );
     if (!confirmed) return;
+
+    // In create mode, just clear the local state
+    if (mode === "create") {
+      if (formData.heroImageUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(formData.heroImageUrl);
+      }
+      setPendingImageFile(null);
+      setFormData((prev) => ({
+        ...prev,
+        heroImageUrl: null,
+      }));
+      return;
+    }
+
+    // In edit mode, delete from server
+    if (!event) return;
 
     setIsUploadingImage(true);
     setImageError(null);
@@ -487,7 +567,8 @@ export function EventForm({
 
       <Accordion.Root
         type="multiple"
-        defaultValue={["basic", "media", "location", "datetime", "pricing"]}
+        value={openSections}
+        onValueChange={setOpenSections}
         className="space-y-4"
       >
         {/* Basic Information Section */}
@@ -666,104 +747,102 @@ export function EventForm({
           </Accordion.Content>
         </Accordion.Item>
 
-        {/* Media Section (only in edit mode) */}
-        {mode === "edit" && event && (
-          <Accordion.Item
-            value="media"
-            className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-900"
-          >
-            <Accordion.Header>
-              <Accordion.Trigger className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
-                <div className="flex items-center gap-3">
-                  <ImageIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Hero afbeelding
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Upload een aantrekkelijke banner voor je evenement
-                    </p>
-                  </div>
-                </div>
-                <svg
-                  className="w-5 h-5 text-gray-500 transition-transform group-data-[state=open]:rotate-180"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </Accordion.Trigger>
-            </Accordion.Header>
-            <Accordion.Content className="px-6 pb-6">
-              <div>
-                {formData.heroImageUrl ? (
-                  <div className="space-y-3">
-                    <div className="relative w-full h-48 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700">
-                      <Image
-                        src={formData.heroImageUrl}
-                        alt="Hero afbeelding"
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleHeroImageDelete}
-                      disabled={isUploadingImage}
-                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Verwijder afbeelding
-                    </button>
-                  </div>
-                ) : (
-                  <div>
-                    <label
-                      htmlFor="heroImage"
-                      className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        {isUploadingImage ? (
-                          <Loader2 className="w-12 h-12 text-gray-400 animate-spin mb-3" />
-                        ) : (
-                          <Upload className="w-12 h-12 text-gray-400 mb-3" />
-                        )}
-                        <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                          <span className="font-semibold">
-                            Klik om te uploaden
-                          </span>{" "}
-                          of sleep
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          PNG, JPG of WEBP (max. 5MB)
-                        </p>
-                      </div>
-                      <input
-                        id="heroImage"
-                        type="file"
-                        accept="image/png,image/jpeg,image/jpg,image/webp"
-                        onChange={handleHeroImageUpload}
-                        disabled={isUploadingImage}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                )}
-                {imageError && (
-                  <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-                    {imageError}
+        {/* Media Section */}
+        <Accordion.Item
+          value="media"
+          className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-900"
+        >
+          <Accordion.Header>
+            <Accordion.Trigger className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
+              <div className="flex items-center gap-3">
+                <ImageIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Hero afbeelding
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Upload een aantrekkelijke banner voor je evenement
                   </p>
-                )}
+                </div>
               </div>
-            </Accordion.Content>
-          </Accordion.Item>
-        )}
+              <svg
+                className="w-5 h-5 text-gray-500 transition-transform group-data-[state=open]:rotate-180"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </Accordion.Trigger>
+          </Accordion.Header>
+          <Accordion.Content className="px-6 pb-6">
+            <div>
+              {formData.heroImageUrl ? (
+                <div className="space-y-3">
+                  <div className="relative w-full h-48 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700">
+                    <Image
+                      src={formData.heroImageUrl}
+                      alt="Hero afbeelding"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleHeroImageDelete}
+                    disabled={isUploadingImage}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Verwijder afbeelding
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <label
+                    htmlFor="heroImage"
+                    className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      {isUploadingImage ? (
+                        <Loader2 className="w-12 h-12 text-gray-400 animate-spin mb-3" />
+                      ) : (
+                        <Upload className="w-12 h-12 text-gray-400 mb-3" />
+                      )}
+                      <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                        <span className="font-semibold">
+                          Klik om te uploaden
+                        </span>{" "}
+                        of sleep
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        PNG, JPG of WEBP (max. 5MB)
+                      </p>
+                    </div>
+                    <input
+                      id="heroImage"
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
+                      onChange={handleHeroImageUpload}
+                      disabled={isUploadingImage}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              )}
+              {imageError && (
+                <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+                  {imageError}
+                </p>
+              )}
+            </div>
+          </Accordion.Content>
+        </Accordion.Item>
 
         {/* Location Section */}
         <Accordion.Item
@@ -823,9 +902,7 @@ export function EventForm({
             </div>
 
             {/* Location */}
-            {mode === "edit" &&
-            event &&
-            process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
+            {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
               <GoogleMapsLocationPicker
                 apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
                 initialLocation={
@@ -858,12 +935,6 @@ export function EventForm({
                   placeholder="bijv. De Oosterpoort, Groningen"
                   className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-                {mode === "create" && (
-                  <p className="mt-1 text-sm text-gray-500">
-                    Je kunt de locatie op een kaart selecteren na het aanmaken
-                    van het evenement.
-                  </p>
-                )}
               </div>
             )}
           </Accordion.Content>

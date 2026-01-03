@@ -152,7 +152,7 @@ export function TicketTypeForm({
 
       const body: Record<string, unknown> = {
         name: formData.name,
-        description: formData.description || null,
+        description: formData.description,
         price,
         capacity,
       };
@@ -299,7 +299,7 @@ export function TicketTypeForm({
             htmlFor="description"
             className="block text-sm font-medium text-gray-700 dark:text-gray-300"
           >
-            Beschrijving
+            Beschrijving *
           </label>
           <button
             type="button"
@@ -328,6 +328,7 @@ export function TicketTypeForm({
           id="description"
           name="description"
           rows={3}
+          required
           maxLength={500}
           value={formData.description}
           onChange={handleChange}
@@ -356,7 +357,7 @@ export function TicketTypeForm({
             htmlFor="price"
             className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
-            Prijs (€) *
+            Prijs (€ inclusief BTW) *
           </label>
           <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">

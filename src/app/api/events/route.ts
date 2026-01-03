@@ -11,6 +11,9 @@ const createEventSchema = z.object({
   title: z.string().min(1, "Titel is verplicht").max(100, "Titel mag maximaal 100 karakters zijn"),
   description: z.string().max(2000, "Beschrijving mag maximaal 2000 karakters zijn").optional(),
   location: z.string().max(200, "Locatie mag maximaal 200 karakters zijn").optional(),
+  locationDescription: z.string().max(200, "Locatie omschrijving mag maximaal 200 karakters zijn").optional(),
+  latitude: z.number().nullable().optional(),
+  longitude: z.number().nullable().optional(),
   startsAt: z.string().datetime("Ongeldige startdatum"),
   endsAt: z.string().datetime("Ongeldige einddatum"),
   isPaid: z.boolean().optional(), // Whether event has paid tickets (requires Mollie)
@@ -84,6 +87,9 @@ export async function POST(request: NextRequest) {
     title: parsed.data.title,
     description: parsed.data.description,
     location: parsed.data.location,
+    locationDescription: parsed.data.locationDescription,
+    latitude: parsed.data.latitude,
+    longitude: parsed.data.longitude,
     startsAt: new Date(parsed.data.startsAt),
     endsAt: new Date(parsed.data.endsAt),
     isPaid: parsed.data.isPaid ?? true, // Default to paid event
