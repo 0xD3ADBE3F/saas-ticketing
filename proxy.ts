@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function proxy(request: NextRequest) {
+  const startTime = Date.now();
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -51,6 +53,34 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
+  }
+
+  // Performance optimizations: Add cache headers
+  const pathname = request.nextUrl.pathname;
+
+  // Public events pages can be cached
+  if (pathname.startsWith("/events") || pathname.startsWith("/e/")) {
+    // Cache for 2 minutes (stale-while-revalidate for 10 minutes)
+    supabaseResponse.headers.set(
+      "Cache-Control",
+      "public, s-maxage=120, stale-while-revalidate=600"
+    );
+  }
+
+  // API routes should not be cached
+  if (pathname.startsWith("/api/")) {
+    supabaseResponse.headers.set("Cache-Control", "no-store, must-revalidate");
+  }
+
+  // Add response time header in development
+  if (process.env.NODE_ENV === "development") {
+    const duration = Date.now() - startTime;
+    supabaseResponse.headers.set("X-Response-Time", `${duration}ms`);
+
+    // Log slow responses
+    if (duration > 1000) {
+      console.warn(`🐌 Slow response: ${pathname} took ${duration}ms`);
+    }
   }
 
   return supabaseResponse;
