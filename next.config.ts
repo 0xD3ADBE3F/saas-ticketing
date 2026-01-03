@@ -43,7 +43,7 @@ const nextConfig: NextConfig = {
       "@radix-ui/react-select",
       "@radix-ui/react-tabs",
     ],
-    
+
     // Enable server actions optimization
     serverActions: {
       bodySizeLimit: "2mb",
