@@ -42,6 +42,16 @@ const MOLLIE_SCOPES = [
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 
 /**
+ * Error thrown when refresh token is invalid or revoked
+ */
+export class InvalidRefreshTokenError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidRefreshTokenError";
+  }
+}
+
+/**
  * Mollie Connect service for OAuth token management
  */
 export const mollieConnectService = {
@@ -91,6 +101,7 @@ export const mollieConnectService = {
 
   /**
    * Refresh an expired access token
+   * @throws {InvalidRefreshTokenError} when refresh token is invalid/revoked
    */
   async refreshToken(refreshToken: string): Promise<MollieTokenResponse> {
     const response = await fetch("https://api.mollie.com/oauth2/tokens", {
@@ -107,8 +118,22 @@ export const mollieConnectService = {
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error("Mollie token refresh failed:", error);
+      const errorText = await response.text();
+      console.error("Mollie token refresh failed:", errorText);
+
+      // Parse error to detect invalid_grant
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.error === "invalid_grant") {
+          throw new InvalidRefreshTokenError(
+            "Refresh token is invalid or revoked. Organization must reconnect to Mollie."
+          );
+        }
+      } catch (e) {
+        // If not JSON or different error, fall through to generic error
+        if (e instanceof InvalidRefreshTokenError) throw e;
+      }
+
       throw new Error(`Token refresh failed: ${response.status}`);
     }
 
@@ -184,10 +209,24 @@ export const mollieConnectService = {
 
     // Token expired, refresh it
     console.log(`Refreshing Mollie token for organization ${organizationId}`);
-    const newTokens = await this.refreshToken(tokens.refreshToken);
-    await this.storeTokens(organizationId, newTokens);
-
-    return newTokens.access_token;
+    try {
+      const newTokens = await this.refreshToken(tokens.refreshToken);
+      await this.storeTokens(organizationId, newTokens);
+      return newTokens.access_token;
+    } catch (error) {
+      // If refresh token is invalid, disconnect organization
+      if (error instanceof InvalidRefreshTokenError) {
+        console.error(
+          `Invalid refresh token for organization ${organizationId}, disconnecting...`
+        );
+        // Disconnect AND notify admins about the issue
+        await this.disconnect(organizationId, true);
+        throw new Error(
+          "Mollie connection is no longer valid. Please reconnect your Mollie account."
+        );
+      }
+      throw error;
+    }
   },
 
   /**
@@ -215,8 +254,20 @@ export const mollieConnectService = {
 
   /**
    * Disconnect organization from Mollie (revoke tokens)
+   * Optionally notify admins about the disconnection
    */
-  async disconnect(organizationId: string): Promise<void> {
+  async disconnect(organizationId: string, notifyAdmins = false): Promise<void> {
+    // Send notification BEFORE disconnecting if requested
+    if (notifyAdmins) {
+      try {
+        const { notifyConnectionFailure } = await import("./mollieMonitoringService");
+        await notifyConnectionFailure(organizationId);
+      } catch (error) {
+        console.error("Failed to send disconnection notification:", error);
+        // Continue with disconnect even if notification fails
+      }
+    }
+
     // TODO: Optionally revoke token at Mollie
     await prisma.organization.update({
       where: { id: organizationId },

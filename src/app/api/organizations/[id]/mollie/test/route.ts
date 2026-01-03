@@ -90,12 +90,18 @@ export async function POST(request: Request, context: RouteContext) {
     });
   } catch (error) {
     console.error("Error testing Mollie connection:", error);
+
+    // Check if this is a connection validity error (refresh token expired)
+    const errorMessage = error instanceof Error ? error.message : "Verbindingstest mislukt";
+    const needsReconnect = errorMessage.includes("reconnect your Mollie account");
+
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Verbindingstest mislukt",
+        error: errorMessage,
+        needsReconnect, // Signal to frontend that OAuth flow should be restarted
       },
-      { status: 500 }
+      { status: needsReconnect ? 401 : 500 }
     );
   }
 }
