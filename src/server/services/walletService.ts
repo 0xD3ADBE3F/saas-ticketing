@@ -27,6 +27,7 @@ import forge from "node-forge";
 import archiver from "archiver";
 import { put } from "@vercel/blob";
 import zlib from "zlib";
+import * as jose from "jose";
 
 // ============================================================================
 // Types
@@ -825,42 +826,454 @@ async function createPkpassArchive(files: Record<string, Buffer>): Promise<Buffe
 }
 
 // ============================================================================
-// Google Wallet (Stub)
+// Google Wallet Implementation
 // ============================================================================
 
 /**
+ * Google Wallet Service Account credentials type
+ */
+type GoogleServiceAccount = {
+  type: string;
+  project_id: string;
+  private_key_id: string;
+  private_key: string;
+  client_email: string;
+  client_id: string;
+  auth_uri: string;
+  token_uri: string;
+  auth_provider_x509_cert_url: string;
+  client_x509_cert_url: string;
+};
+
+/**
+ * Google Wallet certificate data type
+ */
+type GoogleCertificateData = {
+  issuerId: string;
+  serviceAccountEmail: string;
+  privateKey: string;
+};
+
+/**
+ * Load Google Wallet certificate from database
+ */
+async function loadGoogleCertificate(): Promise<WalletServiceResult<GoogleCertificateData>> {
+  const cert = await prisma.walletCertificate.findFirst({
+    where: {
+      platform: "GOOGLE",
+      expiresAt: { gt: new Date() },
+    },
+  });
+
+  if (!cert) {
+    log("error", "No valid Google Wallet certificate found");
+    return {
+      success: false,
+      error: "Google Wallet certificaat niet gevonden of verlopen",
+      details: "Upload een geldig service account in de platform instellingen",
+    };
+  }
+
+  if (!cert.issuerId || !cert.serviceAccount) {
+    log("error", "Google Wallet certificate is incomplete", {
+      hasIssuerId: !!cert.issuerId,
+      hasServiceAccount: !!cert.serviceAccount,
+    });
+    return {
+      success: false,
+      error: "Google Wallet certificaat is incompleet",
+      details: "Issuer ID en Service Account JSON zijn beide vereist",
+    };
+  }
+
+  try {
+    const serviceAccountJson = decrypt(cert.serviceAccount);
+    const serviceAccount = JSON.parse(serviceAccountJson) as GoogleServiceAccount;
+
+    if (!serviceAccount.private_key || !serviceAccount.client_email) {
+      throw new Error("Service account JSON is missing required fields");
+    }
+
+    return {
+      success: true,
+      data: {
+        issuerId: cert.issuerId,
+        serviceAccountEmail: serviceAccount.client_email,
+        privateKey: serviceAccount.private_key,
+      },
+    };
+  } catch (error) {
+    log("error", "Failed to decrypt/parse Google service account", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      success: false,
+      error: "Kon service account niet lezen",
+      details: error instanceof Error ? error.message : "Ongeldige service account data",
+    };
+  }
+}
+
+/**
+ * Create Google Wallet Event Ticket Class object
+ * This defines the template for the ticket
+ */
+function createEventTicketClass(params: {
+  issuerId: string;
+  classId: string;
+  eventTitle: string;
+  organizationName: string;
+  organizationLogo?: string;
+  brandColor?: string;
+}) {
+  const { issuerId, classId, eventTitle, organizationName, organizationLogo, brandColor } = params;
+
+  return {
+    id: `${issuerId}.${classId}`,
+    issuerName: organizationName,
+    reviewStatus: "UNDER_REVIEW", // Will be auto-approved in demo mode
+    eventName: {
+      defaultValue: {
+        language: "nl",
+        value: eventTitle,
+      },
+    },
+    // Logo (organization branding)
+    ...(organizationLogo && {
+      logo: {
+        sourceUri: {
+          uri: organizationLogo,
+        },
+        contentDescription: {
+          defaultValue: {
+            language: "nl",
+            value: organizationName,
+          },
+        },
+      },
+    }),
+    // Brand color
+    ...(brandColor && {
+      hexBackgroundColor: brandColor.startsWith("#") ? brandColor : `#${brandColor}`,
+    }),
+  };
+}
+
+/**
+ * Create Google Wallet Event Ticket Object
+ * This represents a specific ticket instance
+ */
+function createEventTicketObject(params: {
+  issuerId: string;
+  classId: string;
+  objectId: string;
+  qrData: string;
+  ticketCode: string;
+  buyerName: string | null;
+  eventTitle: string;
+  eventDate: Date;
+  eventLocation: string | null;
+  ticketTypeName: string;
+  organizationName: string;
+  organizationLogo?: string;
+  brandColor?: string;
+}) {
+  const {
+    issuerId,
+    classId,
+    objectId,
+    qrData,
+    ticketCode,
+    buyerName,
+    eventTitle,
+    eventDate,
+    eventLocation,
+    ticketTypeName,
+    organizationName,
+    organizationLogo,
+    brandColor,
+  } = params;
+
+  // Format date in Dutch
+  const dateFormatter = new Intl.DateTimeFormat("nl-NL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  const timeFormatter = new Intl.DateTimeFormat("nl-NL", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const formattedDate = dateFormatter.format(eventDate);
+  const capitalizedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+  const formattedTime = timeFormatter.format(eventDate);
+
+  return {
+    id: `${issuerId}.${objectId}`,
+    classId: `${issuerId}.${classId}`,
+    state: "ACTIVE",
+
+    // QR code barcode
+    barcode: {
+      type: "QR_CODE",
+      value: qrData,
+      alternateText: ticketCode,
+    },
+
+    // Ticket holder information
+    ticketHolderName: buyerName || "Algemene toegang",
+    ticketNumber: ticketCode,
+
+    // Event details
+    eventName: {
+      defaultValue: {
+        language: "nl",
+        value: eventTitle,
+      },
+    },
+
+    // Validity period - show pass from now until event ends
+    validTimeInterval: {
+      start: {
+        date: new Date().toISOString(),
+      },
+      end: {
+        // Event + 24 hours for post-event viewing
+        date: new Date(eventDate.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+      },
+    },
+
+    // Text modules for additional information
+    textModulesData: [
+      {
+        header: "Ticket Type",
+        body: ticketTypeName,
+        id: "ticket_type",
+      },
+      {
+        header: "Datum & Tijd",
+        body: `${capitalizedDate} om ${formattedTime}`,
+        id: "date_time",
+      },
+      ...(eventLocation
+        ? [
+            {
+              header: "Locatie",
+              body: eventLocation,
+              id: "location",
+            },
+          ]
+        : []),
+      {
+        header: "Georganiseerd door",
+        body: organizationName,
+        id: "organizer",
+      },
+    ],
+
+    // Hero image (optional - using logo if provided)
+    ...(organizationLogo && {
+      heroImage: {
+        sourceUri: {
+          uri: organizationLogo,
+        },
+        contentDescription: {
+          defaultValue: {
+            language: "nl",
+            value: eventTitle,
+          },
+        },
+      },
+    }),
+
+    // Brand color
+    ...(brandColor && {
+      hexBackgroundColor: brandColor.startsWith("#") ? brandColor : `#${brandColor}`,
+    }),
+  };
+}
+
+/**
+ * Generate signed JWT for Google Wallet
+ *
+ * @param payload - The JWT payload containing class and object definitions
+ * @param serviceAccountEmail - Google service account email
+ * @param privateKey - RSA private key in PEM format
+ */
+async function generateGoogleWalletJWT(
+  payload: {
+    eventTicketClasses?: object[];
+    eventTicketObjects: object[];
+  },
+  serviceAccountEmail: string,
+  privateKey: string
+): Promise<string> {
+  // Parse the private key
+  const key = await jose.importPKCS8(privateKey, "RS256");
+
+  // Create JWT claims
+  const claims = {
+    iss: serviceAccountEmail,
+    aud: "google",
+    typ: "savetowallet",
+    iat: Math.floor(Date.now() / 1000),
+    origins: [], // Can be left empty for server-side generation
+    payload,
+  };
+
+  // Sign the JWT
+  const jwt = await new jose.SignJWT(claims)
+    .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+    .setIssuedAt()
+    .sign(key);
+
+  return jwt;
+}
+
+/**
  * Generate Google Wallet pass
- * TODO: Implement when Google Wallet API is set up
+ *
+ * Creates a signed JWT containing the event ticket class and object,
+ * which can be used to generate an "Add to Google Wallet" URL.
+ *
+ * @param data - Ticket and event information
+ * @param baseUrl - Base URL for QR code generation
+ * @returns Google Wallet save URL or error
  */
 export async function generateGooglePass(
   data: WalletPassData,
   baseUrl: string
 ): Promise<WalletServiceResult<string>> {
-  log("warn", "Google Wallet not yet implemented");
-
-  // Store pass record for tracking
-  const serialNumber = crypto.randomUUID();
-  const objectId = `${data.organizationName}.${data.eventTitle}.${data.ticketId}`.replace(
-    /\s+/g,
-    "_"
-  );
+  log("info", "Starting Google Wallet pass generation", {
+    ticketId: data.ticketId,
+    ticketCode: data.ticketCode,
+    eventTitle: data.eventTitle,
+  });
 
   try {
-    await walletPassRepo.create({
-      ticketId: data.ticketId,
-      platform: "GOOGLE",
-      serialNumber,
-      googlePassId: objectId,
-    });
-  } catch (error) {
-    log("error", "Failed to create Google pass record", { error });
-  }
+    // Step 1: Load and validate Google certificate
+    log("info", "Loading Google Wallet certificate...");
+    const certResult = await loadGoogleCertificate();
+    if (!certResult.success) {
+      return certResult;
+    }
+    const { issuerId, serviceAccountEmail, privateKey } = certResult.data;
+    log("info", "Certificate loaded successfully", { issuerId });
 
-  return {
-    success: false,
-    error: "Google Wallet integratie is nog niet beschikbaar",
-    details: "Neem contact op met support voor meer informatie",
-  };
+    // Step 2: Generate QR code data (same as Apple/email)
+    log("info", "Generating QR code data...");
+    const qrData = generateQRData(
+      { id: data.ticketId, secretToken: data.secretToken },
+      baseUrl
+    );
+    log("info", "QR code generated", { qrDataLength: qrData.length });
+
+    // Step 3: Create unique IDs for class and object
+    // Use organization slug + event title as class ID (shared across all tickets for same event)
+    const classId = `event_${data.organizationName}_${data.eventTitle}`
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, "_")
+      .replace(/_+/g, "_")
+      .substring(0, 64); // Google has max 64 char limit
+
+    // Use ticket ID as object ID (unique per ticket)
+    const objectId = `ticket_${data.ticketId}`.replace(/-/g, "_");
+
+    log("info", "Generated Google Wallet IDs", { classId, objectId });
+
+    // Step 4: Create Event Ticket Class
+    const eventTicketClass = createEventTicketClass({
+      issuerId,
+      classId,
+      eventTitle: data.eventTitle,
+      organizationName: data.organizationName,
+      organizationLogo: data.organizationLogo,
+      brandColor: data.brandColor,
+    });
+
+    // Step 5: Create Event Ticket Object
+    const eventTicketObject = createEventTicketObject({
+      issuerId,
+      classId,
+      objectId,
+      qrData,
+      ticketCode: data.ticketCode,
+      buyerName: data.buyerName,
+      eventTitle: data.eventTitle,
+      eventDate: data.eventDate,
+      eventLocation: data.eventLocation,
+      ticketTypeName: data.ticketTypeName,
+      organizationName: data.organizationName,
+      organizationLogo: data.organizationLogo,
+      brandColor: data.brandColor,
+    });
+
+    // Step 6: Generate signed JWT
+    log("info", "Generating signed JWT...");
+    const jwt = await generateGoogleWalletJWT(
+      {
+        eventTicketClasses: [eventTicketClass],
+        eventTicketObjects: [eventTicketObject],
+      },
+      serviceAccountEmail,
+      privateKey
+    );
+    log("info", "JWT generated", { jwtLength: jwt.length });
+
+    // Step 7: Create "Add to Google Wallet" URL
+    const addToWalletUrl = `https://pay.google.com/gp/v/save/${jwt}`;
+
+    // Check if URL is within safe limits (1800 chars recommended)
+    if (addToWalletUrl.length > 1800) {
+      log("warn", "Google Wallet URL exceeds recommended 1800 character limit", {
+        length: addToWalletUrl.length,
+      });
+    }
+
+    // Step 8: Store pass record in database
+    log("info", "Storing pass record in database...");
+    const serialNumber = crypto.randomUUID();
+    const fullObjectId = `${issuerId}.${objectId}`;
+
+    try {
+      // Check if pass already exists for this ticket
+      const existingPass = await walletPassRepo.findByTicketId(data.ticketId);
+      if (existingPass && existingPass.platform === "GOOGLE") {
+        log("info", "Pass already exists, updating", { passId: existingPass.id });
+        await walletPassRepo.touch(existingPass.id);
+      } else if (!existingPass) {
+        await walletPassRepo.create({
+          ticketId: data.ticketId,
+          platform: "GOOGLE",
+          serialNumber,
+          googlePassId: fullObjectId,
+          passUrl: addToWalletUrl,
+        });
+      }
+    } catch (error) {
+      // Log but don't fail - the pass can still be added
+      log("warn", "Failed to store Google pass record", { error });
+    }
+
+    log("info", "Google Wallet pass generated successfully!", {
+      ticketId: data.ticketId,
+      objectId: fullObjectId,
+      urlLength: addToWalletUrl.length,
+    });
+
+    return { success: true, data: addToWalletUrl };
+  } catch (error) {
+    log("error", "Failed to generate Google Wallet pass", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    return {
+      success: false,
+      error: "Kon Google Wallet pass niet genereren",
+      details: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 // ============================================================================

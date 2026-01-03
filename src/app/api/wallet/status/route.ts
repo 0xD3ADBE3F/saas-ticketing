@@ -31,6 +31,8 @@ export async function GET() {
       select: {
         id: true,
         platform: true,
+        issuerId: true,
+        serviceAccount: true,
         expiresAt: true,
         createdAt: true,
       },
@@ -54,8 +56,11 @@ export async function GET() {
       },
       google: googleCert ? {
         configured: true,
+        issuerId: googleCert.issuerId,
         expiresAt: googleCert.expiresAt,
         isExpired: googleCert.expiresAt < now,
+        hasServiceAccount: !!googleCert.serviceAccount,
+        serviceAccountLength: googleCert.serviceAccount?.length || 0,
       } : {
         configured: false,
       },

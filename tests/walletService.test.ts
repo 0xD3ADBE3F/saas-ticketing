@@ -34,6 +34,20 @@ vi.mock("@vercel/blob", () => ({
   put: vi.fn().mockResolvedValue({ url: "https://blob.vercel-storage.com/test.pkpass" }),
 }));
 
+// Mock jose for JWT signing
+vi.mock("jose", () => {
+  class MockSignJWT {
+    constructor() {}
+    setProtectedHeader() { return this; }
+    setIssuedAt() { return this; }
+    async sign() { return "mock-jwt-token"; }
+  }
+  return {
+    importPKCS8: vi.fn().mockResolvedValue("mock-key"),
+    SignJWT: MockSignJWT,
+  };
+});
+
 // Import after mocks are set up
 import {
   generateApplePass,
@@ -41,6 +55,7 @@ import {
   invalidateWalletPass,
 } from "../src/server/services/walletService";
 import { walletPassRepo } from "../src/server/repos/walletPassRepo";
+import { prisma } from "../src/server/lib/prisma";
 
 describe("Wallet Service", () => {
   const mockTicketData: WalletPassData = {
@@ -99,8 +114,58 @@ describe("Wallet Service", () => {
   });
 
   describe("generateGooglePass", () => {
-    it("should create wallet pass record for Google Wallet", async () => {
+    it("should return error when certificate is not configured", async () => {
       const result = await generateGooglePass(mockTicketData, baseUrl);
+
+      // Without a certificate, should return an error
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toContain("certificaat");
+      }
+    });
+
+    it("should generate pass URL when certificate is configured", async () => {
+      // Mock a valid Google certificate
+      const mockGoogleCert = {
+        id: "cert-1",
+        platform: "GOOGLE",
+        issuerId: "3388000000022203059",
+        serviceAccount: JSON.stringify({
+          type: "service_account",
+          private_key: "-----BEGIN PRIVATE KEY-----\nMOCK\n-----END PRIVATE KEY-----",
+          client_email: "test@test.iam.gserviceaccount.com",
+        }),
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      };
+
+      vi.mocked(prisma.walletCertificate.findFirst).mockResolvedValueOnce(mockGoogleCert as never);
+
+      const result = await generateGooglePass(mockTicketData, baseUrl);
+
+      // Should return a URL
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toContain("https://pay.google.com/gp/v/save/");
+      }
+    });
+
+    it("should create wallet pass record for Google Wallet", async () => {
+      // Mock a valid Google certificate
+      const mockGoogleCert = {
+        id: "cert-1",
+        platform: "GOOGLE",
+        issuerId: "3388000000022203059",
+        serviceAccount: JSON.stringify({
+          type: "service_account",
+          private_key: "-----BEGIN PRIVATE KEY-----\nMOCK\n-----END PRIVATE KEY-----",
+          client_email: "test@test.iam.gserviceaccount.com",
+        }),
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      };
+
+      vi.mocked(prisma.walletCertificate.findFirst).mockResolvedValueOnce(mockGoogleCert as never);
+
+      await generateGooglePass(mockTicketData, baseUrl);
 
       // Service creates a database record
       expect(walletPassRepo.create).toHaveBeenCalledWith(
@@ -109,35 +174,50 @@ describe("Wallet Service", () => {
           platform: "GOOGLE",
           serialNumber: expect.any(String),
           googlePassId: expect.any(String),
+          passUrl: expect.stringContaining("https://pay.google.com/gp/v/save/"),
         })
       );
     });
 
     it("should generate correct Google Pass object ID format", async () => {
+      // Mock a valid Google certificate
+      const mockGoogleCert = {
+        id: "cert-1",
+        platform: "GOOGLE",
+        issuerId: "3388000000022203059",
+        serviceAccount: JSON.stringify({
+          type: "service_account",
+          private_key: "-----BEGIN PRIVATE KEY-----\nMOCK\n-----END PRIVATE KEY-----",
+          client_email: "test@test.iam.gserviceaccount.com",
+        }),
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      };
+
+      vi.mocked(prisma.walletCertificate.findFirst).mockResolvedValueOnce(mockGoogleCert as never);
+
       await generateGooglePass(mockTicketData, baseUrl);
 
       const createCall = vi.mocked(walletPassRepo.create).mock.calls[0][0];
 
-      expect(createCall.googlePassId).toContain(
-        mockTicketData.organizationName.replace(/\s+/g, "_")
-      );
-      expect(createCall.googlePassId).toContain(mockTicketData.ticketId);
-    });
-
-    it("should return error for incomplete implementation", async () => {
-      const result = await generateGooglePass(mockTicketData, baseUrl);
-
-      // Current implementation returns error - Google Wallet not yet implemented
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error).toBeTruthy();
-      }
+      // Should contain issuer ID and ticket ID
+      expect(createCall.googlePassId).toContain(mockGoogleCert.issuerId);
+      expect(createCall.googlePassId).toContain(mockTicketData.ticketId.replace(/-/g, "_"));
     });
 
     it("should handle errors gracefully", async () => {
-      vi.mocked(walletPassRepo.create).mockRejectedValueOnce(
-        new Error("Database error")
-      );
+      // Mock an invalid certificate (missing required fields)
+      const mockInvalidCert = {
+        id: "cert-1",
+        platform: "GOOGLE",
+        issuerId: "3388000000022203059",
+        serviceAccount: JSON.stringify({
+          type: "service_account",
+          // Missing private_key and client_email
+        }),
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      };
+
+      vi.mocked(prisma.walletCertificate.findFirst).mockResolvedValueOnce(mockInvalidCert as never);
 
       const result = await generateGooglePass(mockTicketData, baseUrl);
 
@@ -227,13 +307,27 @@ describe("Wallet Service", () => {
         eventTitle: "Event With Many   Spaces",
       };
 
+      // Mock a valid Google certificate
+      const mockGoogleCert = {
+        id: "cert-1",
+        platform: "GOOGLE",
+        issuerId: "3388000000022203059",
+        serviceAccount: JSON.stringify({
+          type: "service_account",
+          private_key: "-----BEGIN PRIVATE KEY-----\nMOCK\n-----END PRIVATE KEY-----",
+          client_email: "test@test.iam.gserviceaccount.com",
+        }),
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      };
+
+      vi.mocked(prisma.walletCertificate.findFirst).mockResolvedValueOnce(mockGoogleCert as never);
+
       await generateGooglePass(dataWithSpaces, baseUrl);
 
       const createCall = vi.mocked(walletPassRepo.create).mock.calls[0][0];
 
       // Spaces should be replaced with underscores
       expect(createCall.googlePassId).not.toContain(" ");
-      expect(createCall.googlePassId).toContain("_");
     });
   });
 });
