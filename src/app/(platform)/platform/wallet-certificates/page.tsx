@@ -113,7 +113,9 @@ export default async function WalletCertificatesPage() {
                       : "text-green-900 dark:text-green-100"
                   }`}
                 >
-                  {isAppleExpired ? "Certificate Expired" : "Certificate Active"}
+                  {isAppleExpired
+                    ? "Certificate Expired"
+                    : "Certificate Active"}
                 </h3>
                 <p
                   className={`text-sm mt-1 ${
@@ -241,7 +243,9 @@ export default async function WalletCertificatesPage() {
                       : "text-green-900 dark:text-green-100"
                   }`}
                 >
-                  {isGoogleExpired ? "Service Account Expired" : "Service Account Active"}
+                  {isGoogleExpired
+                    ? "Service Account Expired"
+                    : "Service Account Active"}
                 </h3>
                 <p
                   className={`text-sm mt-1 ${

@@ -47,9 +47,10 @@ export function WalletCertificateForm({
     setSuccess(false);
 
     try {
-      const body = platform === "APPLE" 
-        ? { platform, ...appleFormData }
-        : { platform, ...googleFormData };
+      const body =
+        platform === "APPLE"
+          ? { platform, ...appleFormData }
+          : { platform, ...googleFormData };
 
       const response = await fetch("/api/platform/wallet-certificate", {
         method: "POST",
@@ -119,7 +120,8 @@ export function WalletCertificateForm({
                   Opgeslagen
                 </h3>
                 <p className="text-sm text-green-800 dark:text-green-200 mt-1">
-                  Service account versleuteld en opgeslagen. Google Wallet is nu actief!
+                  Service account versleuteld en opgeslagen. Google Wallet is nu
+                  actief!
                 </p>
               </div>
             </div>
@@ -141,15 +143,18 @@ export function WalletCertificateForm({
             placeholder="3388000000022203059"
             value={googleFormData.issuerId}
             onChange={(e) =>
-              setGoogleFormData((prev) => ({ ...prev, issuerId: e.target.value }))
+              setGoogleFormData((prev) => ({
+                ...prev,
+                issuerId: e.target.value,
+              }))
             }
             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Je Google Wallet Issuer ID uit de{" "}
-            <a 
-              href="https://pay.google.com/business/console" 
-              target="_blank" 
+            <a
+              href="https://pay.google.com/business/console"
+              target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 hover:underline"
             >
@@ -200,12 +205,16 @@ export function WalletCertificateForm({
             required
             value={googleFormData.expiresAt}
             onChange={(e) =>
-              setGoogleFormData((prev) => ({ ...prev, expiresAt: e.target.value }))
+              setGoogleFormData((prev) => ({
+                ...prev,
+                expiresAt: e.target.value,
+              }))
             }
             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Service account keys verlopen niet automatisch, maar het is goed om een herinnering te zetten
+            Service account keys verlopen niet automatisch, maar het is goed om
+            een herinnering te zetten
           </p>
         </div>
 
@@ -218,8 +227,9 @@ export function WalletCertificateForm({
                 Beveiliging
               </h3>
               <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
-                De service account JSON wordt versleuteld met AES-256-GCM voordat
-                deze wordt opgeslagen. De key wordt alleen ontsleuteld bij het genereren van wallet passes.
+                De service account JSON wordt versleuteld met AES-256-GCM
+                voordat deze wordt opgeslagen. De key wordt alleen ontsleuteld
+                bij het genereren van wallet passes.
               </p>
             </div>
           </div>
@@ -301,7 +311,10 @@ export function WalletCertificateForm({
           placeholder="pass.com.entro.ticket"
           value={appleFormData.passTypeId}
           onChange={(e) =>
-            setAppleFormData((prev) => ({ ...prev, passTypeId: e.target.value }))
+            setAppleFormData((prev) => ({
+              ...prev,
+              passTypeId: e.target.value,
+            }))
           }
           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
@@ -377,7 +390,10 @@ export function WalletCertificateForm({
           placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----"
           value={appleFormData.privateKeyPem}
           onChange={(e) =>
-            setAppleFormData((prev) => ({ ...prev, privateKeyPem: e.target.value }))
+            setAppleFormData((prev) => ({
+              ...prev,
+              privateKeyPem: e.target.value,
+            }))
           }
           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
         />
