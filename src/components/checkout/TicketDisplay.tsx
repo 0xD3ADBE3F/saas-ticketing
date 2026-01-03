@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { formatDateRange } from "@/lib/date";
+import { AddToWalletButtons } from "./AddToWalletButtons";
 
 interface Ticket {
   id: string;
@@ -154,6 +155,11 @@ export function TicketDisplay({
                 <p className="text-xs text-gray-400 dark:text-gray-500">
                   {formatDateRange(ticket.event.startsAt, ticket.event.endsAt)}
                 </p>
+
+                {/* Add to Wallet Buttons */}
+                <div className="mt-4 w-full">
+                  <AddToWalletButtons ticketId={ticket.id} />
+                </div>
               </div>
             )}
           </div>

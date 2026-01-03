@@ -236,6 +236,125 @@ Organization (tenant)
 
 ---
 
+## 3.1. Digital Wallet Integration
+
+### Overview
+
+Tickets can be added to Apple Wallet (iOS) and Google Wallet (Android) for convenient offline access and improved user experience.
+
+### Supported Platforms
+
+- **Apple Wallet**: iOS 12+ (requires Apple Developer account & certificates)
+- **Google Wallet**: Android 5+ (requires Google Cloud Project & Wallet API)
+
+### Technical Implementation
+
+**QR Code Consistency:**
+
+- Wallet passes use identical QR code as email tickets
+- Same cryptographic signature (HMAC-SHA256)
+- Format: `{baseUrl}/scan/{ticketId}:{signature}`
+
+**Database Models:**
+
+- `WalletPass`: Tracks issued passes per ticket
+- `WalletCertificate`: Stores organization-specific signing credentials
+
+**API Endpoints:**
+
+- `POST /api/wallet/apple/generate` - Generate .pkpass file
+- `POST /api/wallet/google/generate` - Generate Google Wallet link
+- `GET /api/wallet/apple/v1/passes/{passTypeId}/{serialNumber}` - Pass updates
+
+### Pass Content
+
+**Apple Wallet (.pkpass):**
+
+```json
+{
+  "formatVersion": 1,
+  "passTypeIdentifier": "pass.com.entro.ticket",
+  "eventTicket": {
+    "primaryFields": [{ "label": "EVENEMENT", "value": "Event Title" }],
+    "secondaryFields": [{ "label": "DATUM", "value": "2026-06-15T20:00" }],
+    "auxiliaryFields": [
+      { "label": "TYPE", "value": "General Admission" },
+      { "label": "CODE", "value": "ABC123" }
+    ]
+  },
+  "barcode": {
+    "format": "PKBarcodeFormatQR",
+    "message": "https://entro.app/scan/ticket-id:signature"
+  }
+}
+```
+
+**Google Wallet (JWT payload):**
+
+```json
+{
+  "eventName": { "defaultValue": { "language": "nl", "value": "Event Title" } },
+  "barcode": { "type": "QR_CODE", "value": "https://entro.app/scan/..." },
+  "ticketHolderName": "Jan Jansen",
+  "validTimeInterval": { "start": { "date": "2026-06-15T20:00:00Z" } }
+}
+```
+
+### UI Integration
+
+**AddToWalletButtons Component:**
+
+- Auto-detects user platform (iOS/Android/Desktop)
+- Shows appropriate button(s)
+- Handles pass generation and download
+- Displays user-friendly error messages (in Dutch)
+
+**Placement:**
+
+- Ticket confirmation page (after payment)
+- Order confirmation email (future enhancement)
+
+### Security
+
+- ✅ Same cryptographic security as email QR codes
+- ✅ Multi-tenant isolation (organizationId scoping)
+- ✅ Ticket validation before pass generation
+- ✅ Rate limiting per ticket (prevents spam)
+
+### Limitations (Current Implementation)
+
+⚠️ **Foundational infrastructure only:**
+
+- Certificate management UI not implemented
+- Pass signing (PKCS#7) requires external setup
+- Push notifications for updates not implemented
+- Organization-specific branding partially implemented
+
+**To enable full functionality:**
+
+1. Apple: Set up Developer account, create Pass Type ID, generate certificates
+2. Google: Create Cloud Project, enable Wallet API, generate service account
+3. Implement certificate storage and encryption
+4. Build pass signing pipeline
+
+### Refund Handling
+
+When a ticket is refunded:
+
+1. `invalidateWalletPass(ticketId)` is called
+2. Pass record deleted from database
+3. (TODO) Send push notification to expire pass
+
+### Future Enhancements
+
+- Multi-pass support (bundle all tickets from one order)
+- Self-service certificate management for organizations
+- Pass update notifications (venue changes, delays)
+- Analytics dashboard (wallet adoption rates)
+- NFC tap-to-enter support
+
+---
+
 ## 4. Payment Integration
 
 ### Provider: Mollie
