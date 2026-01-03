@@ -17,14 +17,11 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     // 1. Verify request is from Vercel Cron
-    // Vercel automatically adds the x-vercel-cron header with value "1"
-    const cronHeader = request.headers.get("x-vercel-cron");
-
-    if (cronHeader !== "1") {
-      mollieLogger.warn({
-        message: "Unauthorized cron attempt - missing x-vercel-cron header",
+    const authHeader = request.headers.get('authorization');
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return new Response('Unauthorized', {
+        status: 401,
       });
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // 2. Generate invoices for events that ended yesterday

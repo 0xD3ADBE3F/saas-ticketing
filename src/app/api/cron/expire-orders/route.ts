@@ -11,15 +11,11 @@ import { logger } from "@/server/lib/logger";
 async function handleExpireOrders(req: NextRequest) {
   try {
     // Verify request is from Vercel Cron
-    // Vercel automatically adds the x-vercel-cron header with value "1"
-    const cronHeader = req.headers.get("x-vercel-cron");
-
-    if (cronHeader !== "1") {
-      logger.warn({
-        service: "cronJob",
-        ip: req.headers.get("x-forwarded-for") || "unknown",
-      }, "Unauthorized cron job attempt - missing x-vercel-cron header");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authHeader = req.headers.get('authorization');
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return new Response('Unauthorized', {
+        status: 401,
+      });
     }
 
     logger.info({ service: "cronJob" }, "Starting order expiration cron job");

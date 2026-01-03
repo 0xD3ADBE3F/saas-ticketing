@@ -3,6 +3,8 @@ import { prisma } from "../lib/prisma";
 import { mollieConnectService } from "./mollieConnectService";
 import { mollieLogger } from "../lib/logger";
 import { MollieOnboardingStatus } from "../../generated/prisma";
+import { molliePlatformHealthService } from "./molliePlatformHealthService";
+import { platformTokenService } from "./platformTokenService";
 
 /**
  * Client Link request for creating Mollie accounts
@@ -125,7 +127,7 @@ export const mollieOnboardingService = {
       client_id: env.MOLLIE_CONNECT_CLIENT_ID,
       redirect_uri: redirectUri,
       response_type: "code",
-      scope: "organizations.write profiles.write clients.write",
+      scope: "organizations.read organizations.write profiles.write clients.write",
       state: "platform", // Special state to identify platform auth
     });
     return `https://my.mollie.com/oauth2/authorize?${params.toString()}`;
@@ -244,12 +246,40 @@ export const mollieOnboardingService = {
 
     mollieLogger.info({ request }, "Client link request built");
 
-    // Get platform access token (must have clients.write scope)
-    let platformToken = env.MOLLIE_PLATFORM_ACCESS_TOKEN;
-    if (!platformToken) {
-      mollieLogger.error("MOLLIE_PLATFORM_ACCESS_TOKEN not configured");
+    // Check platform connection health before proceeding
+    mollieLogger.info("Checking platform connection health");
+    const healthStatus = await molliePlatformHealthService.checkHealth();
+
+    if (!healthStatus.isHealthy) {
+      mollieLogger.error(
+        {
+          error: healthStatus.error,
+          needsRefresh: healthStatus.needsRefresh,
+        },
+        "Platform connection unhealthy"
+      );
+
+      if (healthStatus.needsRefresh) {
+        throw new Error(
+          "Platform token is invalid or expired. " +
+          "Please re-authorize the platform by visiting: " +
+          molliePlatformHealthService.getPlatformAuthUrl()
+        );
+      }
+
       throw new Error(
-        "MOLLIE_PLATFORM_ACCESS_TOKEN not configured. " +
+        `Platform connection error: ${healthStatus.error || "Unknown error"}`
+      );
+    }
+
+    mollieLogger.info("Platform connection healthy, proceeding with client link creation");
+
+    // Get platform access token (must have clients.write scope)
+    const platformToken = await platformTokenService.getAccessToken();
+    if (!platformToken) {
+      mollieLogger.error("Platform access token not configured in database");
+      throw new Error(
+        "Platform access token not configured in database. " +
         "Platform admin must authorize the OAuth app first. " +
         `Visit: ${this.getPlatformAuthUrl()}`
       );
@@ -259,7 +289,7 @@ export const mollieOnboardingService = {
 
     // Create client link using platform OAuth token
     mollieLogger.info("Sending client link creation request to Mollie API");
-    let response = await fetch("https://api.mollie.com/v2/client-links", {
+    const response = await fetch("https://api.mollie.com/v2/client-links", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${platformToken}`,
@@ -270,65 +300,13 @@ export const mollieOnboardingService = {
 
     mollieLogger.info({ status: response.status, statusText: response.statusText }, "Received response from Mollie API");
 
-    // If token expired (401), try to refresh it
-    if (response.status === 401 && env.MOLLIE_PLATFORM_REFRESH_TOKEN) {
-      mollieLogger.warn({ status: 401 }, "Platform token expired (401 Unauthorized), attempting refresh");
-
-      try {
-        mollieLogger.info("Sending token refresh request to Mollie");
-        const refreshResponse = await fetch("https://api.mollie.com/oauth2/tokens", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            grant_type: "refresh_token",
-            client_id: env.MOLLIE_CONNECT_CLIENT_ID,
-            client_secret: env.MOLLIE_CONNECT_CLIENT_SECRET,
-            refresh_token: env.MOLLIE_PLATFORM_REFRESH_TOKEN,
-          }),
-        });
-
-        mollieLogger.info({ status: refreshResponse.status }, "Received token refresh response");
-
-        if (refreshResponse.ok) {
-          const tokenData = await refreshResponse.json();
-          platformToken = tokenData.access_token;
-
-          mollieLogger.info({ hasNewRefreshToken: !!tokenData.refresh_token }, "Platform token refreshed successfully. Update .env with new token:");
-          mollieLogger.info(`MOLLIE_PLATFORM_ACCESS_TOKEN=${tokenData.access_token}`);
-          if (tokenData.refresh_token) {
-            mollieLogger.info(`MOLLIE_PLATFORM_REFRESH_TOKEN=${tokenData.refresh_token}`);
-          }
-
-          // Retry with new token
-          mollieLogger.info("Retrying client link creation with refreshed token");
-          response = await fetch("https://api.mollie.com/v2/client-links", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${platformToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(request),
-          });
-          mollieLogger.info({ status: response.status }, "Retry response received");
-        } else {
-          const refreshError = await refreshResponse.text();
-          mollieLogger.error({ status: refreshResponse.status, error: refreshError }, "Token refresh failed");
-        }
-      } catch (refreshError) {
-        mollieLogger.error({ error: refreshError }, "Exception during token refresh");
-      }
-    } else if (response.status === 401) {
-      mollieLogger.error("401 Unauthorized but no refresh token available");
-    }
-
     if (!response.ok) {
       const error = await response.text();
       mollieLogger.error({ error, status: response.status, request }, "Failed to create client link");
 
       if (response.status === 401) {
-        mollieLogger.error("Authentication failed after all attempts. Platform needs re-authorization");
+        mollieLogger.error("Authentication failed. Platform token may have expired since health check");
+        // Health service will handle this on next check
         throw new Error(
           "Platform token is invalid or expired. " +
           "Please re-authorize the platform by visiting: " +

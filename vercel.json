@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/check-mollie-connections",
       "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/check-platform-connection",
+      "schedule": "0 */6 * * *"
     }
   ]
 }

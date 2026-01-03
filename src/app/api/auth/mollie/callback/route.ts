@@ -4,6 +4,7 @@ import { mollieOnboardingService } from "@/server/services/mollieOnboardingServi
 import { prisma } from "@/server/lib/prisma";
 import { mollieLogger } from "@/server/lib/logger";
 import { env } from "@/server/lib/env";
+import { platformTokenService } from "@/server/services/platformTokenService";
 
 /**
  * Mollie OAuth callback handler
@@ -56,51 +57,24 @@ async function handlePlatformCallback(req: NextRequest, code: string) {
   try {
     const tokens = await mollieOnboardingService.exchangePlatformCode(code);
 
-    // Return HTML page with the token to copy
-    return new Response(
-      `<!DOCTYPE html>
-      <html>
-        <head>
-          <title>Platform Authorization Successful</title>
-          <style>
-            body { font-family: system-ui, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; }
-            h1 { color: #10b981; }
-            pre { background: #f3f4f6; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 14px; }
-            .warning { color: #f59e0b; margin-top: 20px; }
-            ol { line-height: 2; }
-          </style>
-        </head>
-        <body>
-          <h1>✅ Platform Authorization Successful</h1>
-          <p>Add this to your <code>.env</code> file:</p>
-          <pre>MOLLIE_PLATFORM_ACCESS_TOKEN=${tokens.accessToken}
+    // Store tokens in database
+    await platformTokenService.setTokens(tokens.accessToken, tokens.refreshToken);
 
-# Save refresh token for future use (optional)
-MOLLIE_PLATFORM_REFRESH_TOKEN=${tokens.refreshToken}</pre>
-          <p class="warning">⚠️ Keep these tokens secure!</p>
-          <ol>
-            <li>Copy the access token above to your <code>.env</code> file</li>
-            <li>Restart your development server</li>
-            <li>Organizations can now use Client Links for onboarding!</li>
-          </ol>
-          <p><a href="/dashboard/settings">← Back to Settings</a></p>
-        </body>
-      </html>`,
-      { status: 200, headers: { "Content-Type": "text/html" } }
+    mollieLogger.info("Platform tokens successfully stored in database");
+
+    // Redirect to platform dashboard with success message
+    return NextResponse.redirect(
+      new URL("/platform?mollie_connected=success", env.NEXT_PUBLIC_APP_URL)
     );
   } catch (err) {
     mollieLogger.error({ err }, "Failed to exchange platform code");
-    return new Response(
-      `<!DOCTYPE html>
-      <html>
-        <head><title>Authorization Failed</title></head>
-        <body style="font-family: system-ui; padding: 40px;">
-          <h1>❌ Platform Authorization Failed</h1>
-          <p>${err instanceof Error ? err.message : "Unknown error"}</p>
-          <p><a href="/dashboard/settings">← Back to Settings</a></p>
-        </body>
-      </html>`,
-      { status: 500, headers: { "Content-Type": "text/html" } }
+
+    // Redirect to platform dashboard with error
+    return NextResponse.redirect(
+      new URL(
+        `/platform?error=${encodeURIComponent("Failed to connect Mollie platform")}`,
+        env.NEXT_PUBLIC_APP_URL
+      )
     );
   }
 }
@@ -147,25 +121,28 @@ async function handleOrganizationCallback(req: NextRequest, code: string, state:
     // Store encrypted tokens
     await mollieConnectService.storeTokens(organizationId, tokens);
 
-    // Get organization info from Mollie to store profile ID
+    // Get organization info from Mollie to store profile ID and organization ID
     const client = await mollieConnectService.getOrgClient(organizationId);
 
     try {
+      // Get the Mollie organization ID
+      const mollieOrg = await client.organizations.getCurrent();
+
       // Get the organization's profiles
       const profiles = await client.profiles.page();
       const defaultProfile = profiles[0];
 
-      if (defaultProfile) {
-        await prisma.organization.update({
-          where: { id: organizationId },
-          data: {
-            mollieProfileId: defaultProfile.id,
-          },
-        });
-      }
+      // Update with both organization ID and profile ID
+      await prisma.organization.update({
+        where: { id: organizationId },
+        data: {
+          mollieOrganizationId: mollieOrg.id,
+          mollieProfileId: defaultProfile?.id || null,
+        },
+      });
     } catch (profileErr) {
       // Non-fatal: profile fetch can fail, tokens are still stored
-      mollieLogger.warn({ profileErr }, "Failed to fetch Mollie profile");
+      mollieLogger.warn({ profileErr }, "Failed to fetch Mollie organization/profile");
     }
 
     mollieLogger.info({ organizationId }, "Mollie connected successfully");

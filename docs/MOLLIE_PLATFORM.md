@@ -310,8 +310,191 @@ src/
 
 - [x] ~~How to handle organizations that haven't completed Mollie onboarding?~~ → Show "Connect Mollie" prompt
 - [x] ~~Should we allow events to be published before Mollie is connected?~~ → Yes, but payment will fail
-- [ ] How to handle refunds when platform fee was already collected? → Mollie handles automatically
-- [ ] Admin dashboard for platform-wide reporting? → Phase 6 or future
+- [x] ~~How to handle refunds when platform fee was already collected?~~ → Mollie handles automatically
+- [x] ~~Admin dashboard for platform-wide reporting?~~ → Platform dashboard implemented
+- [x] ~~Platform token monitoring and health checks?~~ → Implemented (see Platform Token Management section)
+
+---
+
+## Platform Token Management
+
+### Overview
+
+The platform's OAuth access token is used to create client links (onboard new organizations). This token requires monitoring and maintenance to ensure uninterrupted service.
+
+### Health Monitoring
+
+**Service:** `molliePlatformHealthService.ts`
+
+**Features:**
+
+- Automatic health checks via cron job
+- Token validity verification
+- Automatic token refresh when expired
+- Health status persistence in database
+- Dashboard display of connection status
+
+**Cron Job:** `/api/cron/check-platform-connection`
+
+- **Schedule:** Every 6 hours (`0 */6 * * *`)
+- **Function:** Verifies platform token validity
+- **Action:** Attempts automatic refresh if expired
+- **Alert:** Logs urgent warning if manual re-auth needed
+
+### Health Check Flow
+
+```typescript
+// 1. Cron job runs every 6 hours
+POST / api / cron / check - platform - connection;
+
+// 2. Health service checks token validity
+const status = await molliePlatformHealthService.checkHealth();
+
+// 3. If token expired (401), attempt refresh
+if (status === 401) {
+  const refreshed = await attemptTokenRefresh();
+
+  // 4. If refresh fails, log alert
+  if (!refreshed) {
+    // Manual re-authorization required
+    // Visit: https://my.mollie.com/oauth2/authorize?...
+  }
+}
+
+// 5. Store health status in database
+await storeHealthStatus(status);
+```
+
+### Integration Points
+
+**Before Creating Client Links:**
+
+```typescript
+// mollieOnboardingService.ts
+async createClientLink(organizationId: string) {
+  // Check platform health first
+  const healthStatus = await molliePlatformHealthService.checkHealth();
+
+  if (!healthStatus.isHealthy) {
+    throw new Error("Platform connection unhealthy");
+  }
+
+  // Proceed with client link creation...
+}
+```
+
+**Dashboard Display:**
+
+```tsx
+// /platform page
+<PlatformHealthStatus />
+// Shows: status, last checked, last refresh, expiry time
+// Alerts if manual re-authorization needed
+```
+
+### Token Refresh Process
+
+1. **Automatic Refresh (preferred)**
+   - Health service detects 401 Unauthorized
+   - Uses `MOLLIE_PLATFORM_REFRESH_TOKEN` to get new token
+   - Logs new tokens to console for manual update
+   - Returns success/failure status
+
+2. **Manual Re-authorization (fallback)**
+   - If refresh token is invalid/expired
+   - Visit OAuth authorization URL
+   - Complete authorization flow
+   - Update environment variables with new tokens
+
+**OAuth URL Generation:**
+
+```typescript
+const authUrl = molliePlatformHealthService.getPlatformAuthUrl();
+// Returns: https://my.mollie.com/oauth2/authorize?client_id=...&scope=...
+```
+
+### Token Storage
+
+**Database Storage (Current):**
+Platform tokens are stored in `platform_settings` table:
+
+- Key: `MOLLIE_PLATFORM_ACCESS_TOKEN` / `MOLLIE_PLATFORM_REFRESH_TOKEN`
+- Value: Token string
+- Automatically updated when tokens are refreshed
+
+**Environment Variables (Deprecated):**
+
+```env
+# DEPRECATED: Only used for initial migration
+# After migration, these can be removed from .env
+MOLLIE_PLATFORM_ACCESS_TOKEN=access_Wsd...
+MOLLIE_PLATFORM_REFRESH_TOKEN=refresh_...
+```
+
+**Migration:**
+Run once to move tokens from `.env` to database:
+
+```bash
+npx tsx scripts/migrate-platform-tokens.ts
+```
+
+### Monitoring & Alerts
+
+**Health Status Storage:**
+
+```typescript
+// Stored in platform_settings table
+{
+  key: "MOLLIE_PLATFORM_HEALTH",
+  value: {
+    isHealthy: boolean,
+    lastChecked: Date,
+    lastSuccessfulRefresh?: Date,
+    error?: string,
+    expiresAt?: Date,
+    needsRefresh: boolean
+  }
+}
+```
+
+**Alert Triggers:**
+
+- Token expired and refresh failed → Manual re-auth required
+- Last check > 6 hours ago → Health check may be failing
+- Health service exception → Investigate cron job/service
+
+**Future Enhancements:**
+
+- Email alerts to super admins on token expiry
+- Automatic environment variable updates (via Vercel API)
+- Token expiry warnings (30 days before expiry)
+
+### Troubleshooting
+
+**Symptom:** "Platform token expired" error during client link creation
+
+**Solution:**
+
+1. Check `/platform` dashboard for health status
+2. If "needs refresh", run health check manually:
+   ```bash
+   curl -X POST https://your-domain.com/api/cron/check-platform-connection \
+     -H "Authorization: Bearer $CRON_SECRET"
+   ```
+3. If refresh fails, re-authorize platform:
+   - Visit authorization URL (shown in dashboard or logs)
+   - Complete OAuth flow
+   - Tokens automatically stored in database
+   - No restart required!
+
+**Symptom:** Health check not running
+
+**Solution:**
+
+1. Verify Vercel cron job is configured: `vercel.json`
+2. Check cron job logs in Vercel dashboard
+3. Verify `CRON_SECRET` is set in environment variables
+4. Test endpoint manually with curl command above
 
 ---
 
@@ -333,3 +516,11 @@ src/
 | 2025-12-29 | Completed security audit: token encryption, auth, multi-tenancy, RBAC verified      |
 | 2025-12-29 | Added Go-Live Checklist for production deployment                                   |
 | 2025-12-29 | **Phase 6 Complete** - Mollie Connect integration ready for production              |
+| 2026-01-03 | Added platform token health monitoring service                                      |
+| 2026-01-03 | Created health check cron job (6-hour interval)                                     |
+| 2026-01-03 | Integrated health checks into client link creation flow                             |
+| 2026-01-03 | Added platform health status display to /platform dashboard                         |
+| 2026-01-03 | Documented platform token management and refresh procedures                         |
+| 2026-01-03 | **BREAKING**: Moved platform tokens from env vars to database (platform_settings)   |
+| 2026-01-03 | Tokens now automatically refresh and update without restarts                        |
+| 2026-01-03 | Added migration script for existing env-based tokens                                |

@@ -16,9 +16,11 @@ const cronLogger = createLogger("cron");
 export async function POST(request: Request) {
   try {
     // Verify this is a legitimate Vercel cron request
-    const cronHeader = request.headers.get("x-vercel-cron");
-    if (!cronHeader) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authHeader = request.headers.get('authorization');
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return new Response('Unauthorized', {
+        status: 401,
+      });
     }
 
     cronLogger.info("Starting Mollie connection health check");

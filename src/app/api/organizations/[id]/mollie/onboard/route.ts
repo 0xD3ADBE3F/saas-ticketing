@@ -3,6 +3,7 @@ import { mollieOnboardingService } from "@/server/services/mollieOnboardingServi
 import { mollieConnectService } from "@/server/services/mollieConnectService";
 import { prisma } from "@/server/lib/prisma";
 import { env } from "@/server/lib/env";
+import { platformTokenService } from "@/server/services/platformTokenService";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -12,7 +13,7 @@ interface RouteParams {
  * Start Mollie onboarding for organization
  *
  * Two modes:
- * 1. If MOLLIE_PLATFORM_ACCESS_TOKEN is set: Creates a client link with prefilled data from organization
+ * 1. If platform access token is stored in database: Creates a client link with prefilled data from organization
  * 2. Otherwise: Returns standard OAuth authorization URL (simpler, no prefill)
  *
  * POST /api/organizations/[id]/mollie/onboard
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   }
 
   // Check if we have platform token for Client Links API
-  const hasPlatformToken = !!env.MOLLIE_PLATFORM_ACCESS_TOKEN;
+  const hasPlatformToken = !!(await platformTokenService.getAccessToken());
 
   // If we have platform token and all required data, use Client Links API
   if (hasPlatformToken && org.email && org.firstName && org.lastName) {
