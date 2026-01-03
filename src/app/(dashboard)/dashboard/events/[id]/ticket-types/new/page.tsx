@@ -28,7 +28,7 @@ export default async function NewTicketTypePage({
   const event = result.data;
 
   return (
-    <div className="max-w-2xl">
+    <div>
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm mb-6">
         <Link

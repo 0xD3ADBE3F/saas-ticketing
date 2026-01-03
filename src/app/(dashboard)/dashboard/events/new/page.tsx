@@ -29,7 +29,7 @@ export default async function NewEventPage({
   const currentOrg = organizations[0];
 
   return (
-    <div className="max-w-2xl">
+    <div>
       {/* Breadcrumb */}
       {!isOnboarding && (
         <nav className="flex items-center gap-2 text-sm mb-6">
