@@ -68,7 +68,11 @@ export async function generateAndSendTickets(
           ticketType: true,
         },
       },
-      event: true,
+      event: {
+        include: {
+          organization: true,
+        },
+      },
     },
   });
 
@@ -89,6 +93,7 @@ export async function generateAndSendTickets(
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
         await sendOrderTickets(
           {
+            id: order.id,
             orderNumber: order.orderNumber,
             buyerEmail: order.buyerEmail,
             buyerName: order.buyerName,
@@ -98,6 +103,10 @@ export async function generateAndSendTickets(
             startsAt: order.event.startsAt,
             endsAt: order.event.endsAt,
             location: order.event.location,
+            organization: {
+              name: order.event.organization.name,
+              logoUrl: order.event.organization.logoUrl,
+            },
           },
           tickets,
           baseUrl
@@ -167,6 +176,7 @@ export async function generateAndSendTickets(
 
       await sendOrderTickets(
         {
+          id: order.id,
           orderNumber: order.orderNumber,
           buyerEmail: order.buyerEmail,
           buyerName: order.buyerName,
@@ -176,6 +186,10 @@ export async function generateAndSendTickets(
           startsAt: order.event.startsAt,
           endsAt: order.event.endsAt,
           location: order.event.location,
+          organization: {
+            name: order.event.organization.name,
+            logoUrl: order.event.organization.logoUrl,
+          },
         },
         tickets,
         baseUrl

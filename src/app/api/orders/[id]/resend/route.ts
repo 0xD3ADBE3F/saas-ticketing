@@ -47,6 +47,12 @@ export async function POST(request: Request, { params }: RouteParams) {
             startsAt: true,
             endsAt: true,
             location: true,
+            organization: {
+              select: {
+                name: true,
+                logoUrl: true,
+              },
+            },
           },
         },
       },
@@ -80,6 +86,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const result = await sendOrderTickets(
       {
+        id: order.id,
         orderNumber: order.orderNumber,
         buyerEmail: order.buyerEmail,
         buyerName: order.buyerName,
@@ -89,6 +96,10 @@ export async function POST(request: Request, { params }: RouteParams) {
         startsAt: order.event.startsAt,
         endsAt: order.event.endsAt,
         location: order.event.location,
+        organization: {
+          name: order.event.organization.name,
+          logoUrl: order.event.organization.logoUrl,
+        },
       },
       tickets,
       baseUrl

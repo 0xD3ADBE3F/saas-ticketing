@@ -49,6 +49,12 @@ export async function POST(
             endsAt: true,
             location: true,
             organizationId: true,
+            organization: {
+              select: {
+                name: true,
+                logoUrl: true,
+              },
+            },
           },
         },
         ticketType: {
@@ -82,6 +88,7 @@ export async function POST(
     // Send email with tickets
     await sendOrderTickets(
       {
+        id: order.id,
         orderNumber: order.orderNumber,
         buyerEmail: order.buyerEmail,
         buyerName: order.buyerName,
@@ -91,6 +98,10 @@ export async function POST(
         startsAt: event.startsAt,
         endsAt: event.endsAt,
         location: event.location,
+        organization: {
+          name: event.organization.name,
+          logoUrl: event.organization.logoUrl,
+        },
       },
       tickets,
       baseUrl
