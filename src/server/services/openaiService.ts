@@ -6,10 +6,22 @@ import OpenAI from "openai";
 // Handles AI-powered interactions using OpenAI's API
 // =============================================================================
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy-load OpenAI client (only initialize when needed, not at build time)
+let openaiInstance: OpenAI | null = null;
+
+function getOpenAI(): OpenAI {
+  if (!openaiInstance) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error(
+        "Missing credentials. Please set the OPENAI_API_KEY environment variable."
+      );
+    }
+    openaiInstance = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openaiInstance;
+}
 
 export type ChatMessage = {
   role: "system" | "user" | "assistant";
@@ -44,7 +56,7 @@ export async function chatCompletion(
   input: ChatCompletionInput
 ): Promise<ChatCompletionResult> {
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: input.model || "gpt-4o-mini",
       messages: input.messages.map((msg) => ({
         role: msg.role,
@@ -118,7 +130,7 @@ export async function generateEmbedding(
   model: string = "text-embedding-3-small"
 ): Promise<number[]> {
   try {
-    const response = await openai.embeddings.create({
+    const response = await getOpenAI().embeddings.create({
       model,
       input: text,
     });
@@ -144,7 +156,7 @@ export async function* streamChatCompletion(
   input: ChatCompletionInput
 ): AsyncGenerator<string, void, unknown> {
   try {
-    const stream = await openai.chat.completions.create({
+    const stream = await getOpenAI().chat.completions.create({
       model: input.model || "gpt-4-turbo-preview",
       messages: input.messages.map((msg) => ({
         role: msg.role,

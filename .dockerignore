@@ -1,0 +1,65 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Testing
+coverage
+.nyc_output
+*.test.ts
+*.test.tsx
+tests
+
+# Next.js
+.next
+out
+dist
+build
+
+# Environment files (use build args instead)
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+docs
+
+# Misc
+.eslintcache
+.prettierignore
+README.md
+SPEC.md
+TODO.md
+*.md
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Vercel
+.vercel
+vercel.disable
