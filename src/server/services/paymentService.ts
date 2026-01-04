@@ -153,17 +153,8 @@ export async function generateAndSendTickets(
       data: ticketsToCreate,
     });
 
-    // 3. Update sold counts for each ticket type
-    for (const item of order.orderItems) {
-      await tx.ticketType.update({
-        where: { id: item.ticketTypeId },
-        data: {
-          soldCount: {
-            increment: item.quantity,
-          },
-        },
-      });
-    }
+    // Note: soldCount is already incremented when order is created in orderService.ts
+    // We don't increment it again here to avoid double-counting
 
     return ticketsToCreate.length;
   });
