@@ -94,7 +94,10 @@ dokku buildpacks:set $APP_NAME heroku/nodejs
 # 5. CONFIGURE CHECKS (Health check endpoint)
 # ============================================================================
 # echo_info "Configuring health checks..."
-# dokku checks:set $APP_NAME web /api/health
+# Health checks are automatically handled by Dokku
+# It will try http://container:port/ by default
+# For custom checks, create CHECKS file in repo root or use app.json
+# See: https://dokku.com/docs/deployment/zero-downtime-deploys/
 
 # ============================================================================
 # 6. CONFIGURE NGINX SETTINGS
@@ -130,8 +133,10 @@ dokku ports:set $APP_NAME http:80:3000 https:443:3000 2>/dev/null || echo_warn "
 # 9. CONFIGURE RESOURCE LIMITS
 # ============================================================================
 echo_info "Configuring resource limits..."
-dokku resource:limit $APP_NAME --memory 1024 --memory-swap 2048
-dokku resource:reserve $APP_NAME --memory 512
+# Note: memory-swap is TOTAL (memory + swap), not additional swap
+# Setting to -1 allows unlimited swap (recommended for small VPS)
+dokku resource:limit $APP_NAME --memory 1024
+dokku resource:reserve $APP_NAME --memory 256
 
 # ============================================================================
 # 10. ENABLE LET'S ENCRYPT SSL
@@ -171,6 +176,41 @@ dokku ps:set $APP_NAME restart-policy unless-stopped
 # dokku checks:set $APP_NAME wait-to-retire 30 || echo_warn "Could not set wait-to-retire (may not be supported)"
 
 # ============================================================================
+# 12. INSTALL DOKKU UI (Optional Web Interface)
+# ============================================================================
+echo_info "Setting up Dokku UI web interface..."
+
+UI_APP_NAME="dokku-ui"
+
+# Check if UI app already exists
+if dokku apps:list | grep -q "^$UI_APP_NAME$"; then
+    echo_warn "Dokku UI already installed, skipping"
+else
+    # Install UI plugin
+    if ! dokku plugin:list | grep -q "dokku-ui"; then
+        echo_info "Installing Dokku UI plugin..."
+        dokku plugin:install https://github.com/dokku/dokku-ui.git dokku-ui || echo_warn "Dokku UI plugin installation failed"
+    fi
+
+    # Create UI app
+    echo_info "Creating Dokku UI app..."
+    dokku apps:create $UI_APP_NAME || true
+
+    # Set a default password (user should change this)
+    echo_info "Setting default password (CHANGE THIS!)..."
+    dokku config:set --no-restart $UI_APP_NAME PASSWORD="changeme-$(openssl rand -hex 8)"
+
+    # Deploy UI
+    echo_info "Deploying Dokku UI..."
+    dokku ui:deploy $UI_APP_NAME || echo_warn "Dokku UI deployment skipped (deploy manually if needed)"
+
+    echo_info "Dokku UI installed!"
+    echo_warn "Access Dokku UI at: http://$(hostname -I | awk '{print $1}'):3000"
+    echo_warn "Username: admin"
+    echo_warn "Password: Check with 'dokku config:get dokku-ui PASSWORD'"
+fi
+
+# ============================================================================
 # SUMMARY
 # ============================================================================
 echo ""
@@ -182,6 +222,11 @@ echo_info "App Configuration:"
 echo "  Name:   $APP_NAME"
 echo "  Domain: $DOMAIN"
 echo "  SSL:    Let's Encrypt (will be enabled after deployment)"
+echo ""
+echo_info "Dokku UI Web Interface:"
+echo "  URL:      http://$(hostname -I | awk '{print $1}'):3000"
+echo "  Username: admin"
+echo "  Password: Run 'dokku config:get dokku-ui PASSWORD' to see"
 echo ""
 echo_info "Next Steps:"
 echo ""

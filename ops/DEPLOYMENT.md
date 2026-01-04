@@ -68,7 +68,7 @@ git push dokku main:master
 ./ops/enable-ssl.sh
 
 # Option 2: Manual
-ssh root@164.92.156.106 dokku letsencrypt:enable entro
+ssh root@164.92.156.106 dokku letsencrypt:enable entro-production
 ```
 
 Your app is now live at **https://www.getentro.app** 🎉
@@ -240,7 +240,7 @@ Since you're using external DigitalOcean Postgres:
 
 ```bash
 # Run migrations after deployment
-ssh root@164.92.156.106 dokku run entro pnpm prisma migrate deploy
+ssh root@164.92.156.106 dokku run entro-production pnpm prisma migrate deploy
 
 # Or from local (one-time setup)
 # Set DATABASE_URL locally, then:
@@ -248,6 +248,78 @@ pnpm prisma migrate deploy
 ```
 
 ## Deployment Workflow
+
+### Quick Deploy (Most Common)
+
+After making code changes, deploy to production:
+
+```bash
+# 1. Commit your changes
+git add .
+git commit -m "feat: your change description"
+
+# 2. Deploy to production
+git push dokku main:master
+
+# 3. Watch the deployment logs (opens automatically during push)
+# Wait for: "=====> Application deployed"
+
+# 4. Verify the deployment
+curl https://www.getentro.app/api/health
+```
+
+That's it! Your changes are live.
+
+### Deploy with Database Migrations
+
+When you have Prisma schema changes:
+
+```bash
+# 1. Create migration locally (creates migration files)
+pnpm prisma migrate dev --name add_new_field
+
+# 2. Commit code AND migration files
+git add .
+git commit -m "feat: add new field to users table"
+
+# 3. Deploy code
+git push dokku main:master
+
+# 4. Apply migrations to production database
+ssh root@164.92.156.106 "dokku run entro-production pnpm prisma migrate deploy"
+
+# 5. Verify
+curl https://www.getentro.app/api/health
+```
+
+**Important:**
+
+- Always test migrations locally first
+- Deploy code before running migrations (deployment includes schema)
+- Migrations run inside the app container, so env vars are available
+- Use `migrate deploy` (not `migrate dev`) in production
+
+### Deploy from Feature Branch
+
+If you're working on a branch:
+
+```bash
+# Deploy your current branch to production
+git push dokku your-branch-name:master
+
+# Or merge to main first (recommended)
+git checkout main
+git merge your-branch-name
+git push dokku main:master
+```
+
+### Force Rebuild
+
+If you need to rebuild without code changes (e.g., after changing env vars):
+
+```bash
+ssh root@164.92.156.106 "dokku ps:rebuild entro-production"
+```
 
 ### Regular Deployments
 
@@ -293,13 +365,13 @@ If health check fails, old container keeps running!
 
 ```bash
 # Real-time logs
-ssh root@164.92.156.106 dokku logs entro -t
+ssh root@164.92.156.106 dokku logs entro-production -t
 
 # Last 100 lines
-ssh root@164.92.156.106 dokku logs entro --num 100
+ssh root@164.92.156.106 dokku logs entro-production --num 100
 
 # From local machine
-ssh root@164.92.156.106 "dokku logs entro -t"
+ssh root@164.92.156.106 "dokku logs entro-production -t"
 ```
 
 ### Check App Status
@@ -459,26 +531,72 @@ chmod +x ops/*.sh
 ## Quick Reference
 
 ```bash
-# Deploy
+# ============================================
+# DEPLOYMENT
+# ============================================
+
+# Deploy to production (most common)
+git add .
+git commit -m "feat: description"
 git push dokku main:master
 
-# View logs
-ssh root@164.92.156.106 dokku logs entro -t
+# Deploy specific branch
+git push dokku branch-name:master
 
-# Restart app
-ssh root@164.92.156.106 dokku ps:restart entro
+# Force rebuild
+ssh root@164.92.156.106 "dokku ps:rebuild entro-production"
+
+# ============================================
+# MONITORING
+# ============================================
+
+# View logs (real-time)
+ssh root@164.92.156.106 "dokku logs entro-production -t"
+
+# Check app status
+ssh root@164.92.156.106 "dokku ps:report entro-production"
+
+# Test health endpoint
+curl https://www.getentro.app/api/health
+
+# ============================================
+# CONFIGURATION
+# ============================================
 
 # Update env var
-ssh root@164.92.156.106 dokku config:set entro KEY=value
+ssh root@164.92.156.106 "dokku config:set entro-production KEY=value"
+
+# View all config
+ssh root@164.92.156.106 "dokku config:show entro-production"
+
+# Restart app (after config changes)
+ssh root@164.92.156.106 "dokku ps:restart entro-production"
+
+# ============================================
+# DATABASE
+# ============================================
 
 # Run migrations
-ssh root@164.92.156.106 dokku run entro pnpm prisma migrate deploy
+ssh root@164.92.156.106 "dokku run entro-production pnpm prisma migrate deploy"
 
-# Check status
-ssh root@164.92.156.106 dokku ps:report entro
+# Open Prisma Studio (from local)
+pnpm prisma studio
 
-# Scale app
-ssh root@164.92.156.106 dokku ps:scale entro web=2
+# ============================================
+# TROUBLESHOOTING
+# ============================================
+
+# View last 100 log lines
+ssh root@164.92.156.106 "dokku logs entro-production --num 100"
+
+# Restart app
+ssh root@164.92.156.106 "dokku ps:restart entro-production"
+
+# Rebuild from scratch
+ssh root@164.92.156.106 "dokku ps:rebuild entro-production"
+
+# Check domains
+ssh root@164.92.156.106 "dokku domains:report entro-production"
 ```
 
 ## Next Steps
