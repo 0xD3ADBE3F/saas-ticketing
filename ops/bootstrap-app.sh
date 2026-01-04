@@ -77,6 +77,11 @@ while IFS= read -r line || [ -n "$line" ]; do
     fi
 done < .env
 
+# Enable build-time environment variables (for Next.js NEXT_PUBLIC_* vars)
+echo_info "Enabling build-time environment variables..."
+# This ensures env vars are available during npm/pnpm build
+dokku config:set --no-restart $APP_NAME DOKKU_APP_BUILD_ENV=1
+
 # ============================================================================
 # 4. CONFIGURE BUILDPACK (Heroku buildpack for Node.js)
 # ============================================================================

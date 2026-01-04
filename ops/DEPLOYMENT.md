@@ -181,6 +181,9 @@ SUPABASE_SERVICE_ROLE_KEY=...
 # Mollie
 MOLLIE_API_KEY=...
 
+# OpenAI (optional - for AI features)
+OPENAI_API_KEY=sk-...
+
 # Security
 TICKET_SIGNING_SECRET=... # min 32 chars
 
@@ -188,6 +191,12 @@ TICKET_SIGNING_SECRET=... # min 32 chars
 NEXT_PUBLIC_APP_URL=https://www.getentro.app
 NODE_ENV=production
 ```
+
+**Important Notes:**
+
+- **Build-time vs Runtime:** `NEXT_PUBLIC_*` variables are baked into the client bundle at build time
+- **Dokku behavior:** All env vars set via `dokku config:set` are available during both build and runtime
+- **Verification:** Check with `dokku config:show entro-production`
 
 Update config anytime:
 
