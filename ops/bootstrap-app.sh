@@ -86,6 +86,8 @@ dokku config:set --no-restart $APP_NAME DOKKU_APP_BUILD_ENV=1
 # 4. CONFIGURE BUILDPACK (Heroku buildpack for Node.js)
 # ============================================================================
 echo_info "Configuring buildpack..."
+# Use buildpacks instead of Dockerfile (buildpacks make env vars available during build)
+dokku builder:set $APP_NAME selected herokuish
 dokku buildpacks:set $APP_NAME heroku/nodejs
 
 # ============================================================================

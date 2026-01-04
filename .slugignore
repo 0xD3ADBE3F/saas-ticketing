@@ -1,0 +1,4 @@
+# Tell Dokku to ignore Dockerfile and use buildpacks
+
+Dockerfile
+.dockerignore
