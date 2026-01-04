@@ -1,17 +1,7 @@
 import { prisma } from "@/server/lib/prisma";
 import { formatPrice } from "@/lib/currency";
-import { PlatformMollieConnection } from "@/components/platform/PlatformMollieConnection";
-import { platformTokenService } from "@/server/services/platformTokenService";
-import { molliePlatformHealthService } from "@/server/services/molliePlatformHealthService";
 
 export default async function PlatformDashboardPage() {
-  // Check platform Mollie connection
-  const platformTokens = await platformTokenService.getTokens();
-  const isPlatformConnected = !!platformTokens.accessToken;
-
-  // Get connection health details
-  const healthStatus = await molliePlatformHealthService.getHealthStatus();
-
   // Get platform-wide statistics
   const [
     totalOrgs,
@@ -121,14 +111,6 @@ export default async function PlatformDashboardPage() {
           value={formatPrice(platformFeesCollected)}
           description="2% of ticket sales"
           color="orange"
-        />
-      </div>
-
-      {/* Platform Mollie Connection */}
-      <div className="mb-8">
-        <PlatformMollieConnection
-          isConnected={isPlatformConnected}
-          healthStatus={healthStatus}
         />
       </div>
 

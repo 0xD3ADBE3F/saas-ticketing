@@ -39,14 +39,8 @@ function PlatformNav({ adminEmail }: { adminEmail: string }) {
       {/* Desktop Sidebar */}
       <nav className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">
         <div className="flex items-center h-16 px-6 border-b border-gray-200 dark:border-gray-800">
-          <Image
-            src="/logo-white.png"
-            alt="Entro"
-            width={100}
-            height={32}
-            className="dark:invert"
-          />
-          <span className="ml-2 text-xs font-medium text-red-600 bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded">
+          <Image src="/logo-white.png" alt="Entro" width={100} height={32} />
+          <span className="ml-2 text-xl font-medium text-red-600 bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded">
             Admin
           </span>
         </div>
@@ -62,8 +56,14 @@ function PlatformNav({ adminEmail }: { adminEmail: string }) {
             <NavLink href="/platform/analytics" icon="📈">
               Analytics
             </NavLink>
+            <NavLink href="/platform/mollie-connection" icon="💳">
+              Mollie Connection
+            </NavLink>
             <NavLink href="/platform/audit-logs" icon="📝">
               Audit Logs
+            </NavLink>
+            <NavLink href="/platform/wallet-certificates" icon="🎫">
+              Wallet Certificates
             </NavLink>
             <NavLink href="/platform/settings" icon="⚙️">
               Settings
@@ -103,7 +103,7 @@ function PlatformNav({ adminEmail }: { adminEmail: string }) {
 
       {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 z-50">
-        <div className="grid grid-cols-4 gap-1 p-2">
+        <div className="grid grid-cols-5 gap-1 p-2">
           <MobileNavLink href="/platform" icon="📊" label="Dashboard" />
           <MobileNavLink
             href="/platform/organizations"
@@ -111,9 +111,14 @@ function PlatformNav({ adminEmail }: { adminEmail: string }) {
             label="Orgs"
           />
           <MobileNavLink
-            href="/platform/analytics"
-            icon="📈"
-            label="Analytics"
+            href="/platform/mollie-connection"
+            icon="💳"
+            label="Mollie"
+          />
+          <MobileNavLink
+            href="/platform/wallet-certificates"
+            icon="🎫"
+            label="Wallet"
           />
           <MobileNavLink href="/platform/settings" icon="⚙️" label="Settings" />
         </div>
