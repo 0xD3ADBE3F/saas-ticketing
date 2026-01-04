@@ -62,6 +62,7 @@ function generateTicketEmailHTML(data: TicketEmailData): string {
     .map((ticket) => {
       const qrDataUrl = generateQRData(ticket, data.baseUrl);
       const qrImageUrl = getQRImageUrl(qrDataUrl, 150);
+      const appleWalletUrl = `${data.baseUrl}/api/wallet/apple/generate?ticketId=${encodeURIComponent(ticket.id)}`;
 
       return `
         <tr>
@@ -78,9 +79,12 @@ function generateTicketEmailHTML(data: TicketEmailData): string {
                   <p style="margin: 0 0 4px 0; font-size: 14px; color: #666;">
                     Ticketcode: <strong style="font-family: monospace; color: #1a1a1a;">${ticket.code}</strong>
                   </p>
-                  <p style="margin: 16px 0 0 0; font-size: 12px; color: #999;">
+                  <p style="margin: 16px 0 8px 0; font-size: 12px; color: #999;">
                     Toon deze QR-code bij de ingang
                   </p>
+                  <a href="${appleWalletUrl}" style="display: inline-block; margin-top: 8px; text-decoration: none;">
+                    <img src="${data.baseUrl}/apple-wallet-badge.svg" alt="Add to Apple Wallet" style="height: 40px; width: 156px; display: block;" />
+                  </a>
                 </td>
               </tr>
             </table>
@@ -197,7 +201,10 @@ function generateTicketEmailHTML(data: TicketEmailData): string {
  */
 function generateTicketEmailText(data: TicketEmailData): string {
   const ticketList = data.tickets
-    .map((ticket) => `- ${ticket.ticketTypeName} (Code: ${ticket.code})`)
+    .map((ticket) => {
+      const appleWalletUrl = `${data.baseUrl}/api/wallet/apple/generate?ticketId=${encodeURIComponent(ticket.id)}`;
+      return `- ${ticket.ticketTypeName} (Code: ${ticket.code})\n  Voeg toe aan Apple Wallet: ${appleWalletUrl}`;
+    })
     .join("\n");
 
   return `
@@ -218,6 +225,7 @@ ${ticketList}
 Bestelnummer: ${data.orderNumber}
 
 Bewaar deze e-mail goed. Je hebt de ticketcodes nodig om binnen te komen.
+Je kunt je tickets ook toevoegen aan Apple Wallet via de links hierboven.
 
 © ${new Date().getFullYear()} Entro (getentro.app)
   `.trim();
