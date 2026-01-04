@@ -22,24 +22,57 @@ export default function ScannerLoginPage() {
   const [success, setSuccess] = useState(false);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const autoSubmitTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Auto-focus input on mount
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  // Clear error when user starts typing
+  // Clear error when user edits the code
   useEffect(() => {
-    if (error && code.length > 0) {
+    if (error) {
       setError(null);
     }
-  }, [code, error]);
+  }, [code]); // Only depend on code, not error
+
+  // Auto-submit after delay when 6 characters are entered
+  useEffect(() => {
+    // Clear any existing timer
+    if (autoSubmitTimerRef.current) {
+      clearTimeout(autoSubmitTimerRef.current);
+      autoSubmitTimerRef.current = null;
+    }
+
+    // If code is 6 characters and not already loading/success/error, schedule auto-submit
+    if (code.length === 6 && !loading && !success && !error) {
+      autoSubmitTimerRef.current = setTimeout(() => {
+        // Trigger form submit programmatically
+        const form = inputRef.current?.form;
+        if (form) {
+          form.requestSubmit();
+        }
+      }, 500); // 500ms delay for better UX
+    }
+
+    // Cleanup timer on unmount
+    return () => {
+      if (autoSubmitTimerRef.current) {
+        clearTimeout(autoSubmitTimerRef.current);
+      }
+    };
+  }, [code, loading, success, error]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (code.length !== 6) {
       setError("Voer een 6-cijferige code in");
+      return;
+    }
+
+    // Prevent submission if already showing an error (until user edits code)
+    if (error) {
       return;
     }
 
@@ -57,6 +90,7 @@ export default function ScannerLoginPage() {
 
       if (!res.ok) {
         setError(data.error || "Ongeldige code");
+        setLoading(false);
         // Shake animation on error
         inputRef.current?.classList.add("animate-shake");
         setTimeout(() => {

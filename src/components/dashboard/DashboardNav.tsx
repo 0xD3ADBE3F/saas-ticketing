@@ -81,16 +81,18 @@ export function DashboardNav({
             <Image
               src="/logo.png"
               alt="Entro"
-              width={120}
-              height={32}
-              className="dark:hidden"
+              width={140}
+              height={46}
+              className="dark:hidden h-auto"
+              priority
             />
             <Image
               src="/logo-white.png"
               alt="Entro"
               width={140}
-              height={32}
-              className="hidden dark:block"
+              height={46}
+              className="hidden dark:block h-auto"
+              priority
             />
           </Link>
         </div>
@@ -161,15 +163,22 @@ export function DashboardNav({
       {/* Mobile Header */}
       <header className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 z-50 flex items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="p-1.5 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
-            <Image
-              src="/logo-icon.svg"
-              alt="Entro"
-              width={20}
-              height={20}
-              className="brightness-0 invert"
-            />
-          </div>
+          <Image
+            src="/logo.png"
+            alt="Entro"
+            width={100}
+            height={33}
+            className="dark:hidden h-auto"
+            priority
+          />
+          <Image
+            src="/logo-white.png"
+            alt="Entro"
+            width={100}
+            height={33}
+            className="hidden dark:block h-auto"
+            priority
+          />
         </Link>
         <div className="flex items-center gap-2">
           <ThemeToggle />
