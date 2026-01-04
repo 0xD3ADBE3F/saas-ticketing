@@ -30,11 +30,13 @@ export const designService = {
 
     // Upload new logo to Vercel Blob
     const ext = file.name.split('.').pop();
-    const pathname = `${orgId}/logo.${ext}`;
+    // Add timestamp to force cache invalidation when replacing logos
+    const timestamp = Date.now();
+    const pathname = `${orgId}/logo-${timestamp}.${ext}`;
 
     const blob = await put(pathname, file, {
       access: 'public',
-      addRandomSuffix: false, // Keep consistent filename
+      addRandomSuffix: false,
     });
 
     // Save URL to database

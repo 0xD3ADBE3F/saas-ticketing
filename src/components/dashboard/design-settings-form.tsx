@@ -216,6 +216,7 @@ export function DesignSettingsForm({
             <div className="space-y-4">
               <div className="relative w-full max-w-sm h-48 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted">
                 <img
+                  key={logoUrl}
                   src={logoUrl}
                   alt="Organization logo"
                   className="max-w-full max-h-full object-contain p-4"

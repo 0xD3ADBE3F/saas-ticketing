@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getUser } from '@/server/lib/supabase';
 import { getUserOrganizations } from '@/server/services/organizationService';
 import { designService } from '@/server/services/designService';
@@ -32,6 +33,10 @@ export async function POST(req: NextRequest) {
 
     // Upload logo
     const result = await designService.uploadLogo(org.id, file);
+
+    // Revalidate pages that show the logo
+    revalidatePath('/dashboard/settings/ticket-portal');
+    revalidatePath('/e/[slug]', 'page');
 
     return NextResponse.json(result);
   } catch (error) {
