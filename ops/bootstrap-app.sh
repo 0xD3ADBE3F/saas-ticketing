@@ -175,40 +175,6 @@ dokku ps:set $APP_NAME restart-policy unless-stopped
 # Configure deployment checks wait time (only valid key)
 # dokku checks:set $APP_NAME wait-to-retire 30 || echo_warn "Could not set wait-to-retire (may not be supported)"
 
-# ============================================================================
-# 12. INSTALL DOKKU UI (Optional Web Interface)
-# ============================================================================
-echo_info "Setting up Dokku UI web interface..."
-
-UI_APP_NAME="dokku-ui"
-
-# Check if UI app already exists
-if dokku apps:list | grep -q "^$UI_APP_NAME$"; then
-    echo_warn "Dokku UI already installed, skipping"
-else
-    # Install UI plugin
-    if ! dokku plugin:list | grep -q "dokku-ui"; then
-        echo_info "Installing Dokku UI plugin..."
-        dokku plugin:install https://github.com/dokku/dokku-ui.git dokku-ui || echo_warn "Dokku UI plugin installation failed"
-    fi
-
-    # Create UI app
-    echo_info "Creating Dokku UI app..."
-    dokku apps:create $UI_APP_NAME || true
-
-    # Set a default password (user should change this)
-    echo_info "Setting default password (CHANGE THIS!)..."
-    dokku config:set --no-restart $UI_APP_NAME PASSWORD="changeme-$(openssl rand -hex 8)"
-
-    # Deploy UI
-    echo_info "Deploying Dokku UI..."
-    dokku ui:deploy $UI_APP_NAME || echo_warn "Dokku UI deployment skipped (deploy manually if needed)"
-
-    echo_info "Dokku UI installed!"
-    echo_warn "Access Dokku UI at: http://$(hostname -I | awk '{print $1}'):3000"
-    echo_warn "Username: admin"
-    echo_warn "Password: Check with 'dokku config:get dokku-ui PASSWORD'"
-fi
 
 # ============================================================================
 # SUMMARY
@@ -222,11 +188,6 @@ echo_info "App Configuration:"
 echo "  Name:   $APP_NAME"
 echo "  Domain: $DOMAIN"
 echo "  SSL:    Let's Encrypt (will be enabled after deployment)"
-echo ""
-echo_info "Dokku UI Web Interface:"
-echo "  URL:      http://$(hostname -I | awk '{print $1}'):3000"
-echo "  Username: admin"
-echo "  Password: Run 'dokku config:get dokku-ui PASSWORD' to see"
 echo ""
 echo_info "Next Steps:"
 echo ""
