@@ -271,7 +271,7 @@ export function MollieConnection({ organizationId }: MollieConnectionProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl shadow-md">
+          <div className="p-2.5 w-11 text-center bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl shadow-md">
             <span className="text-white font-bold text-base">M</span>
           </div>
           <div>

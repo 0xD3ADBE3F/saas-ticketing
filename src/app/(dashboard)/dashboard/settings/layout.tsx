@@ -6,6 +6,12 @@ import { usePathname } from "next/navigation";
 const settingsNav = [
   { href: "/dashboard/settings", label: "Algemeen", icon: "⚙️", exact: true },
   {
+    href: "/dashboard/settings/payment-provider",
+    label: "Betalingen",
+    icon: "💳",
+    exact: false,
+  },
+  {
     href: "/dashboard/settings/ticket-portal",
     label: "Ticket Portaal",
     icon: "🎨",
@@ -13,7 +19,7 @@ const settingsNav = [
   },
   {
     href: "/dashboard/settings/invoicing",
-    label: "Facturatie",
+    label: "Facturen",
     icon: "📄",
     exact: false,
   },

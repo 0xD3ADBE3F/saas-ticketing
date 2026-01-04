@@ -54,17 +54,6 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   EXPIRED: "Verlopen",
 };
 
-const STATUS_COLORS: Record<OrderStatus, string> = {
-  PENDING:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-  PAID: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  FAILED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  CANCELLED: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-  REFUNDED: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  EXPIRED:
-    "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-};
-
 export function OrderList({ organizationId }: OrderListProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [total, setTotal] = useState(0);
@@ -295,9 +284,6 @@ export function OrderList({ organizationId }: OrderListProps) {
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                     Datum
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                    Acties
-                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200/50 dark:divide-gray-700">
@@ -307,7 +293,13 @@ export function OrderList({ organizationId }: OrderListProps) {
                     className="hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all group"
                   >
                     <td className="px-6 py-5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
-                      {order.orderNumber}
+                      <Link
+                        href={`/dashboard/orders/${order.id}`}
+                        className="font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-2 group"
+                      >
+                        {order.orderNumber}
+                        <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </Link>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-sm">
                       <div>
@@ -326,34 +318,35 @@ export function OrderList({ organizationId }: OrderListProps) {
                       {order.event.title}
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                      {order.orderItems.reduce(
-                        (sum, item) => sum + item.quantity,
-                        0
-                      )}{" "}
-                      tickets
+                      {(() => {
+                        const count = order.orderItems.reduce(
+                          (sum, item) => sum + item.quantity,
+                          0
+                        );
+                        return `${count} ${count === 1 ? "ticket" : "tickets"}`;
+                      })()}
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
-                      {formatCurrency(order.totalAmount)}
+                      {order.totalAmount === 0
+                        ? "-"
+                        : formatCurrency(order.totalAmount)}
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
                       <Badge
-                        variant={getOrderStatusVariant(order.status)}
+                        variant={
+                          order.totalAmount === 0
+                            ? "success"
+                            : getOrderStatusVariant(order.status)
+                        }
                         className="font-medium"
                       >
-                        {STATUS_LABELS[order.status]}
+                        {order.totalAmount === 0
+                          ? "Voltooid"
+                          : STATUS_LABELS[order.status]}
                       </Badge>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                       {formatDate(order.createdAt)}
-                    </td>
-                    <td className="px-6 py-5 whitespace-nowrap text-right">
-                      <Link
-                        href={`/dashboard/orders/${order.id}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
-                      >
-                        Details
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </Link>
                     </td>
                   </tr>
                 ))}

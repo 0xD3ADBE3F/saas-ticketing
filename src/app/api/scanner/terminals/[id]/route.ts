@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getUser } from "@/server/lib/supabase";
 import { getUserOrganizations, hasRole } from "@/server/services/organizationService";
 import {
@@ -109,6 +110,7 @@ export async function PATCH(request: NextRequest, { params }: Props) {
         { status: 404 }
       );
     }
+    revalidatePath("/dashboard/scanning/terminals");
     return NextResponse.json({ success: true, message: "Terminal geactiveerd" });
   }
 
@@ -120,6 +122,7 @@ export async function PATCH(request: NextRequest, { params }: Props) {
         { status: 404 }
       );
     }
+    revalidatePath("/dashboard/scanning/terminals");
     return NextResponse.json({ success: true, message: "Terminal gedeactiveerd" });
   }
 
@@ -170,5 +173,6 @@ export async function DELETE(request: NextRequest, { params }: Props) {
     );
   }
 
+  revalidatePath("/dashboard/scanning/terminals");
   return NextResponse.json({ success: true, message: "Terminal verwijderd" });
 }

@@ -296,7 +296,9 @@ export function OrderDetails({ organizationId, orderId }: OrderDetailsProps) {
                       STATUS_COLORS[order.status]
                     }`}
                   >
-                    {STATUS_LABELS[order.status]}
+                    {order.totalAmount === 0 && order.status === "PAID"
+                      ? "Voltooid"
+                      : STATUS_LABELS[order.status]}
                   </span>
                 </dd>
               </div>

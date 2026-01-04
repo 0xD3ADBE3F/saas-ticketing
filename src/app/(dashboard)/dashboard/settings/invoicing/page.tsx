@@ -64,7 +64,7 @@ export default async function InvoicesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Facturatie</h1>
+      <h1 className="text-2xl font-bold mb-6">Facturen</h1>
 
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
         <Suspense

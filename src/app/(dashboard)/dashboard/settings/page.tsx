@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation";
 import { getUser } from "@/server/lib/supabase";
 import { getUserOrganizations } from "@/server/services/organizationService";
-import { MollieConnection } from "@/components/dashboard/MollieConnection";
 import { OrganizationForm } from "@/components/dashboard/OrganizationForm";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Building2, Users } from "lucide-react";
+import { Building2, Users } from "lucide-react";
 
 export default async function SettingsPage() {
   const user = await getUser();
@@ -34,23 +33,6 @@ export default async function SettingsPage() {
       </div>
 
       <div className="space-y-6">
-        {/* Mollie Connection */}
-        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-2 border-gray-200/50 dark:border-gray-800/50 rounded-2xl overflow-hidden shadow-xl">
-          <div className="px-6 py-5 border-b border-gray-200/50 dark:border-gray-800/50 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-800/30">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                <CreditCard className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                Betalingen
-              </h2>
-            </div>
-          </div>
-          <div className="p-6">
-            <MollieConnection organizationId={currentOrg.id} />
-          </div>
-        </div>
-
         {/* Organization Form */}
         <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-2 border-gray-200/50 dark:border-gray-800/50 rounded-2xl overflow-hidden shadow-xl">
           <div className="px-6 py-5 border-b border-gray-200/50 dark:border-gray-800/50 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-800/30">

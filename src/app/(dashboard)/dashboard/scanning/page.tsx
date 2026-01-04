@@ -181,12 +181,12 @@ export default async function ScanningPage() {
                 <ScanLine className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <h3 className="font-bold text-lg text-purple-900 dark:text-purple-300">
-                Mobiele Scanner
+                Terminals
               </h3>
             </div>
             <p className="text-sm text-purple-800 dark:text-purple-400 mb-4 leading-relaxed">
-              Maak terminal codes aan voor je deur-personeel. Zij kunnen op hun
-              mobiel tickets scannen zonder in te loggen.
+              Maak terminal codes aan voor je scan-personeel. Zij kunnen met een
+              terminal code op hun mobiel tickets scannen zonder in te loggen.
             </p>
             <Link
               href="/dashboard/scanning/terminals"

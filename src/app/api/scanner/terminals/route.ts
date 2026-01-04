@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { getUser } from "@/server/lib/supabase";
 import { getUserOrganizations, hasRole } from "@/server/services/organizationService";
 import {
@@ -78,7 +79,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
 
-  return NextResponse.json(result.terminal, { status: 201 });
+  // Revalidate the terminals page to show the new terminal
+  revalidatePath("/dashboard/scanning/terminals");
+
+  // Return terminal with properly serialized dates
+  return NextResponse.json(
+    {
+      id: result.terminal.id,
+      code: result.terminal.code,
+      name: result.terminal.name,
+      isActive: result.terminal.isActive,
+      expiresAt: result.terminal.expiresAt?.toISOString() || null,
+      createdAt: result.terminal.createdAt.toISOString(),
+    },
+    { status: 201 }
+  );
 }
 
 // =============================================================================

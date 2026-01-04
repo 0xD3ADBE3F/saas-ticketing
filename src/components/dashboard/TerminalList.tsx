@@ -63,12 +63,18 @@ export function TerminalList({
         throw new Error(data.error || "Kon terminal niet aanmaken");
       }
 
-      const { terminal } = await res.json();
+      const terminal = await res.json();
 
-      // Add to list
+      // Add to list with proper formatting
       setTerminals((prev) => [
         {
-          ...terminal,
+          id: terminal.id,
+          code: terminal.code,
+          name: terminal.name,
+          isActive: terminal.isActive,
+          expiresAt: terminal.expiresAt || null,
+          createdAt: terminal.createdAt,
+          lastUsedAt: null,
           event: formEventId
             ? events.find((e) => e.id === formEventId) || null
             : null,
@@ -81,11 +87,6 @@ export function TerminalList({
       setFormEventId("");
       setFormExpiresAt("");
       setShowCreateForm(false);
-
-      // Show the new code
-      alert(
-        `Terminal aangemaakt!\n\nCode: ${terminal.code}\n\nDeel deze code met je deur-personeel.`
-      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Er ging iets mis");
     } finally {
@@ -186,7 +187,7 @@ export function TerminalList({
                   type="text"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  placeholder="bijv. Deur 1, Hoofdingang, Pietje"
+                  placeholder="bijv. Deur 1, Hoofdingang, Bar"
                   required
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
                 />

@@ -26,13 +26,6 @@ const statusLabels: Record<EventStatus, string> = {
   CANCELLED: "Geannuleerd",
 };
 
-const statusColors: Record<EventStatus, string> = {
-  DRAFT: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-  LIVE: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  ENDED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  CANCELLED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-};
-
 export function EventList({ events, organizationSlug }: EventListProps) {
   return (
     <div className="space-y-4">
@@ -108,16 +101,6 @@ export function EventList({ events, organizationSlug }: EventListProps) {
                       <Edit className="w-3.5 h-3.5" />
                       Bewerken
                     </Link>
-                    {event.status === "LIVE" && (
-                      <Link
-                        href={`/e/${organizationSlug}/${event.slug}`}
-                        target="_blank"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        Bekijk
-                      </Link>
-                    )}
                   </div>
                 </td>
               </tr>
